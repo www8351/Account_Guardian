@@ -1,0 +1,9 @@
+﻿# MD files stay local except README
+*.md
+!README.md
+
+# Junk
+__pycache__/
+*.pyc
+.venv/
+*.log
