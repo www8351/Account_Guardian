@@ -1,5 +1,49 @@
 # AccountGuardian
 
+Account-level `Expert Advisor` for `MetaTrader 5`.
+
+## What it is
+
+A protection layer that runs on the whole account, not on a single trade
+and not on a single strategy. The goal is to enforce account-level risk
+limits in real time, independent of other advisors running in parallel
+on the same terminal.
+
+## Who it is for
+
+A single-account operator running multiple advisors or manual trading on
+the same account, who needs one backstop that applies to everything.
+
+## Why it matters
+
+A regular advisor only protects the trades it opened itself. Cumulative
+daily loss, margin overuse, or manual trades opened by mistake are not
+stopped by anyone. This layer is the last line of defense.
+
+## Current status
+
+No code written yet. The repo currently contains only management files
+and git scaffolding. Exact operational settings are still open.
+
+## Known constraints
+
+* `MQL5` is the target stack. No library or helper framework chosen yet.
+* The advisor cannot close the terminal or disconnect from the broker.
+  Maximum enforcement is closing positions, deleting pending orders, and
+  blocking new opens.
+* The advisor only runs on one open chart. If the chart is closed, the
+  protection stops working.
+* `OnTick` is not guaranteed to run when the market is closed. A separate
+  timer is needed for checks that do not depend on quotes.
+
+## Tone
+
+Direct, no filler.
+
+---
+
+# AccountGuardian
+
 `Expert Advisor` ברמת חשבון עבור `MetaTrader 5`.
 
 ## מה זה
@@ -21,8 +65,8 @@
 
 ## סטטוס נוכחי
 
-טרם נכתב קוד. הריפו מכיל כרגע רק קבצי ניהול ותשתית `git`.
-ההגדרות התפעוליות המדויקות עדיין פתוחות, ראה `STATUS.md`.
+טרם נכתב קוד. הריפו מכיל כרגע רק קבצי ניהול ותשתית `git`. ההגדרות
+התפעוליות המדויקות עדיין פתוחות.
 
 ## מגבלות ידועות
 
@@ -32,10 +76,6 @@
 * יועץ רץ רק על גרף פתוח אחד. אם הגרף נסגר, ההגנה מפסיקה לפעול.
 * `OnTick` לא מובטח לרוץ כשהשוק סגור. טיימר נפרד נדרש לבדיקות שלא תלויות
   בציטוטים.
-
-
-`.gitignore` חוסם את כל קבצי `md` פרט ל־`README.md`. שאר קבצי הניהול
-נשארים מקומיים בלבד.
 
 ## טון
 
