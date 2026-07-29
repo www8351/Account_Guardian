@@ -1,6 +1,6 @@
 # AccountGuardian SPEC v0.1
 
-Status: FROZEN 2026-07-29.
+Status: FROZEN 2026-07-29. Amended 2026-07-29 by owner ruling (Amendment A1, see section 9).
 Code is measured against this document. Any change requires an owner ruling recorded in the decision log. Source material: docs/REVIEW_v0.md (findings F1-F16) and the owner rulings of 2026-07-29 (Q1-Q8, pinned F11/F12/F13). This spec contains structure and obligations only, no implementation bodies.
 
 ## 0. Product statement
@@ -141,10 +141,11 @@ The guardian must never be the hazard: no spurious flatten from deposits or with
 ## 8. Phased build plan and acceptance matrices
 
 ### Phase 0, skeleton, no trading calls compiled in
-- Single instance: second attach refuses with Alert; crashed-instance takeover works after heartbeat staleness.
-- Crash loop: threshold enters SAFE_HALT, closes nothing, survives restart, manual resume only.
+- Single instance: second attach refuses with Alert; crashed-instance takeover works after heartbeat staleness. OnDeinit releases the mutex by zeroing the heartbeat GV (deliberate-release marker), so the takeover row is exercised via hard kill, where the heartbeat stays non-zero and goes stale.
+- Crash loop (per Amendment A1): the process is hard-killed, not gracefully re-inited, CrashLoopMaxInits + 1 times inside CrashLoopWindowSeconds. Show: SAFE_HALT entered, halt file persisted, SAFE_HALT survives a further terminal restart, EA closes nothing throughout, and service resumes only via the documented manual deletion of the halt file.
+- Clean re-inits (input change, chart symbol change, recompile) repeated inside the window do NOT accumulate toward SAFE_HALT.
 - Timer cadence verified with market closed.
-- Input validation matrix: each malformed core input refuses init with INIT_PARAMETERS_INCORRECT; malformed optional input logs WARN and disables only itself; both limits zero refuses init.
+- Input validation matrix: each malformed core input refuses init with INIT_PARAMETERS_INCORRECT; malformed optional input logs WARN and disables only itself; both limits zero refuses init. Malformed is defined concretely: negative where a magnitude is required, zero where a positive value is required, out of documented range (e.g. percent above 100), and non-finite doubles injected via a .set file (NaN or infinity are not reachable through normal MT5 input parsing, so the .set route is the test vector).
 
 ### Phase 1, PnL engine, read-only
 - Deposit and withdrawal neutrality, both directions, on demo: headroom and limit unchanged. The permanent acceptance test.
@@ -178,3 +179,17 @@ The guardian must never be the hazard: no spurious flatten from deposits or with
 - Bypass drills, each with expected outcome logged: file delete, file forge, AutoTrading toggle, clock change, input inflation, detach and re-attach.
 - One-week demo soak with daily reconciliation of guardian PnL against the broker statement within a defined tolerance, plus a journal scan for secrets and spam.
 - Only then live.
+
+## 9. Amendments
+
+### A1, 2026-07-29, owner ruling: SAFE_HALT persistence and manual resume
+
+Supersedes the Phase 0 plan's in-memory init counter, which could never accumulate across real crashes, and closes the gap where SAFE_HALT would not survive a terminal restart.
+
+- Home: a separate file MQL5/Files/AccountGuardian/halt_<login>.dat. The state file stays charter-constrained to lock state only; SAFE_HALT is explicitly not a lock, so its evidence gets its own file rather than a quiet widening of the state file's scope. Same atomic-write path (tmp, FileFlush, FileMove FILE_REWRITE) and the same loud-failure semantics as the state file.
+- Contents: format version, account login, session records (init timestamp, clean-exit flag), halt flag, halt reason, halt time, checksum.
+- Crash counting: at init, the EA appends a session record; at clean OnDeinit it marks the record clean. Crash count = sessions without a clean exit inside CrashLoopWindowSeconds. Consequence: hard kills accumulate, clean re-inits (input change, chart change, recompile) never do, so a healthy guardian cannot SAFE_HALT itself through routine handling.
+- SAFE_HALT entry: crash count exceeds CrashLoopMaxInits. Halt flag, reason, and time persisted immediately. On any later init, a set halt flag means SAFE_HALT regardless of restarts. Closes nothing, sweeps nothing, banner plus periodic Alert, excluded from expiry.
+- Manual resume, the documented official procedure: a human deletes halt_<login>.dat while the EA is stopped, then restarts. Deliberate act, not a side effect. No input toggle (inputs are accident-prone and already treated as suspect while locked). The EA logs a RESUMED_FROM_SAFE_HALT line when it boots and finds no halt file after having previously halted (detected via the halt flag it last persisted to the GV mirror, best effort).
+- Halt-file corruption: checksum fail means quarantine as .bad plus loud WARN, then start a fresh file seeded with the current session. Fails toward the guardian running, because SAFE_HALT means no protection at all; the loud WARN keeps it visible.
+- Clock exemption: session timestamps and the heartbeat-mutex timestamp use the local clock, exempt from the Q7 TimeCurrent-only rule. Q7 governs expiry and anchor decisions; mutex staleness and crash counting are neither. TimeCurrent freezes in dead markets, which would fake staleness (false takeover) and make crash timestamps unrecordable offline. Worst-case clock manipulation here only avoids entering SAFE_HALT, a state the owner may exit manually anyway.
