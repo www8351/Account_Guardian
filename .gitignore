@@ -1,6 +1,7 @@
-﻿# MD files stay local except README
+﻿# MD files stay local except README and versioned docs
 *.md
 !README.md
+!docs/*.md
 
 # Junk
 __pycache__/
