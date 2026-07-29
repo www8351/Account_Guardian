@@ -230,8 +230,20 @@ void OnTick() { }
 void OnDeinit(const int reason)
   {
    EventKillTimer();
-   AgHaltMarkClean();
-   AgHaltSave();
+   //--- A model that was never loaded is never written. OnDeinit also runs
+   //--- after a refused OnInit (reason 8), where the halt model is still
+   //--- default-constructed empty; saving it there wiped every session
+   //--- record and cleared a persisted halt flag, which the GV mirror then
+   //--- read back as a human deletion. The skip is logged, never silent.
+   if(g_ag_halt_loaded)
+     {
+      AgHaltMarkClean();
+      AgHaltSave();
+     }
+   else
+      AgInfo("deinit|halt file NOT written: the halt model was never loaded this session"
+             + " (init refused before AgHaltLoad), so writing it would erase the session"
+             + " history and any persisted halt flag");
    if(g_owns_mutex)
       AgMutexRelease();
    AgInfo("deinit|reason=" + (string)reason + "|session marked clean"

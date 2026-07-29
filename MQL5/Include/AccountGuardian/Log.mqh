@@ -70,9 +70,15 @@ void AgProofOfLife(const string state_name, const int seconds_in_state,
    if(g_ag_last_life_log != 0 && now - g_ag_last_life_log < interval_seconds)
       return;
    g_ag_last_life_log = now;
+   //--- Both clocks are sampled here on purpose. TimeCurrent is expected to
+   //--- freeze in a dead market while TimeLocal keeps advancing; that is the
+   //--- premise the A1/A3 clock exemption rests on, and it is inference until
+   //--- a no-tick window puts it on the record.
    AgLog("LIFE", "state=" + state_name
          + "|seconds_in_state=" + (string)seconds_in_state
-         + "|waiting_on=" + (waiting_on == "" ? "-" : waiting_on));
+         + "|waiting_on=" + (waiting_on == "" ? "-" : waiting_on)
+         + "|server=" + TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS)
+         + "|local=" + TimeToString(now, TIME_DATE | TIME_SECONDS));
   }
 
 //+------------------------------------------------------------------+

@@ -29,6 +29,12 @@ bool     g_ag_halt_flag   = false;
 string   g_ag_halt_reason = "";
 datetime g_ag_halt_time   = 0;
 
+// A save path must never write a model that was never loaded. A refused
+// init returns before AgHaltLoad, so the model is default-constructed
+// empty, and writing that erases every session record and clears a
+// persisted halt flag on disk. See the bypass in SPEC section 7.
+bool     g_ag_halt_loaded = false;
+
 // --- mutex ----------------------------------------------------------
 double   g_ag_instance_id = 0.0;
 
@@ -113,6 +119,11 @@ int AgHaltLoad()
    g_ag_halt_flag = false;
    g_ag_halt_reason = "";
    g_ag_halt_time = 0;
+
+   // Every exit below leaves a deliberately initialized model: loaded from
+   // a valid file, empty because no file exists, or reset after quarantine.
+   // All three are legitimate to persist; only never-loaded is not.
+   g_ag_halt_loaded = true;
 
    string path = AgHaltPath();
    if(!FileIsExist(path))
