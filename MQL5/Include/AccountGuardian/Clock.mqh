@@ -4,8 +4,9 @@
 //| Q7 (FINAL): decision paths use TimeCurrent exclusively.          |
 //| TimeTradeServer and TimeLocal are forbidden here.                |
 //| The only sanctioned local-clock users are the crash-loop session |
-//| timestamps and the heartbeat mutex, which live in Persist.mqh    |
-//| under the Amendment A1 clock exemption.                          |
+//| timestamps and the mutex heartbeat in Persist.mqh (Amendment A1  |
+//| clock exemption), and the proof-of-life line and seconds-in-     |
+//| state counter (A3), which must advance in a dead market.         |
 //| No trade calls in this file (static-structure rule, SPEC 1).     |
 //+------------------------------------------------------------------+
 #ifndef AG_CLOCK_MQH

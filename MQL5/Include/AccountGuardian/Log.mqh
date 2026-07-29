@@ -1,6 +1,7 @@
 //+------------------------------------------------------------------+
 //| AccountGuardian - Log.mqh                                        |
-//| Logging contract implementation per SPEC v0.1 section 6.         |
+//| Logging contract implementation per SPEC v0.1 sections 6 and 9   |
+//| (amendment A3, proof of life).                                   |
 //| No trade calls in this file (static-structure rule, SPEC 1).     |
 //+------------------------------------------------------------------+
 #ifndef AG_LOG_MQH
@@ -12,8 +13,8 @@ enum ENUM_AG_LOG_VERBOSITY
    AG_LOG_VERBOSE = 1  // Verbose
   };
 
-ENUM_AG_LOG_VERBOSITY g_ag_verbosity      = AG_LOG_NORMAL;
-datetime              g_ag_last_heartbeat = 0;
+ENUM_AG_LOG_VERBOSITY g_ag_verbosity     = AG_LOG_NORMAL;
+datetime              g_ag_last_life_log = 0;
 
 //+------------------------------------------------------------------+
 //| One structured journal line. Level: INFO/WARN/ALERT/TRANSITION.  |
@@ -27,7 +28,8 @@ void AgInfo(const string message)  { AgLog("INFO", message); }
 void AgWarn(const string message)  { AgLog("WARN", message); }
 
 //+------------------------------------------------------------------+
-//| Verbose-only line. Transitions never route through this.         |
+//| Verbose-only line. Transitions and proof of life never route     |
+//| through this: they must survive any verbosity setting.           |
 //+------------------------------------------------------------------+
 void AgVerbose(const string message)
   {
@@ -54,15 +56,23 @@ void AgLogTransition(const string from_state, const string to_state,
   }
 
 //+------------------------------------------------------------------+
-//| Heartbeat journal line, at most once per minute (SPEC 6).        |
+//| Proof of life (SPEC amendment A3). Every state emits this at a   |
+//| fixed interval, SYNCING and LOCKED included, carrying the state, |
+//| seconds in state, and what a transitional state waits on. A      |
+//| stuck guardian and a healthy one must never look identical from  |
+//| outside, which is exactly the failure this closes.               |
+//| Never suppressed by verbosity, never rate-limited away.          |
 //+------------------------------------------------------------------+
-void AgHeartbeatLog(const string state_name)
+void AgProofOfLife(const string state_name, const int seconds_in_state,
+                   const string waiting_on, const int interval_seconds)
   {
-   datetime now = TimeCurrent();
-   if(now - g_ag_last_heartbeat < 60)
+   datetime now = TimeLocal();   // wall clock: must tick in a dead market too
+   if(g_ag_last_life_log != 0 && now - g_ag_last_life_log < interval_seconds)
       return;
-   g_ag_last_heartbeat = now;
-   AgVerbose("heartbeat|state=" + state_name);
+   g_ag_last_life_log = now;
+   AgLog("LIFE", "state=" + state_name
+         + "|seconds_in_state=" + (string)seconds_in_state
+         + "|waiting_on=" + (waiting_on == "" ? "-" : waiting_on));
   }
 
 //+------------------------------------------------------------------+

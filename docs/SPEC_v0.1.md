@@ -1,6 +1,6 @@
 # AccountGuardian SPEC v0.1
 
-Status: FROZEN 2026-07-29. Amended 2026-07-29 by owner ruling (Amendments A1 and A2, see section 9).
+Status: FROZEN 2026-07-29. Amended 2026-07-29 by owner ruling (Amendments A1, A2, A3, see section 9).
 Code is measured against this document. Any change requires an owner ruling recorded in the decision log. Source material: docs/REVIEW_v0.md (findings F1-F16) and the owner rulings of 2026-07-29 (Q1-Q8, pinned F11/F12/F13). This spec contains structure and obligations only, no implementation bodies.
 
 ## 0. Product statement
@@ -130,7 +130,7 @@ No symbol filter, no magic filter. Scope is everything on the account. Single in
 - Sweep: one line per close or delete attempt with retcode; failure reasons distinct; trade-disallowed states enumerated by name.
 - Alert popups mandatory for: breach, lock, unlock, state-write failure, cannot-trade-while-locked, SAFE_HALT.
 - Chart banner always shows: current state, lock reason, locked_until, daily PnL vs limit.
-- Liveness journal line at most once per minute in ACTIVE.
+- Proof-of-life journal line in every state at a fixed interval (amendment A3, which supersedes the earlier ACTIVE-only scoping).
 - No secrets, no credentials, ever. v0 has no network path; the clause stays dormant but is tested by a journal scan in the DoD.
 
 ## 7. Threat model summary
@@ -201,3 +201,16 @@ Supersedes the Phase 0 plan's in-memory init counter, which could never accumula
 The bare word "heartbeat" is banned from this document and from the ledger. Two distinct things had been sharing it: the AG_HB_<login> GlobalVariable that proves a live instance, now always "mutex heartbeat", and the external dead-man ping of the deferred visibility phase, now always "network heartbeat". The once-per-minute journal line in section 6, which is neither of those, is now the "liveness journal line". No obligation, algorithm, or acceptance row changes; this amendment is terminology only. Code comments still carry the older wording and will be brought into line with the next code change rather than by a change made solely for it. docs/REVIEW_v0.md keeps its original wording: it is the review as delivered and is not rewritten after the fact.
 
 Deferred-phase note carried here so it is not lost: the external healthchecks.io dead-man check belonging to the deleted prior project has been deleted by the owner. When the visibility phase opens, provision a fresh check with a new UUID. The old UUID is never reused.
+
+### A3, 2026-07-29, owner ruling: proof of life
+
+"Every state, including SYNCING and LOCKED, emits a periodic proof-of-life journal line at a fixed interval carrying: current state, seconds in state, and the specific condition being waited on where the state is transitional. A state the EA can occupy indefinitely while emitting nothing violates fail-visible: a stuck guardian and a healthy one must never look identical from outside."
+
+This supersedes the section 6 scoping of that line to ACTIVE. Rationale from the incident that produced the ruling: the EA sat in SYNCING with a dead timer and emitted nothing for hours, and the silence was indistinguishable from healthy waiting. The line is never suppressed by verbosity. Seconds-in-state and the interval use the local clock, so they advance in a dead market; the Q7 TimeCurrent rule governs expiry and anchors, which this is not.
+
+Obligations attached: a transitional state must name the condition it waits on, and where that condition is not yet implemented the line says so explicitly rather than reading as an idle wait.
+
+### Threat-model additions, 2026-07-29
+
+- Clock manipulation across repeated hard kills could compress session timestamps into the crash-loop window and force a false SAFE_HALT, disarming the guardian. Accepted: it requires repeatedly killing the terminal, which is already conceded as kill-equivalent and detect-only, so the adversary gains nothing over simply leaving the terminal dead.
+- common.ini carries [Experts] Account=1, "disable automated trading when the account changes". A login switch therefore disarms automated trading silently while the EA stays attached, which stops execution without any visible detach. Enumerated here under the Q3/F2 trade-disallowed family. Production posture (Account=0 as a documented requirement, verified in the Definition of Done) is a later ruling, not part of this amendment.

@@ -30,6 +30,26 @@ int  g_timer_seconds       = 1;
 bool g_weekly_enabled      = true;
 bool g_owns_mutex          = false;
 bool g_resumed_from_halt   = false;
+bool g_timer_armed         = false;
+int  g_timer_ticks         = 0;
+
+#define AG_LIFE_INTERVAL_SECONDS 30
+
+//+------------------------------------------------------------------+
+//| Single arming point for the timer, return value checked and      |
+//| logged. A timer that silently fails to arm freezes the mutex     |
+//| heartbeat, and a frozen mutex heartbeat always reads stale,      |
+//| which hands the mutex to every later instance. Never assume.     |
+//+------------------------------------------------------------------+
+void AgArmTimer()
+  {
+   g_timer_armed = EventSetTimer(g_timer_seconds);
+   if(g_timer_armed)
+      AgInfo("timer armed|period=" + (string)g_timer_seconds + "s");
+   else
+      AgAlertEvent("EventSetTimer FAILED (error " + (string)GetLastError()
+                   + "), the guardian cannot run: no evaluation, no sweep, and a frozen mutex heartbeat");
+  }
 
 //+------------------------------------------------------------------+
 void AgRefreshBanner()
@@ -136,7 +156,7 @@ int OnInit()
       AgAlertEvent("SAFE_HALT persists across restart: " + g_ag_halt_reason
                    + ". Delete " + AgHaltPath() + " while the EA is stopped, then restart.");
       AgRefreshBanner();
-      EventSetTimer(g_timer_seconds);
+      AgArmTimer();
       return INIT_SUCCEEDED;
      }
 
@@ -149,7 +169,7 @@ int OnInit()
      {
       AgEnterSafeHalt("crash loop: " + (string)unclean + " unclean sessions inside "
                       + (string)CrashLoopWindowSeconds + "s, limit " + (string)CrashLoopMaxInits);
-      EventSetTimer(g_timer_seconds);
+      AgArmTimer();
       return INIT_SUCCEEDED;
      }
    AgVerbose("crash-loop check|unclean=" + (string)unclean + "/" + (string)CrashLoopMaxInits
@@ -158,7 +178,7 @@ int OnInit()
    AgTransition(AG_STATE_SYNCING, "boot", "weekly=" + (g_weekly_enabled ? "on" : "off")
                 + "|timer=" + (string)g_timer_seconds + "s");
    AgRefreshBanner();
-   EventSetTimer(g_timer_seconds);
+   AgArmTimer();
    return INIT_SUCCEEDED;
   }
 
@@ -167,20 +187,25 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnTimer()
   {
+   g_timer_ticks++;
+
+   //--- first, unconditionally, in every state: the mutex heartbeat.
+   //--- Nothing downstream may gate it. Guardian liveness is not a
+   //--- function of history sync, PnL, or lock state.
    if(g_owns_mutex)
       AgMutexRefresh();
 
+   //--- second, in every state including SYNCING and SAFE_HALT:
+   //--- proof of life (SPEC A3). A stuck guardian and a healthy one
+   //--- must never look identical from outside.
+   AgProofOfLife(AgStateName(g_ag_state), AgSecondsInState(), AgWaitingOn(), AG_LIFE_INTERVAL_SECONDS);
+   AgRefreshBanner();
+
    if(g_ag_state == AG_STATE_SAFE_HALT)
-     {
-      AgHeartbeatLog(AgStateName(g_ag_state));
-      AgRefreshBanner();
       return;   // closes nothing, sweeps nothing, no expiry
-     }
 
    // Phase 1 adds: SYNCING exit condition, PnL evaluation, breach check.
    // Phase 2 adds: lock persistence and expiry. Phase 3 adds: sweep.
-   AgHeartbeatLog(AgStateName(g_ag_state));
-   AgRefreshBanner();
   }
 
 //+------------------------------------------------------------------+
@@ -209,6 +234,8 @@ void OnDeinit(const int reason)
    AgHaltSave();
    if(g_owns_mutex)
       AgMutexRelease();
-   AgInfo("deinit|reason=" + (string)reason + "|session marked clean");
+   AgInfo("deinit|reason=" + (string)reason + "|session marked clean"
+          + "|timer_armed=" + (g_timer_armed ? "1" : "0")
+          + "|timer_ticks=" + (string)g_timer_ticks);
    AgBannerClear();
   }

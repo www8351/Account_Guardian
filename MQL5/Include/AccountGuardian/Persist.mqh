@@ -1,10 +1,10 @@
 //+------------------------------------------------------------------+
 //| AccountGuardian - Persist.mqh                                    |
 //| Atomic file writes, checksums, halt file (Amendment A1),         |
-//| single-instance heartbeat mutex. SPEC v0.1 sections 3 and 9.     |
-//| Clock exemption (A1): session timestamps and the heartbeat use   |
-//| TimeLocal; TimeCurrent freezes in dead markets, which would fake |
-//| staleness and make crash timestamps unrecordable offline.        |
+//| single-instance mutex heartbeat. SPEC v0.1 sections 3 and 9.     |
+//| Clock exemption (A1): session timestamps and the mutex heartbeat |
+//| use TimeLocal; TimeCurrent freezes in dead markets, which would  |
+//| fake staleness and make crash timestamps unrecordable offline.   |
 //| No trade calls in this file (static-structure rule, SPEC 1).     |
 //+------------------------------------------------------------------+
 #ifndef AG_PERSIST_MQH
@@ -232,9 +232,14 @@ void AgHaltSetFlag(const string reason)
   }
 
 //+------------------------------------------------------------------+
-//| Single-instance heartbeat mutex (SPEC 5, F8).                    |
-//| Live other instance: refuse. Stale heartbeat: takeover.          |
-//| Heartbeat 0 = deliberate release by a clean OnDeinit.            |
+//| Single-instance mutex heartbeat (SPEC 5, F8).                    |
+//| Live other instance: refuse. Stale mutex heartbeat: takeover.    |
+//| Mutex heartbeat 0 = deliberate release by a clean OnDeinit.      |
+//|                                                                  |
+//| A frozen mutex heartbeat always reads stale, and staleness       |
+//| authorizes takeover, so a refresh that silently stops disarms    |
+//| single-instance protection completely. Every write is therefore  |
+//| checked and logged rather than assumed.                          |
 //+------------------------------------------------------------------+
 bool AgMutexAcquire()
   {
@@ -244,15 +249,36 @@ bool AgMutexAcquire()
       double age = (double)TimeLocal() - hb;   // A1 clock exemption
       if(age < AG_MUTEX_STALE_SECONDS)
          return false;                          // live instance holds it
-      AgWarn("stale heartbeat (" + DoubleToString(age, 0) + "s), taking over crashed-instance mutex");
+      AgWarn("stale mutex heartbeat (" + DoubleToString(age, 0) + "s), taking over crashed-instance mutex");
      }
    g_ag_instance_id = (double)GetTickCount() * 65536.0 + (double)MathRand();
-   GlobalVariableSet(AgGvInstance(), g_ag_instance_id);
-   GlobalVariableSet(AgGvHeartbeat(), (double)TimeLocal());
+
+   string   id_name = AgGvInstance();
+   string   hb_name = AgGvHeartbeat();
+   datetime hb_now  = TimeLocal();             // A1 clock exemption
+
+   bool id_set = GlobalVariableSet(id_name, g_ag_instance_id) > 0;
+   bool hb_set = GlobalVariableSet(hb_name, (double)hb_now) > 0;
    GlobalVariablesFlush();
+
+   AgInfo("mutex acquire|id_name=" + id_name + "|id_set=" + (id_set ? "1" : "0")
+          + "|id_exists=" + (GlobalVariableCheck(id_name) ? "1" : "0")
+          + "|hb_name=" + hb_name + "|hb_set=" + (hb_set ? "1" : "0")
+          + "|hb_exists=" + (GlobalVariableCheck(hb_name) ? "1" : "0")
+          + "|hb_value=" + (string)((long)hb_now));
+
+   if(!id_set || !hb_set)
+      AgAlertEvent("mutex write failed at acquire, single-instance protection is not in force"
+                   + " (id_set=" + (id_set ? "1" : "0") + ", hb_set=" + (hb_set ? "1" : "0")
+                   + ", error " + (string)GetLastError() + ")");
    return true;
   }
 
+//+------------------------------------------------------------------+
+//| Called from the first timer tick onward in EVERY state. Guardian |
+//| liveness does not depend on history sync, breach evaluation, or  |
+//| anything downstream, so nothing may gate this.                   |
+//+------------------------------------------------------------------+
 void AgMutexRefresh()
   {
    double id = 0.0;
@@ -261,7 +287,10 @@ void AgMutexRefresh()
       AgAlertEvent("instance mutex overwritten by another instance, this should not happen");
       return;
      }
-   GlobalVariableSet(AgGvHeartbeat(), (double)TimeLocal());   // A1 clock exemption
+   datetime hb_now = TimeLocal();              // A1 clock exemption
+   if(GlobalVariableSet(AgGvHeartbeat(), (double)hb_now) == 0)
+      AgWarn("mutex heartbeat refresh failed, error " + (string)GetLastError()
+             + ", takeover protection is degraded");
    GlobalVariablesFlush();
   }
 
