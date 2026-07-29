@@ -2,13 +2,36 @@
 
 ## ISSUES
 
-Issue:  Phase 0 not started. Spec is frozen (docs/SPEC_v0.1.md, 2026-07-29); code is measured against it and changes require an owner ruling.
-Action: Next step is Phase 0 build (file skeleton, static-structure rule, heartbeat mutex, crash-loop SAFE_HALT, timer cadence, input validation) per SPEC section 8. Phase 0 work plan presented to owner; implementation blocked until approval.
+Issue:  Phase 0 demo-attach matrix cannot run: experts load on the chart but never execute. No OnInit output, no files created, no folder writes, verified with a throwaway probe EA that only prints and writes one file. Journal shows "expert AccountGuardian (EURUSD,M1) loaded successfully" and nothing further. Cause is the terminal-side algo-trading gate, which is not reachable from the command line: startup-config keys [Experts] Enabled=1 and AllowLiveTrading=1 are accepted by the launcher (journal confirms "successfully initialized from start config") but do not flip it, and config\common.ini has [Experts] Enabled=1 with no AllowLiveTrading key, plus Account=1 (disable automated trading when the account changes), which fires on the login that follows chart load. Editing common.ini directly was blocked by the sandbox classifier.
+Action: Owner action needed, one of: (a) click the Algo Trading button in the terminal toolbar once and leave it on, then the whole matrix can run headless, or (b) authorize the executor to edit config\common.ini ([Experts] AllowLiveTrading=1, Account=0), a backup already sits in the job tmp directory. Static and compile rows are green and logged below; nine attach rows are pending this gate.
 Status: BLOCKED
+
+Issue:  A prior, unrelated AccountGuardian implementation exists inside the terminal data folder, outside this repo: MQL5\Experts\AccountGuardian_foreign.mq5.bak dated 2026-07-24, plus metaeditor.log references from 2026-07-25 to an AccountGuardian.mq5 and three AG_* scripts that are no longer on disk. The charter declares this project greenfield and any reference to prior implementations invalid by definition.
+Action: Not read, not used, not deleted. Flagged for the owner. Nothing in this build derives from it.
+Status: OPEN
 
 ---
 
 ## ACTIONS
+
+2026-07-29: Phase 0 code written and committed (build 3627886, EA version 1.00, spec phase carried in #property description because the MQL5 Market version format rejects a zero major). Files: Experts/AccountGuardian/AccountGuardian.mq5 plus Include/AccountGuardian/{Log,Clock,State,Persist,Pnl,Sweep}.mqh. Deployed and compiled in the terminal data folder as well. Phase 0 test matrix results, one row each:
+
+  S1 no trade API anywhere in the build            PASS  static grep, only hit is the rule comment inside Sweep.mqh
+  S2 trade API confined to Sweep.mqh               PASS  static grep, scaffold in place, zero call sites
+  S3 TimeCurrent-only rule in decision paths       PASS  static grep, TimeTradeServer count zero; TimeLocal confined to Persist.mqh under the A1 clock exemption
+  C1 compiles clean, zero warnings                 PASS  metaeditor64 /compile, "0 errors, 0 warnings"; first run had warning 68 on the version string, fixed
+  A1 second attach refuses with Alert              PENDING blocked by the algo-trading gate
+  A2 stale-heartbeat takeover after hard kill      PENDING blocked
+  A3 crash loop, 4 hard kills inside 60s           PENDING blocked
+  A4 SAFE_HALT survives a further restart          PENDING blocked
+  A5 SAFE_HALT closes nothing                      PENDING blocked (no trade code exists in this build, so it holds by construction, but the row still needs its run)
+  A6 manual resume only via halt-file deletion     PENDING blocked
+  A7 clean re-inits do not accumulate to SAFE_HALT PENDING blocked
+  A8 timer fires with the market closed            PENDING blocked
+  A9 input matrix, core refuses / optional WARNs   PENDING blocked
+  A10 transition log lines match SPEC section 6    PENDING blocked
+
+  Harness built and left in place at the job tmp directory: kills the terminal, relaunches it with a startup config that attaches the EA to EURUSD M1 with a chosen .set file, then diffs the journal. It works end to end; only the execution gate stops it. Test account is the JustMarkets demo 1200252169 on JustMarkets-Demo3, confirmed demo by the journal line "balance management has been disabled - demo account".
 
 2026-07-29: Owner approved the Phase 0 plan with two amendments. Amendment 1: LEDGER.md enters git as a governance record (narrow .gitignore negation added, supersession logged, decision recorded FINAL). Amendment 2: SAFE_HALT evidence persisted in a separate halt_<login>.dat, crash count = unclean sessions in window, manual resume = documented deletion of the halt file; SPEC_v0.1 amended in place with a dated amendment block; Phase 0 crash-loop matrix row changed to hard process kills. Minor notes folded in: OnDeinit releases the heartbeat GV by zeroing it, takeover exercised via hard kill; malformed input defined concretely (negative, zero-when-required, out-of-range, non-finite via .set file).
 
