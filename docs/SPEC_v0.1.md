@@ -1,13 +1,15 @@
 # AccountGuardian SPEC v0.1
 
-Status: FROZEN 2026-07-29. Amended 2026-07-29 by owner ruling (Amendment A1, see section 9).
+Status: FROZEN 2026-07-29. Amended 2026-07-29 by owner ruling (Amendments A1 and A2, see section 9).
 Code is measured against this document. Any change requires an owner ruling recorded in the decision log. Source material: docs/REVIEW_v0.md (findings F1-F16) and the owner rulings of 2026-07-29 (Q1-Q8, pinned F11/F12/F13). This spec contains structure and obligations only, no implementation bodies.
 
 ## 0. Product statement
 
 Single account-level lockout EA for MetaTrader 5, one JustMarkets terminal, Windows. Daily loss breach: flatten every position and delete every pending order on the account (every symbol, magic, origin, including mobile and manual), then lock until expiry. While locked, anything newly opened is flattened within seconds of the platform accepting a close for that symbol. Weekly PnL is measured and reported only; no weekly code path may lock, close, or sweep. Unlock is time expiry only. No manual override of any kind.
 
-Out of scope v0 (deferred, not deleted): session windows, network visibility (heartbeat, events, dead-man drill), cooperating-EA contract, account-split hardening, any trading logic.
+Out of scope v0 (deferred, not deleted): session windows, network visibility (network heartbeat, events, dead-man drill), cooperating-EA contract, account-split hardening, any trading logic.
+
+Naming discipline (owner ruling, 2026-07-29): the bare word "heartbeat" is never used in this document. "Mutex heartbeat" means the AG_HB_<login> GlobalVariable that proves a live instance. "Network heartbeat" means the external dead-man ping, which belongs to the deferred visibility phase and does not exist in v0.
 
 ## 1. Architecture and file layout
 
@@ -24,7 +26,7 @@ MQL5/Files/AccountGuardian/state_<login>.dat       lock state only
 
 Event model:
 - OnInit: acquire single-instance mutex, validate inputs per config classes (section 5), enter SYNCING.
-- OnTimer at 1 s: everything runs here. Sync check, PnL evaluation, breach check, sweep, expiry check, weekly measurement, heartbeat.
+- OnTimer at 1 s: everything runs here. Sync check, PnL evaluation, breach check, sweep, expiry check, weekly measurement, mutex heartbeat refresh.
 - OnTradeTransaction: accelerated sweep trigger only. Delivery is not guaranteed by the platform; correctness never depends on it.
 - OnTick: unused.
 - OnDeinit: release mutex. Never touches lock state.
@@ -65,7 +67,7 @@ Read policy:
 - Checksum fail: CORRUPT_STATE lock until next rollover, quarantine the file as .bad.
 - Missing file: never trusted as unlocked. Run the derivation of 4.6.
 
-GlobalVariable mirror: AG_LOCK_<login> = locked_until, AG_HB_<login> = heartbeat timestamp, both written each timer tick and flushed with GlobalVariablesFlush. The 4-week GV lifetime is irrelevant at 1 s refresh.
+GlobalVariable mirror: AG_LOCK_<login> = locked_until, AG_HB_<login> = mutex heartbeat timestamp, both written each timer tick and flushed with GlobalVariablesFlush. The 4-week GV lifetime is irrelevant at 1 s refresh.
 
 Authority order: broker history is the authority; file and GV are witnesses (accelerators). Lock at boot = OR over all three.
 
@@ -119,7 +121,7 @@ Config classes (Q4, FINAL):
 | HistoryStablePolls | int | 3 | none | core | SYNCING exit condition |
 | LogVerbosity | enum | NORMAL | none | optional | never suppresses transitions |
 
-No symbol filter, no magic filter. Scope is everything on the account. Single instance per account enforced at init (heartbeat mutex, stale takeover).
+No symbol filter, no magic filter. Scope is everything on the account. Single instance per account enforced at init (mutex heartbeat, stale takeover).
 
 ## 6. Logging contract
 
@@ -128,7 +130,7 @@ No symbol filter, no magic filter. Scope is everything on the account. Single in
 - Sweep: one line per close or delete attempt with retcode; failure reasons distinct; trade-disallowed states enumerated by name.
 - Alert popups mandatory for: breach, lock, unlock, state-write failure, cannot-trade-while-locked, SAFE_HALT.
 - Chart banner always shows: current state, lock reason, locked_until, daily PnL vs limit.
-- Heartbeat journal line at most once per minute in ACTIVE.
+- Liveness journal line at most once per minute in ACTIVE.
 - No secrets, no credentials, ever. v0 has no network path; the clause stays dormant but is tested by a journal scan in the DoD.
 
 ## 7. Threat model summary
@@ -141,7 +143,7 @@ The guardian must never be the hazard: no spurious flatten from deposits or with
 ## 8. Phased build plan and acceptance matrices
 
 ### Phase 0, skeleton, no trading calls compiled in
-- Single instance: second attach refuses with Alert; crashed-instance takeover works after heartbeat staleness. OnDeinit releases the mutex by zeroing the heartbeat GV (deliberate-release marker), so the takeover row is exercised via hard kill, where the heartbeat stays non-zero and goes stale.
+- Single instance: second attach refuses with Alert; crashed-instance takeover works after mutex heartbeat staleness. OnDeinit releases the mutex by zeroing the mutex heartbeat GV (deliberate-release marker), so the takeover row is exercised via hard kill, where the mutex heartbeat stays non-zero and goes stale.
 - Crash loop (per Amendment A1): the process is hard-killed, not gracefully re-inited, CrashLoopMaxInits + 1 times inside CrashLoopWindowSeconds. Show: SAFE_HALT entered, halt file persisted, SAFE_HALT survives a further terminal restart, EA closes nothing throughout, and service resumes only via the documented manual deletion of the halt file.
 - Clean re-inits (input change, chart symbol change, recompile) repeated inside the window do NOT accumulate toward SAFE_HALT.
 - Timer cadence verified with market closed.
@@ -192,4 +194,10 @@ Supersedes the Phase 0 plan's in-memory init counter, which could never accumula
 - SAFE_HALT entry: crash count exceeds CrashLoopMaxInits. Halt flag, reason, and time persisted immediately. On any later init, a set halt flag means SAFE_HALT regardless of restarts. Closes nothing, sweeps nothing, banner plus periodic Alert, excluded from expiry.
 - Manual resume, the documented official procedure: a human deletes halt_<login>.dat while the EA is stopped, then restarts. Deliberate act, not a side effect. No input toggle (inputs are accident-prone and already treated as suspect while locked). The EA logs a RESUMED_FROM_SAFE_HALT line when it boots and finds no halt file after having previously halted (detected via the halt flag it last persisted to the GV mirror, best effort).
 - Halt-file corruption: checksum fail means quarantine as .bad plus loud WARN, then start a fresh file seeded with the current session. Fails toward the guardian running, because SAFE_HALT means no protection at all; the loud WARN keeps it visible.
-- Clock exemption: session timestamps and the heartbeat-mutex timestamp use the local clock, exempt from the Q7 TimeCurrent-only rule. Q7 governs expiry and anchor decisions; mutex staleness and crash counting are neither. TimeCurrent freezes in dead markets, which would fake staleness (false takeover) and make crash timestamps unrecordable offline. Worst-case clock manipulation here only avoids entering SAFE_HALT, a state the owner may exit manually anyway.
+- Clock exemption: session timestamps and the mutex heartbeat timestamp use the local clock, exempt from the Q7 TimeCurrent-only rule. Q7 governs expiry and anchor decisions; mutex staleness and crash counting are neither. TimeCurrent freezes in dead markets, which would fake staleness (false takeover) and make crash timestamps unrecordable offline. Worst-case clock manipulation here only avoids entering SAFE_HALT, a state the owner may exit manually anyway.
+
+### A2, 2026-07-29, owner ruling: naming discipline, editorial only
+
+The bare word "heartbeat" is banned from this document and from the ledger. Two distinct things had been sharing it: the AG_HB_<login> GlobalVariable that proves a live instance, now always "mutex heartbeat", and the external dead-man ping of the deferred visibility phase, now always "network heartbeat". The once-per-minute journal line in section 6, which is neither of those, is now the "liveness journal line". No obligation, algorithm, or acceptance row changes; this amendment is terminology only. Code comments still carry the older wording and will be brought into line with the next code change rather than by a change made solely for it. docs/REVIEW_v0.md keeps its original wording: it is the review as delivered and is not rewritten after the fact.
+
+Deferred-phase note carried here so it is not lost: the external healthchecks.io dead-man check belonging to the deleted prior project has been deleted by the owner. When the visibility phase opens, provision a fresh check with a new UUID. The old UUID is never reused.

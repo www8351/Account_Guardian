@@ -6,8 +6,12 @@ Issue:  CORRECTION to the entry below, dated 2026-07-29. The root cause recorded
 Action: Do not re-run the harness until the cause is settled. Next diagnostic is to attach manually with the EA properties dialog visible and compare its algo-permission checkbox against a startup-config attach.
 Status: OPEN
 
-Issue:  Heartbeat GV AG_HB_1200252169 is absent from the terminal global-variable store while the EA is attached and initialized, even though AG_ID_1200252169 is present and both are written by the same two adjacent lines in AgMutexAcquire. The store holds exactly five variables and its length is constant at 1737 bytes across samples, so this is an absence, not a read artifact. If the heartbeat is genuinely never written, the single-instance design is broken in the unsafe direction: AgMutexAcquire finds no heartbeat, skips the live-instance check, and grants the mutex, so two live instances could both believe they own it. That would also make the A1 and A2 acceptance rows untestable as written.
-Action: Investigate at the top of the next work item. Needs in-EA introspection (log the GlobalVariableSet return value and GlobalVariableCheck for both names), which means a code change and a re-attach on the owner's chart, so it waits for the owner. Severity is potentially BLOCKER for Phase 0.
+Issue:  Mutex heartbeat GV AG_HB_1200252169 did not appear in an external read of bases\gvariables.dat while the EA was attached and initialized, although AG_ID_1200252169 did. The claim "this is an absence, not a read artifact" was overstated and is withdrawn: that file is a snapshot owned by the running process, and a constant length across samples is equally consistent with a file that is simply not being refreshed. Static source read settles two candidates and clears both: every write uses GlobalVariableSet, the persistent form, and GlobalVariableTemp appears nowhere in the build, so the temporary-GV explanation is out; GlobalVariablesFlush is called on all five write paths including the per-tick refresh at Persist.mqh:265, so the missing-flush explanation is out. The leftover-from-an-earlier-session explanation for AG_ID is also out: the stale prior-project globals are unsuffixed, AG_ID_1200252169 carries our account suffix, and the only session of ours that ever executed is the 14:09:40 manual attach, which wrote it at Persist.mqh:250, one line before the mutex heartbeat write.
+Action: Waiting on the owner's F3 reading of the live store, which is authoritative. No fix proposed until then. If F3 shows the mutex heartbeat live and incrementing, the defect was the external read method, and this entry closes with the standing rule that external gvariables.dat reads are never evidence while the terminal runs.
+Status: OPEN
+
+Issue:  External reads of bases\gvariables.dat while the terminal is running are unreliable as evidence, in both directions: the file is a snapshot the process owns, absence there does not prove absence in the live store, and a stale length does not prove a stable variable set. One wrong conclusion has already been drawn from it.
+Action: Never cite that file as evidence again. The live store is read through the terminal F3 dialog or from inside MQL5 via GlobalVariableCheck and GlobalVariableGet.
 Status: OPEN
 
 Issue:  Cosmetic logging defect confirmed live: the boot transition prints "SYNCING->SYNCING" because the state global is initialized to SYNCING and AgTransition then reports from-state equal to to-state. The SPEC section 6 contract wants a meaningful from-state.
@@ -30,6 +34,8 @@ Status: OPEN
 
 ## ACTIONS
 
+2026-07-29: Recorded the owner's naming ruling and the external dead-man residue note. Applied the terminology to docs/SPEC_v0.1.md (amendment A2, editorial) and to the ISSUES and DECISIONS sections here. ACTIONS entries above this line keep their original wording: this section is append-only by protocol, and docs/REVIEW_v0.md likewise keeps the wording it was delivered with. Also withdrew the overstated part of the mutex heartbeat finding after a static source read cleared both of the owner's candidates.
+
 2026-07-29: Owner corrected the harness root-cause claim. Read-only verification of the manually attached instance: OnInit output present in the Experts log at 14:09:40 on XAUUSD.ecn M1, halt file written with one unclean session record and halt flag 0, five global variables in the store of which one (AG_ID_1200252169) is ours. Deleted MQL5\Experts\AccountGuardian_foreign.mq5.bak unread. Struck the algo-gate cause in the ISSUES section rather than editing it silently, and logged three new open issues found during the check: the missing heartbeat GV, the SYNCING->SYNCING boot log, and the stale prior-project globals plus old state file. WebRequest is enabled in common.ini with the URL whitelist stored as an opaque 534-character encoded blob that cannot be decoded from outside the terminal.
 
 2026-07-29: Phase 0 code written and committed (build 3627886, EA version 1.00, spec phase carried in #property description because the MQL5 Market version format rejects a zero major). Files: Experts/AccountGuardian/AccountGuardian.mq5 plus Include/AccountGuardian/{Log,Clock,State,Persist,Pnl,Sweep}.mqh. Deployed and compiled in the terminal data folder as well. Phase 0 test matrix results, one row each:
@@ -39,7 +45,7 @@ Status: OPEN
   S3 TimeCurrent-only rule in decision paths       PASS  static grep, TimeTradeServer count zero; TimeLocal confined to Persist.mqh under the A1 clock exemption
   C1 compiles clean, zero warnings                 PASS  metaeditor64 /compile, "0 errors, 0 warnings"; first run had warning 68 on the version string, fixed
   A1 second attach refuses with Alert              PENDING blocked by the algo-trading gate
-  A2 stale-heartbeat takeover after hard kill      PENDING blocked
+  A2 stale mutex heartbeat takeover after kill     PENDING blocked
   A3 crash loop, 4 hard kills inside 60s           PENDING blocked
   A4 SAFE_HALT survives a further restart          PENDING blocked
   A5 SAFE_HALT closes nothing                      PENDING blocked (no trade code exists in this build, so it holds by construction, but the row still needs its run)
@@ -120,6 +126,18 @@ Decision: (F13 pinned, owner ruling 2026-07-29) Timer-driven architecture, Event
 Reason: OnTick starves on quiet charts and dead sessions; transaction delivery is not guaranteed by the platform.
 Status: FINAL
 
+Decision: (owner ruling 2026-07-29) Naming discipline. The bare word "heartbeat" is never used in LEDGER.md or SPEC_v0.1.md. "Mutex heartbeat" = the AG_HB_<login> GlobalVariable proving a live instance. "Network heartbeat" = the external dead-man ping of the deferred visibility phase. The once-per-minute journal line, which is neither, is the "liveness journal line".
+Reason: One word was carrying two unrelated meanings across a lock-critical design and a deferred network feature.
+Status: FINAL
+
+Decision: (owner ruling 2026-07-29) Lock artifacts are never deleted, only quarantined. Standing principle, applies to state files, lock mirrors, and any future artifact carrying lock state, regardless of which project wrote it.
+Reason: Deleting a lock artifact is the exact bypass this product exists to prevent, so the executor must never do it as housekeeping.
+Status: FINAL
+
+Decision: (owner note 2026-07-29) The external healthchecks.io dead-man check belonging to the deleted prior project has been deleted by the owner. When the deferred visibility phase opens, provision a fresh check with a new UUID. The old UUID is never reused.
+Reason: No network path exists in v0, so there is no impact now; reusing a retired dead-man UUID would silence or misattribute alerts later.
+Status: FINAL
+
 Decision: (Amendment 1, owner ruling 2026-07-29) LEDGER.md is tracked in git as a governance record. Supersedes the inherited local-only policy for this one file. CLAUDE.md stays local: configuration, not record.
 Reason: LEDGER holds the FINAL decisions code is measured against; a single untracked copy is a governance single point of failure. Owner has ruled this question before: governance records are tracked.
 Status: FINAL
@@ -132,6 +150,6 @@ Decision: (Amendment 2c, owner ruling 2026-07-29, mechanism pre-approved as acce
 Reason: Resumption must be a deliberate human act; inputs are accident-prone and already treated as suspect while locked.
 Status: FINAL
 
-Decision: (Amendment 2 clock exemption, executor, 2026-07-29) Crash-loop session timestamps and the heartbeat-mutex timestamp use the local clock, explicitly exempt from the Q7 TimeCurrent-only rule.
+Decision: (Amendment 2 clock exemption, executor, 2026-07-29) Crash-loop session timestamps and the mutex heartbeat timestamp use the local clock, explicitly exempt from the Q7 TimeCurrent-only rule.
 Reason: Q7 governs expiry and anchor decisions; SAFE_HALT is not a lock and mutex staleness is not an expiry. TimeCurrent freezes in dead markets, which would make a healthy instance look stale (false takeover) and crash timestamps unrecordable offline. Clock manipulation here can at worst avoid entering SAFE_HALT, a state the owner can already exit manually.
 Status: FINAL
