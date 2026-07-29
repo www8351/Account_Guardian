@@ -4,6 +4,9 @@
 !docs/*.md
 !LEDGER.md
 
+# Build artifacts
+*.ex5
+
 # Junk
 __pycache__/
 *.pyc
