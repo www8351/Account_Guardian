@@ -1,7 +1,7 @@
 ﻿# MD files stay local except README, versioned docs, and the governance record
 *.md
 !README.md
-!docs/*.md
+!docs/**/*.md
 !LEDGER.md
 
 # Build artifacts
