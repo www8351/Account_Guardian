@@ -66,9 +66,19 @@ Issue:  A prior, unrelated AccountGuardian implementation exists inside the term
 Action: Not read, not used, not deleted. Flagged for the owner. Nothing in this build derives from it.
 Status: OPEN
 
+Issue:  Q6 clarification needs owner ratification. The Phase 1/2 design (docs/DESIGN_PHASE1_2.md) found a case Q6's original wording left silent: which limit governs the derived-breach comparison (SPEC 4.6) when no valid snapshot exists to read (file missing, corrupted, or login-mismatched, exactly F4's own defense scenario). Drafted clarification: falls back to the live-computed limit from current inputs and live base, never a cached value; does not weaken Q6's snapshot rule where a snapshot exists. Full wording in docs/DESIGN_PHASE1_2.md, addendum section.
+Action: Awaiting owner ratification of the drafted wording. Once ratified, move to DECISIONS as FINAL, sourced to owner per the standing process rule (executor proposes, owner rules).
+Status: BLOCKED on owner
+
+Issue:  Active-state limit inflation (raising DailyLossPercent/DailyLossCurrency before any breach) is an undefended five-second bypass the owner identified; the executor's initial dismissal of it was withdrawn as unsound reasoning. Two options costed in docs/DESIGN_PHASE1_2.md addendum: a ratchet (inputs may only tighten intraday, release automatic at day anchor, new floor_<login>.dat file plus GV mirror, same never-loaded-never-written and atomic-write discipline as the other persisted artifacts) versus log-loudly-and-accept (zero new artifacts, detect-only, matches the existing Q3/F2 posture). Ratchet's residual is real: it has no history-backed third witness (an input value is never a deal), so file+GV destruction alone resets it, weaker than the lock's own resilience. Executor recommendation: ratchet, since the named threat is impulsive-under-pressure and that is exactly what the extra deliberate step defeats.
+Action: Awaiting owner's ruling between the two options, or a third option the owner prefers. Design only, nothing implemented.
+Status: BLOCKED on owner
+
 ---
 
 ## ACTIONS
+
+2026-07-30: Phase 1/2 design review (PnL engine, F4 derived-lock defense) conducted in a plan-mode session per the owner's request: read-only against docs/SPEC_v0.1.md, docs/REVIEW_v0.md, and this ledger, plus a read-only grounding pass over the Phase 0 source (no Phase 0 file touched, no new Phase 0 defect found beyond the already-tracked SAFE_HALT bypass). Delivered as chat text, then captured into docs/DESIGN_PHASE1_2.md and committed on the owner's explicit authorization, closing the gap where this design would otherwise have existed only as a chat message, the fourth such governance artifact and the first with no file existence at all prior to capture. Owner ruled all four open questions (GV clamp, login-mismatch handling, weekly banner content, epsilon convention and direction) FINAL, recorded below. Owner rejected the design's dismissal of active-state limit inflation as a non-threat; a ratchet defense was costed against a log-and-accept alternative in the document's addendum and left for the owner's ruling, not implemented. A Q6 clarification (derived-breach comparison's fallback to live inputs when no snapshot exists) was drafted for ratification, not yet ruled. Noted for coordination: the worktree-phase0-plan-capture branch (locked, HEAD a6f2702 at the time of this entry) is independently active with its own LEDGER-style commits; this entry only appends to ISSUES/ACTIONS/DECISIONS and edits no existing entry, to keep a future merge narrow. Phase 0 completion remains the prerequisite for any Phase 1/2 code, per the owner's explicit scope instruction; nothing in docs/DESIGN_PHASE1_2.md is authoritative for implementation purposes yet.
 
 2026-07-29: Correction-2 investigation, ordered before the kill rows, found a SAFE_HALT bypass by source read rather than by test. AG_MUTEX_STALE_SECONDS is 10 s. A refused init appends no session record: OnInit returns INIT_FAILED at :131, while AgHaltLoad is at :136 and AgHaltAppendSession at :163, both downstream. Worse than the owner's framing: OnDeinit then wrote the empty model over the halt file and the GV mirror turned that into a false manual resume. Recorded in the SPEC threat model as prevented, with the general never-loaded-never-written obligation and a best-effort caveat on manual-resume detection. Both fixes written, neither compiled nor deployed, held for step 1 of the sequence so the bug is demonstrated against the unfixed build. Halt file backed up to scratchpad and to docs/evidence/ before anything touched it. Ratified AG_LIFE_INTERVAL_SECONDS to FINAL and logged AG_MUTEX_STALE_SECONDS as a deliberate non-input. A5 stands as PASS-BY-CONSTRUCTION, not PASS: no trade API exists in this build, so the row proves nothing about Phase 3 and carries forward to the sweep engine. Withdrew the earlier proposal to run A3 at CrashLoopWindowSeconds = 600 on the owner's correction: it is kept only as a diagnostic fallback to separate a broken mechanism from a window too tight, and the real default is ruled after measurement. Clock offset established from the session records: server UTC, machine UTC+3.
 
@@ -219,4 +229,20 @@ Status: REVISIT
 
 Decision: (owner ruling 2026-07-29) Proof of life, SPEC amendment A3. Every state, SYNCING and LOCKED included, emits a periodic proof-of-life journal line at a fixed interval carrying current state, seconds in state, and the specific condition being waited on where the state is transitional. Supersedes the section 6 scoping of that line to ACTIVE.
 Reason: A state the EA can occupy indefinitely while emitting nothing violates fail-visible. This exact gap hid a dead timer for hours: a stuck guardian and a healthy one looked identical from outside.
+Status: FINAL
+
+Decision: (owner ruling 2026-07-30) Any witness-supplied locked_until (file or GV) is clamped to AgNextDayAnchor(current TimeCurrent) at evaluation time in the Phase 2 boot-lock derivation (F4).
+Reason: Q1 already guarantees the system itself never legitimately produces a locked_until beyond tomorrow's anchor; a value further out is not one the system wrote. Clamping bounds a griefed or fat-fingered GV value to at most one extra day-cycle while preserving the OR-only-adds-lock property.
+Status: FINAL
+
+Decision: (owner ruling 2026-07-30) A state file that parses validly and passes checksum but carries a login not matching the current account is treated as CORRUPT_STATE-equivalent: quarantined as .bad, loud WARN, fresh file written, locked via CORRUPT_STATE.
+Reason: Errs locked and loud; this project has already been bitten once by foreign-project residue sitting at an expected path (2026-07-29 residue finding).
+Status: FINAL
+
+Decision: (owner ruling 2026-07-30) The Phase 4 weekly chart-banner field shows the raw weekly PnL currency figure only.
+Reason: Any additional reference point (e.g. a ratio against the daily limit) invents a threshold the charter never specified and risks being read as a weekly enforcement limit that does not exist.
+Status: FINAL
+
+Decision: (owner ruling 2026-07-30) Acceptance-test float comparisons (Base, limit, PnL figures) use a flat 0.01 account-currency-unit epsilon. Separately, the live breach comparison itself, wherever any epsilon is applied to it, must err toward breach: total <= -limit + epsilon is acceptable, total <= -limit - epsilon is not.
+Reason: A test-assertion epsilon and a live-enforcement epsilon are different obligations; conflating them risks an implementer picking the sign that lets a real breach slip through as within-tolerance.
 Status: FINAL
