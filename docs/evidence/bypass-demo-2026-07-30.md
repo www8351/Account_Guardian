@@ -51,6 +51,52 @@ Fresh-load refusal routes that WOULD erase on 694d570, none yet demonstrated:
 
 The twelve vectors are on disk at `<DataDir>\MQL5\Presets\a9_*.set`, the same folder that already holds ten `AG_*.set` files written by the deleted prior project, so the path is the one MT5 itself uses. The owner reports they do not appear in the properties dialog Load browser. Terminal has been running since 10:50:03; the files were written at about 12:47, after that start. Two candidate causes, not yet separated: the terminal enumerates the preset list at startup and has not rescanned, or the dialog opened at a different default directory. The discriminator is whether the pre-existing `AG_*.set` files appear in that same browser; if they do, it is a refresh problem, if they do not, it is a location problem. Encoding is a third candidate: these files are ASCII while MT5 writes .set as UTF-16LE, so a re-save is the cheap fallback. Not fixed, per instruction to diagnose only.
 
+## ADDENDUM, 22:26:37: the erasure DID fire, on a fresh load, and is fully evidenced
+
+While the owner and the executor were exchanging the analysis above, the hazard the owner had just identified fired on its own: MT5 retains last-used inputs per EA, those values were still both-zero from the 22:08 edit, and a fresh Navigator attach confirmed them unchanged. That is a genuine fresh program load followed by a config refusal, which is exactly the erasure trigger. It was uncontrolled in the sense that nobody staged it, but no evidence was lost: the pre-state was already backed up, the journal recorded the event, and the post-state proves the wipe.
+
+Journal, the decisive contrast in a single log:
+
+```
+22:26:37.701  INFO|init|build=Phase0|...
+22:26:37.701  ALERT|refusing to run, core config invalid: both limits are zero, ...
+22:26:37.703  INFO|deinit|reason=8|session marked clean|timer_armed=0|timer_ticks=0      <-- FRESH load, ERASES
+22:26:54.730  INFO|init ... mutex acquire ... BOOT->SYNCING ... timer armed              <-- healthy, reseeds
+22:35:29.341  INFO|deinit|reason=5|session marked clean|timer_armed=1|timer_ticks=514
+22:35:29.346  ALERT|refusing to run, core config invalid: both limits are zero, ...
+22:35:29.350  INFO|deinit|reason=8|session marked clean|timer_armed=1|timer_ticks=514    <-- SAME image, harmless
+22:36:39.679  INFO|init ... mutex acquire ... BOOT->SYNCING ... timer armed              <-- healthy, live
+```
+
+`timer_armed=0|timer_ticks=0` at 22:26:37 versus `timer_armed=1|timer_ticks=514` at 22:35:29 is the discriminator, measured rather than argued: the first refusal ran in a program image whose globals had never been touched, the second inherited a running image. Same input condition, same alert text, opposite consequence.
+
+File-level proof of the wipe:
+
+| | before (22:11) | after (22:38) |
+|---|---|---|
+| size | 138 | 74 |
+| S records | 6 | 2 |
+| oldest record | 2026-07-29 14:09:40 | 2026-07-30 22:26:54 |
+
+All five pre-existing session records plus the 10:50:08 one are gone. The two survivors are the 22:26:54 reseed (clean=1, ended by the 22:35 edit) and the 22:36:39 live session (clean=0). The file was reset to an empty model by the refused init's OnDeinit and then reseeded from scratch by the next healthy attach.
+
+CONCLUSION: the SAFE_HALT bypass is DEMONSTRATED against 694d570 on the config-refusal path, with a fresh program load as the necessary trigger. The erasure half only; see the standing scope limit, the false-RESUMED half remains source-read-only because it needs a persisted SAFE_HALT that only the fixed build can produce.
+
+## Fresh-load audit: which Phase 0 rows are exposed to last-used-input persistence
+
+The governing rule, now measured: an input-change re-init reuses the loaded program image and its globals survive; a fresh attach, a recompile, and a terminal restart all build a fresh image with globals reset. MT5 seeds a fresh attach from the last-used inputs for that EA, so a bad value persists silently across attaches and across terminal restarts via the chart profile.
+
+- A1, second attach refuses: the second chart inherits last-used inputs. If those are malformed the instance refuses at the config check (AccountGuardian.mq5:89), which returns BEFORE AgMutexAcquire (:126), so the mutex is never reached and the row tests nothing. The second chart MUST be attached with valid inputs.
+- A2, stale mutex takeover: the relaunched terminal restores the EA from the saved chart profile. A profile carrying malformed inputs makes every relaunch refuse, so no takeover ever occurs.
+- A3, crash loop: every relaunch is a fresh load from the profile, and AgHaltAppendSession sits downstream of every refusal return, so refused inits append no session record at all. Malformed profile inputs would make the crash count permanently unable to accumulate and the row impossible.
+- A4, SAFE_HALT survives restart, and A6, manual resume: same profile dependency as A2 and A3.
+- A7, clean re-inits do not accumulate: a recompile builds a fresh image, so each A7 re-init is a fresh load taking inputs from the profile; malformed values would turn every intended clean re-init into a refusal.
+- A8, timer with market closed: exposed only through the attach that starts the observation window.
+- A9, input matrix: exposed in the opposite direction, and this one changes how the row must be run. A malformed row driven by editing inputs on a RUNNING instance inherits a populated model, so g_ag_halt_loaded is already true, the fix's skip branch never executes, and the row proves the refusal without proving the fix. To exercise the fix each malformed row must be a fresh load. A refusal detaches the EA, so consecutive fresh attaches follow naturally, but the FIRST row must begin from a removal rather than from an edit.
+- A10 is unaffected directly, since it audits lines the other rows emit.
+
+Operational consequence adopted for the rest of the matrix: every attach instruction names the exact input values to confirm before OK, and the executor takes the halt baseline BEFORE the owner attaches, never after.
+
 ## Files
 
 - Backup of this state: `docs/evidence/halt_1200252169.dat.after-config-refusal-2026-07-30`, md5 3209ABA485948D39872B0181C06BE2D6.
