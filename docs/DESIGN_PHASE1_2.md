@@ -268,3 +268,17 @@ Corrected mechanism: ratchet the **derived `limit_currency`**, not the raw input
 **Alternative, costed: log loudly and accept.** Unchanged from the first pass: zero new files, zero new persisted state, zero new GV, zero new load/save/corruption path, zero new acceptance rows. Detect-only, the same posture already accepted for Q3/F2, extended rather than invented fresh.
 
 **Recommendation, mechanism only, awaiting ratification:** build it as corrected above. The decision to build is already ruled; this section restates the mechanism the owner flagged as buggy and re-derives every downstream consequence, persistence fields, the Q6-fallback interaction, the residual size, the acceptance rows, from the corrected version. Nothing here is binding for implementation until ratified.
+
+---
+
+## Session handoff note (2026-07-30, process status, not a design decision)
+
+This section is a status note for continuity across sessions. It is not a ruling and not a design obligation; nothing here requires ratification.
+
+**LEDGER.md write freeze, in effect on `main`.** Owner instruction (2026-07-30): no further LEDGER.md commits on `main` until the owner lifts it. Reason: `main` and the separate worktree branch `worktree-phase0-plan-capture`, a different session executing Phase 0, diverged from common ancestor `72ed960`, and both carry LEDGER.md edits. One divergence point, one merge, planned below.
+
+**LEDGER.md is currently stale on two entries.** Its ISSUES section still shows both "Q6 clarification needs owner ratification" and "Active-state limit inflation / ratchet" as `Status: BLOCKED on owner`. Both have moved past that point in this document: the Q6 clarification is RATIFIED and FINAL (above). The ratchet defense is RULED YES to build (above); only its corrected mechanism remains UNRULED. Do not read LEDGER.md's ISSUES section alone for either item — this document is ahead of it until the freeze lifts and someone reconciles the two.
+
+**Merge plan for `worktree-phase0-plan-capture` into `main`, planned, not run.** When Phase 0 goes green and the owner instructs it: a real merge commit, never rebase, never fast-forward-only, never `-X ours`/`-X theirs`. Resolve every LEDGER.md conflict by hand, keeping both sides' entries (union, never choosing a side), respecting each section's own ordering convention (ACTIONS newest-first, DECISIONS chronological, ISSUES priority-ordered). After merging, verify by counting entries per section before and after, and by identity-matching each entry's opening line against the merged file, not count alone, so a balanced count cannot mask one entry silently dropped and an unrelated one double-counted. Do not run this merge until Phase 0 is confirmed green and the owner explicitly instructs it.
+
+**Scope boundary, unchanged:** no Phase 1 or Phase 2 code before Phase 0 is green. Phase 0 files and the `worktree-phase0-plan-capture` worktree stay untouched by this line of work.
