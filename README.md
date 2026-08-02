@@ -1,5 +1,5 @@
 <!--TOKENS-->
-**Claude Code Usage** — updated 2026-08-02
+**Dev Tool Usage** — updated 2026-08-02
 Total: In 4.0K · Out 989.5K · CacheW 5.1M · CacheR 78.4M
 | Model | In | Out | CacheW | CacheR |
 |---|---|---|---|---|
