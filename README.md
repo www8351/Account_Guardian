@@ -1,3 +1,13 @@
+<!--TOKENS-->
+**Claude Code Usage** — updated 2026-08-02
+Total: In 4.0K · Out 989.5K · CacheW 5.1M · CacheR 78.4M
+| Model | In | Out | CacheW | CacheR |
+|---|---|---|---|---|
+| claude-opus-5 | 477 | 300.6K | 2.2M | 43.8M |
+| claude-fable-5 | 3.3K | 317.8K | 2.1M | 22.7M |
+| claude-sonnet-5 | 158 | 371.1K | 913.6K | 12.0M |
+<!--/TOKENS-->
+
 # AccountGuardian
 
 Account-level `Expert Advisor` for `MetaTrader 5`.
