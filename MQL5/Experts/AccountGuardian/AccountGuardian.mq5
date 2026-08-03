@@ -32,6 +32,7 @@ bool g_owns_mutex          = false;
 bool g_resumed_from_halt   = false;
 bool g_timer_armed         = false;
 int  g_timer_ticks         = 0;
+bool g_init_refused        = false;
 
 #define AG_LIFE_INTERVAL_SECONDS 30
 
@@ -58,6 +59,23 @@ void AgRefreshBanner()
    if(g_ag_state == AG_STATE_SAFE_HALT)
       pnl = "halted: " + g_ag_halt_reason + " (delete " + AgHaltPath() + " to resume)";
    AgBanner(AgStateName(g_ag_state), AgLockReasonName(g_ag_lock_reason), g_ag_locked_until, pnl);
+  }
+
+//+------------------------------------------------------------------+
+//| Visible refusal (Q4, owner ruling 2026-08-03). Sets the refusal  |
+//| flag and draws the dated REFUSED banner before every refusal     |
+//| return in OnInit, both paths. OnDeinit skips the banner clear    |
+//| while the flag is set, so the refusal stays on the chart as a    |
+//| dated event record, not an apparent live state, until the next   |
+//| attach on that chart or the terminal restart.                    |
+//+------------------------------------------------------------------+
+int AgRefuseInit(const int retcode, const string reason)
+  {
+   g_init_refused = true;
+   AgBanner("REFUSED " + TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS)
+            + " (local " + TimeToString(TimeLocal(), TIME_DATE | TIME_SECONDS) + ")",
+            reason, 0, "n/a (init refused)");
+   return retcode;
   }
 
 //+------------------------------------------------------------------+
@@ -89,28 +107,28 @@ int OnInit()
    if(!AgValidateLimits(DailyLossPercent, DailyLossCurrency, why))
      {
       AgAlertEvent("refusing to run, core config invalid: " + why);
-      return INIT_PARAMETERS_INCORRECT;
+      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: " + why);
      }
    if(CrashLoopMaxInits < 1)
      {
       AgAlertEvent("refusing to run, core config invalid: CrashLoopMaxInits must be at least 1");
-      return INIT_PARAMETERS_INCORRECT;
+      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: CrashLoopMaxInits must be at least 1");
      }
    if(CrashLoopWindowSeconds < 1)
      {
       AgAlertEvent("refusing to run, core config invalid: CrashLoopWindowSeconds must be at least 1");
-      return INIT_PARAMETERS_INCORRECT;
+      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: CrashLoopWindowSeconds must be at least 1");
      }
    if(SweepPeriodSeconds < 1 || SweepPeriodSeconds > 5)
      {
       AgAlertEvent("refusing to run, core config invalid: SweepPeriodSeconds out of range 1..5 ("
                    + (string)SweepPeriodSeconds + ")");
-      return INIT_PARAMETERS_INCORRECT;
+      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: SweepPeriodSeconds out of range 1..5");
      }
    if(HistoryStablePolls < 1)
      {
       AgAlertEvent("refusing to run, core config invalid: HistoryStablePolls must be at least 1");
-      return INIT_PARAMETERS_INCORRECT;
+      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: HistoryStablePolls must be at least 1");
      }
    g_timer_seconds = SweepPeriodSeconds;
 
@@ -127,8 +145,7 @@ int OnInit()
      {
       AgAlertEvent("refusing to run: another AccountGuardian instance is live on account "
                    + (string)g_ag_login);
-      AgBanner("REFUSED", "duplicate instance", 0, "another instance holds the mutex");
-      return INIT_FAILED;
+      return AgRefuseInit(INIT_FAILED, "duplicate instance: another instance holds the mutex");
      }
    g_owns_mutex = true;
 
@@ -249,5 +266,12 @@ void OnDeinit(const int reason)
    AgInfo("deinit|reason=" + (string)reason + "|session marked clean"
           + "|timer_armed=" + (g_timer_armed ? "1" : "0")
           + "|timer_ticks=" + (string)g_timer_ticks);
-   AgBannerClear();
+   //--- Visible refusal (owner ruling 2026-08-03): a refused init leaves its
+   //--- dated REFUSED banner on the chart. The gate keys on the dedicated
+   //--- refusal flag, never on a proxy like g_ag_halt_loaded, whose semantic
+   //--- is model-loaded, not init-refused. The skip is logged, never silent.
+   if(g_init_refused)
+      AgInfo("deinit|banner NOT cleared: init was refused, dated REFUSED banner stays on the chart");
+   else
+      AgBannerClear();
   }

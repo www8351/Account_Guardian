@@ -1,7 +1,7 @@
 ﻿# MD files stay local except README, versioned docs, and the governance record
 *.md
 !README.md
-!docs/*.md
+!docs/**/*.md
 !LEDGER.md
 
 # Build artifacts
@@ -12,3 +12,6 @@ __pycache__/
 *.pyc
 .venv/
 *.log
+
+# Owner profile backups of CLAUDE.md, local config residue
+CLAUDE.md.bak*
