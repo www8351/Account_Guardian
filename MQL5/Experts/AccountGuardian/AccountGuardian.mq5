@@ -18,9 +18,9 @@
 //--- core config class: malformed means the EA refuses to run (Q4)
 input double                 DailyLossPercent       = 5.0;   // Daily loss limit, percent of day-anchor base (0 = off)
 input double                 DailyLossCurrency      = 0.0;   // Daily loss limit, account currency (0 = off)
-input int                    SweepPeriodSeconds     = 1;     // Timer period, clamped 1..5
-input int                    CrashLoopMaxInits      = 3;     // Unclean sessions tolerated inside the window
-input int                    CrashLoopWindowSeconds = 60;    // Crash-loop detection window
+input int                    SweepPeriodSeconds     = 1;     // Timer period, refused outside 1..5
+input int                    CrashLoopMaxInits      = 3;     // Consecutive unclean sessions tolerated
+input int                    CrashLoopWindowSeconds = 300;   // Max gap between adjacent inits in a chain
 input int                    HistoryStablePolls     = 3;     // SYNCING exit condition (used from Phase 1)
 //--- optional config class: malformed means feature off plus WARN
 input bool                   WeeklyReportEnabled    = true;  // Weekly measurement and reporting
@@ -178,19 +178,19 @@ int OnInit()
      }
 
    AgHaltAppendSession();
-   int unclean = AgHaltUncleanCount(CrashLoopWindowSeconds);
+   int chain = AgHaltUncleanChain(CrashLoopWindowSeconds);
    if(!AgHaltSave())
       AgAlertEvent("halt file could not be written, crash-loop evidence is not durable this session");
 
-   if(unclean > CrashLoopMaxInits)
+   if(chain > CrashLoopMaxInits)
      {
-      AgEnterSafeHalt("crash loop: " + (string)unclean + " unclean sessions inside "
+      AgEnterSafeHalt("crash loop: " + (string)chain + " consecutive unclean sessions, adjacent inits within "
                       + (string)CrashLoopWindowSeconds + "s, limit " + (string)CrashLoopMaxInits);
       AgArmTimer();
       return INIT_SUCCEEDED;
      }
-   AgVerbose("crash-loop check|unclean=" + (string)unclean + "/" + (string)CrashLoopMaxInits
-             + " inside " + (string)CrashLoopWindowSeconds + "s");
+   AgVerbose("crash-loop check|chain=" + (string)chain + "/" + (string)CrashLoopMaxInits
+             + " consecutive unclean, gap bound " + (string)CrashLoopWindowSeconds + "s");
 
    AgTransition(AG_STATE_SYNCING, "boot", "weekly=" + (g_weekly_enabled ? "on" : "off")
                 + "|timer=" + (string)g_timer_seconds + "s");
