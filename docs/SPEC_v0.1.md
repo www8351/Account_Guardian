@@ -50,7 +50,7 @@ Transitions, every one logged (section 6):
 | ACTIVE | LOCKED (DAILY_BREACH) | daily PnL <= -(limit) | snapshot limit and base into state file (Q6), set locked_until = next day anchor (Q1), persist, delete pendings, begin sweep |
 | any | LOCKED (CORRUPT_STATE) | state file fails checksum | locked_until = next rollover, computed at boot, never read from the failed file; rename file to .bad, quarantine |
 | LOCKED | ACTIVE | TimeCurrent >= locked_until | log unlock; never any other cause |
-| any | SAFE_HALT | init count > CrashLoopMaxInits within CrashLoopWindowSeconds | close nothing, sweep nothing, banner + periodic Alert, manual restart only |
+| any | SAFE_HALT | more than CrashLoopMaxInits consecutive unclean sessions, each adjacent pair of inits no more than CrashLoopWindowSeconds apart (A4) | close nothing, sweep nothing, banner + periodic Alert, manual restart only |
 
 SAFE_HALT is not a lock: excluded from expiry, cleared only by manual restart. SAFE_HALT while a lock exists leaves the account unswept by design (guardian code presumed broken); this shadow is documented and drilled, not hidden.
 
@@ -115,9 +115,9 @@ Config classes (Q4, FINAL):
 | DailyLossPercent | double | 5.0 | 0 | core | percent of day-anchor base |
 | DailyLossCurrency | double | 0 | 0 | core | absolute account currency; stricter of the two wins; both zero refuses init |
 | WeeklyReportEnabled | bool | true | false | optional | report-only path |
-| SweepPeriodSeconds | int | 1 | none | core | clamped 1..5 |
-| CrashLoopMaxInits | int | 3 | none | core | within CrashLoopWindowSeconds |
-| CrashLoopWindowSeconds | int | 60 | none | core | |
+| SweepPeriodSeconds | int | 1 | none | core | out of range refuses init; valid range 1..5 |
+| CrashLoopMaxInits | int | 3 | none | core | consecutive unclean sessions tolerated (A4) |
+| CrashLoopWindowSeconds | int | 300 | none | core | max gap between adjacent inits in a chain, not a rolling window (A4) |
 | HistoryStablePolls | int | 3 | none | core | SYNCING exit condition |
 | LogVerbosity | enum | NORMAL | none | optional | never suppresses transitions |
 
@@ -145,7 +145,7 @@ The guardian must never be the hazard: no spurious flatten from deposits or with
 
 ### Phase 0, skeleton, no trading calls compiled in
 - Single instance: second attach refuses with Alert; crashed-instance takeover works after mutex heartbeat staleness. OnDeinit releases the mutex by zeroing the mutex heartbeat GV (deliberate-release marker), so the takeover row is exercised via hard kill, where the mutex heartbeat stays non-zero and goes stale.
-- Crash loop (per Amendment A1): the process is hard-killed, not gracefully re-inited, CrashLoopMaxInits + 1 times inside CrashLoopWindowSeconds. Show: SAFE_HALT entered, halt file persisted, SAFE_HALT survives a further terminal restart, EA closes nothing throughout, and service resumes only via the documented manual deletion of the halt file.
+- Crash loop (per Amendments A1 and A4): the process is hard-killed, not gracefully re-inited, CrashLoopMaxInits + 1 times in a row, with each adjacent pair of inits no more than CrashLoopWindowSeconds apart. Show: SAFE_HALT entered, halt file persisted, SAFE_HALT survives a further terminal restart, EA closes nothing throughout, and service resumes only via the documented manual deletion of the halt file.
 - Clean re-inits (input change, chart symbol change, recompile) repeated inside the window do NOT accumulate toward SAFE_HALT.
 - Timer cadence verified with market closed.
 - Input validation matrix: each malformed core input refuses init with INIT_PARAMETERS_INCORRECT; malformed optional input logs WARN and disables only itself; both limits zero refuses init. Malformed is defined concretely: negative where a magnitude is required, zero where a positive value is required, out of documented range (e.g. percent above 100), and non-finite doubles injected via a .set file (NaN or infinity are not reachable through normal MT5 input parsing, so the .set route is the test vector).
@@ -191,7 +191,7 @@ Supersedes the Phase 0 plan's in-memory init counter, which could never accumula
 
 - Home: a separate file MQL5/Files/AccountGuardian/halt_<login>.dat. The state file stays charter-constrained to lock state only; SAFE_HALT is explicitly not a lock, so its evidence gets its own file rather than a quiet widening of the state file's scope. Same atomic-write path (tmp, FileFlush, FileMove FILE_REWRITE) and the same loud-failure semantics as the state file.
 - Contents: format version, account login, session records (init timestamp, clean-exit flag), halt flag, halt reason, halt time, checksum.
-- Crash counting: at init, the EA appends a session record; at clean OnDeinit it marks the record clean. Crash count = sessions without a clean exit inside CrashLoopWindowSeconds. Consequence: hard kills accumulate, clean re-inits (input change, chart change, recompile) never do, so a healthy guardian cannot SAFE_HALT itself through routine handling.
+- Crash counting: at init, the EA appends a session record; at clean OnDeinit it marks the record clean. Crash count = the length of the unclean chain ending at the current session, per Amendment A4, which supersedes this bullet's original rolling-window count. Consequence, unchanged: hard kills accumulate, clean re-inits (input change, chart change, recompile) never do, so a healthy guardian cannot SAFE_HALT itself through routine handling.
 - SAFE_HALT entry: crash count exceeds CrashLoopMaxInits. Halt flag, reason, and time persisted immediately. On any later init, a set halt flag means SAFE_HALT regardless of restarts. Closes nothing, sweeps nothing, banner plus periodic Alert, excluded from expiry.
 - Manual resume, the documented official procedure: a human deletes halt_<login>.dat while the EA is stopped, then restarts. Deliberate act, not a side effect. No input toggle (inputs are accident-prone and already treated as suspect while locked). The EA logs a RESUMED_FROM_SAFE_HALT line when it boots and finds no halt file after having previously halted (detected via the halt flag it last persisted to the GV mirror, best effort).
 - Halt-file corruption: checksum fail means quarantine as .bad plus loud WARN, then start a fresh file seeded with the current session. Fails toward the guardian running, because SAFE_HALT means no protection at all; the loud WARN keeps it visible.
@@ -210,6 +210,15 @@ Deferred-phase note carried here so it is not lost: the external healthchecks.io
 This supersedes the section 6 scoping of that line to ACTIVE. Rationale from the incident that produced the ruling: the EA sat in SYNCING with a dead timer and emitted nothing for hours, and the silence was indistinguishable from healthy waiting. The line is never suppressed by verbosity. Seconds-in-state and the interval use the local clock, so they advance in a dead market; the Q7 TimeCurrent rule governs expiry and anchors, which this is not.
 
 Obligations attached: a transitional state must name the condition it waits on, and where that condition is not yet implemented the line says so explicitly rather than reading as an idle wait.
+
+### A4, 2026-07-30, owner ruling: crash-loop primitive and window default
+
+Supersedes the rolling-window counting of Amendment A1. The halt file format is untouched: this changes how existing records are read, not what is written.
+
+- Primitive (R1): SAFE_HALT trips when more than CrashLoopMaxInits **consecutive** unclean sessions exist and **each adjacent pair of inits** lies within CrashLoopWindowSeconds of the other. The count is the length of the unclean chain ending at the current session, found by walking back from the newest record and stopping at the first clean record or the first adjacent init pair further apart than the bound.
+- What changed and why it matters: A1 counted every unclean record inside a window anchored on "now", so a clean session did not reset anything and unrelated deaths spread across a window could accumulate. The chain is anchored on adjacent init pairs only and never on the current time, which is precisely what makes one clean record reset it. Grounded in the 2026-07-30 measurement that routine shutdowns and routine re-inits both produce clean records, so only genuine process deaths accumulate.
+- CrashLoopWindowSeconds default becomes 300 and is redefined as the pairwise gap bound, not a rolling window (R2, absorbed into R1 rather than deferred). Under the conjunction the discriminating work moves to consecutiveness, so a wide bound is cheap: unrelated unclean deaths are hours or days apart, real crash loops are seconds to minutes apart. 300 catches a slow terminal-level crash-restart loop that 60 would miss, while the measured 30 to 40 second kill cycle sits comfortably inside it.
+- Backward clock steps (owner ruling 2026-08-04): a negative gap between two adjacent inits, which is what a backward local clock step produces, counts as inside the bound and does not break the chain. Breaking on a negative gap would let a single clock change disarm the count in one step, which is worse than the timestamp-compression residual the threat model below already accepts. The chain therefore errs toward tripping in both clock directions.
 
 ### Threat-model additions, 2026-07-29
 

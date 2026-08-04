@@ -217,16 +217,33 @@ void AgHaltAppendSession()
   }
 
 //+------------------------------------------------------------------+
-//| Unclean sessions inside the window, current session included.    |
+//| Consecutive unclean sessions ending at the newest record (R1).    |
+//| Walks back from the newest session, which is the current one and  |
+//| is unclean by construction, and stops at the first clean record   |
+//| or the first adjacent init pair further apart than the bound.     |
+//|                                                                   |
+//| Anchored on adjacent init pairs, never on "now": that is what     |
+//| makes a clean record reset the chain, so routine re-inits cannot  |
+//| accumulate toward SAFE_HALT while genuine deaths still do.        |
+//|                                                                   |
+//| A backward local clock step gives a negative gap, which counts as |
+//| inside the bound. Breaking the chain on a negative gap would let  |
+//| one clock change disarm the count in a single step, worse than    |
+//| the compression residual the SPEC threat model already accepts.   |
 //+------------------------------------------------------------------+
-int AgHaltUncleanCount(const int window_seconds)
+int AgHaltUncleanChain(const int max_gap_seconds)
   {
-   datetime now = TimeLocal();   // A1 clock exemption
-   int unclean = 0;
-   for(int i = 0; i < g_ag_sess_count; i++)
-      if(!g_ag_sess_clean[i] && now - g_ag_sess_init[i] <= window_seconds)
-         unclean++;
-   return unclean;
+   int chain = 0;
+   for(int i = g_ag_sess_count - 1; i >= 0; i--)
+     {
+      if(g_ag_sess_clean[i])
+         break;
+      if(i < g_ag_sess_count - 1
+         && (long)g_ag_sess_init[i + 1] - (long)g_ag_sess_init[i] > (long)max_gap_seconds)
+         break;
+      chain++;
+     }
+   return chain;
   }
 
 void AgHaltMarkClean()
