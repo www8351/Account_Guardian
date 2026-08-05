@@ -44,13 +44,14 @@ Transitions, every one logged (section 6):
 
 | From | To | Trigger | Actions |
 |---|---|---|---|
-| boot | SYNCING | always | log boot, read state file, read GV mirror |
+| boot in a fresh image, or the surviving prior state in an in-place re-init (A5) | SYNCING | always | log boot, read state file, read GV mirror |
 | SYNCING | LOCKED | state file, GV mirror, or derived breach (4.6) says locked | adopt strictest witness |
 | SYNCING | ACTIVE | TERMINAL_CONNECTED true and HistoryDealsTotal stable across HistoryStablePolls consecutive polls and no lock witness | log sync duration |
 | ACTIVE | LOCKED (DAILY_BREACH) | daily PnL <= -(limit) | snapshot limit and base into state file (Q6), set locked_until = next day anchor (Q1), persist, delete pendings, begin sweep |
 | any | LOCKED (CORRUPT_STATE) | state file fails checksum | locked_until = next rollover, computed at boot, never read from the failed file; rename file to .bad, quarantine |
 | LOCKED | ACTIVE | TimeCurrent >= locked_until | log unlock; never any other cause |
-| any | SAFE_HALT | more than CrashLoopMaxInits consecutive unclean sessions, each adjacent pair of inits no more than CrashLoopWindowSeconds apart (A4) | close nothing, sweep nothing, banner + periodic Alert, manual restart only |
+| boot | SAFE_HALT | chain trip: more than CrashLoopMaxInits consecutive unclean sessions, each adjacent pair of inits no more than CrashLoopWindowSeconds apart (A4). Only a fresh image reaches this. | close nothing, sweep nothing, banner + one Alert at entry or re-entry, manual restart only |
+| any | SAFE_HALT | halt flag persisted from an earlier session, re-entered at init or in-place re-init (section 8, A5). From stays any so SAFE_HALT to SAFE_HALT conforms. | close nothing, sweep nothing, banner + one Alert at entry or re-entry, manual restart only |
 
 SAFE_HALT is not a lock: excluded from expiry, cleared only by manual restart. SAFE_HALT while a lock exists leaves the account unswept by design (guardian code presumed broken); this shadow is documented and drilled, not hidden.
 
@@ -219,6 +220,18 @@ Supersedes the rolling-window counting of Amendment A1. The halt file format is 
 - What changed and why it matters: A1 counted every unclean record inside a window anchored on "now", so a clean session did not reset anything and unrelated deaths spread across a window could accumulate. The chain is anchored on adjacent init pairs only and never on the current time, which is precisely what makes one clean record reset it. Grounded in the 2026-07-30 measurement that routine shutdowns and routine re-inits both produce clean records, so only genuine process deaths accumulate.
 - CrashLoopWindowSeconds default becomes 300 and is redefined as the pairwise gap bound, not a rolling window (R2, absorbed into R1 rather than deferred). Under the conjunction the discriminating work moves to consecutiveness, so a wide bound is cheap: unrelated unclean deaths are hours or days apart, real crash loops are seconds to minutes apart. 300 catches a slow terminal-level crash-restart loop that 60 would miss, while the measured 30 to 40 second kill cycle sits comfortably inside it.
 - Backward clock steps (owner ruling 2026-08-04): a negative gap between two adjacent inits, which is what a backward local clock step produces, counts as inside the bound and does not break the chain. Breaking on a negative gap would let a single clock change disarm the count in one step, which is worse than the timestamp-compression residual the threat model below already accepts. The chain therefore errs toward tripping in both clock directions.
+
+### A5, 2026-08-05, owner ruling: transition-table conformance, table moves and code stands
+
+Found by the A10 conformance sweep of 2026-08-04, which reconciled 24 observed transition lines against section 2 and found two the table could not account for. The behaviour was correct in both cases and is required by section 8; the table simply failed to enumerate the triggers. Nothing in the code changed under this amendment.
+
+Ground, and it is the load-bearing sentence: the from-state of a transition line is the state the program image was actually in. That is BOOT in a fresh image, and the surviving prior state in an in-place re-init. This ground replaces an earlier formulation, that every init is a fresh image from BOOT, which measurement contradicts: the three SYNCING to SYNCING lines observed on the deployed lineage are in-place re-inits, each preceded within 13 milliseconds by a deinit reason=5 carrying timer_armed=1 and tick counts of 1806, 1819 and 14, whereas a fresh image reads zero on both counters. The fresh-versus-inherited discriminator is already FINAL in the section 9 threat model and this amendment is written to agree with it rather than contradict it.
+
+- F1: the boot to SYNCING row's From cell widens to "boot in a fresh image, or the surviving prior state in an in-place re-init". This makes the observed SYNCING to SYNCING line conforming, and with it the unobserved but emittable SAFE_HALT to SYNCING produced by a manual resume executed against an inherited image. No new row is needed.
+- F2: the any to SAFE_HALT row splits in two. A boot to SAFE_HALT row carries the chain trip of A4, which only a fresh image can reach. An any to SAFE_HALT row carries re-entry on a halt flag persisted from an earlier session, the obligation section 8 already imposes. The From column of the re-entry row stays "any" deliberately: narrowing it to boot would make SAFE_HALT to SAFE_HALT non-conforming, and that line is emittable through AccountGuardian.mq5:171 when an input edit lands on an already halted chart.
+- Third edit, riding along from a side observation recorded with the same sweep: the SAFE_HALT action cell said "periodic Alert" while the code raises one Alert per session at entry or re-entry and none from OnTimer. The cell now reads "one Alert at entry or re-entry". The document was describing behaviour the code never had.
+
+Evidence: docs/evidence/a10-transition-conformance-2026-08-04.md. Note carried for anyone re-deriving this later: only the re-entry line exists in the deployed build's own output, because the 16:37:04 trip session was hard killed before its output flushed, so the trip line rests on the halt file as read back by the next image.
 
 ### Threat-model additions, 2026-07-29
 
