@@ -15,3 +15,4 @@ __pycache__/
 
 # Owner profile backups of CLAUDE.md, local config residue
 CLAUDE.md.bak*
+.claude/worktrees/
