@@ -65,6 +65,38 @@ ahead of it in this list.
 Same obstruction as Stage 2 and Stage 3: MetaEditor's include resolution roots to the
 deployed terminal MQL5 tree, not this worktree. No compile log is claimed.
 
+## Owner-review finding 1, fixed 2026-08-09: DEGRADED visibility gap
+
+Owner review of tip `e5d32bc` found two defects in the original wiring, both verified
+against source before the fix:
+
+1. `AgPnlNumbersString()` (mq5:75-85 as committed) returned the ACTIVE governing numbers
+   with no DEGRADED marker; only `g_ag_dynamic_waiting_on` carried it, so a reader of the
+   numbers field group alone (not cross-referencing `waiting_on`) could mistake stale
+   figures for a live evaluation. Q10 requires the LIFE line and banner to show last-known
+   figures WITH the marker.
+2. `g_ag_degraded = false` ran unconditionally right after the connection check passed
+   (mq5:117 as committed), before the computation that follows could still fail
+   (`AgRealized`/`AgDayBase` returning `ok=false` on a HistorySelect failure). A reconnect
+   pass that failed its history read would show a non-degraded banner over stale numbers.
+
+Fix: `AgPnlNumbersString()` now prefixes `DEGRADED|` to the whole field group when
+`g_ag_degraded` holds. `g_ag_degraded = false` moved from the connection-check branch to
+the single point where `g_ag_have_pnl_numbers = true` is set, i.e. only once a full
+computation succeeds this pass.
+
+```
+$ grep -n "g_ag_degraded" MQL5/Experts/AccountGuardian/AccountGuardian.mq5
+44:bool     g_ag_degraded             = false; // Q10 DEGRADED marker
+85:   string prefix = g_ag_degraded ? "DEGRADED|" : "";
+101:      pnl = (g_ag_degraded ? "DEGRADED: " : "")
+120:      g_ag_degraded          = true;
+167:   g_ag_degraded         = false;   // cleared here, not on entry: see the note above
+```
+
+Exactly one set-true site (the disconnect branch) and one clear site (post-computation
+success); no path clears it before a computation attempt can fail.
+
 ## Status
 
 Static evidence: DONE, this session. Live/compile acceptance (LIFE-line field list,

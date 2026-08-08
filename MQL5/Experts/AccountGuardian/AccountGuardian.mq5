@@ -45,6 +45,7 @@ bool     g_ag_degraded             = false; // Q10 DEGRADED marker
 datetime g_ag_last_logged_anchor   = 0;     // monotonic rollover-line latch (2.1)
 datetime g_ag_last_breach_alert    = 0;     // Q2 ALERT cadence, local clock
 bool     g_ag_have_pnl_numbers     = false; // false until the first ACTIVE pass completes
+bool     g_ag_resyncing            = false; // Q10 NEW RULING 2026-08-09: gates reconnect on AgHistoryStable
 datetime g_ag_last_anchor          = 0;
 double   g_ag_last_realized        = 0.0;
 double   g_ag_last_floating        = 0.0;
@@ -71,12 +72,18 @@ void AgArmTimer()
 //+------------------------------------------------------------------+
 //| ACTIVE governing numbers as a LIFE-line field group (A6, 4.5).   |
 //| Empty until the first completed ACTIVE pass, or outside ACTIVE.  |
+//| Prefixed DEGRADED| whenever g_ag_degraded holds (Q10 FINAL,      |
+//| owner finding 2026-08-09): the numbers are last-known figures    |
+//| from before a disconnect, and a reader of the numbers field      |
+//| alone, without cross-referencing waiting_on, must not be able    |
+//| to mistake them for a fresh, live evaluation.                    |
 //+------------------------------------------------------------------+
 string AgPnlNumbersString()
   {
    if(g_ag_state != AG_STATE_ACTIVE || !g_ag_have_pnl_numbers)
       return "";
-   return "anchor=" + TimeToString(g_ag_last_anchor, TIME_DATE | TIME_SECONDS)
+   string prefix = g_ag_degraded ? "DEGRADED|" : "";
+   return prefix + "anchor=" + TimeToString(g_ag_last_anchor, TIME_DATE | TIME_SECONDS)
         + "|realized=" + DoubleToString(g_ag_last_realized, 2)
         + "|floating=" + DoubleToString(g_ag_last_floating, 2)
         + "|base=" + DoubleToString(g_ag_last_base, 2)
@@ -114,7 +121,10 @@ void AgEvaluateActive()
       g_ag_dynamic_waiting_on = "DEGRADED: disconnected, no breach decisions";
       return;
      }
-   g_ag_degraded = false;
+   //--- g_ag_degraded is cleared further below, only once this pass's
+   //--- computation actually succeeds (owner finding 2026-08-09): clearing
+   //--- it here, on entry, let a HistorySelect failure on the reconnect
+   //--- pass show a non-degraded banner over stale numbers.
 
    //--- Q8: anchor high-water-mark sanity check ---------------------------
    datetime fresh_anchor  = AgDayAnchor(AgServerNow());
@@ -154,6 +164,7 @@ void AgEvaluateActive()
    g_ag_last_limit       = limit;
    g_ag_last_pnl         = pnl;
    g_ag_have_pnl_numbers = true;
+   g_ag_degraded         = false;   // cleared here, not on entry: see the note above
 
    //--- Q9: coherence-deferral, then the Q2 interim breach posture -------
    long current_count = HistoryDealsTotal();
