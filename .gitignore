@@ -26,4 +26,11 @@ node_modules/
 
 # Owner profile backups of CLAUDE.md, local config residue
 CLAUDE.md.bak*
-.claude/worktrees/
+
+# Local tooling scaffolding. Everything under it today is worktrees, which are
+# full checkouts of this repository and must never enter history.
+.claude/
+
+# Root-level duplicate of docs/status/index.html, identical byte for byte.
+# The versioned copy under docs/ is the one that counts.
+/Monitor_Plan.html

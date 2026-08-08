@@ -1,13 +1,3 @@
-<!--TOKENS-->
-**Dev Tool Usage** — updated 2026-08-08
-Total: In 4.3K · Out 1.2M · CacheW 6.3M · CacheR 105.7M
-| Model | In | Out | CacheW | CacheR |
-|---|---|---|---|---|
-| claude-opus-5 | 537 | 338.2K | 2.5M | 47.0M |
-| claude-fable-5 | 3.6K | 495.9K | 2.8M | 45.1M |
-| claude-sonnet-5 | 186 | 380.7K | 1.0M | 13.6M |
-<!--/TOKENS-->
-
 <div align="center">
 
 # AccountGuardian
