@@ -64,7 +64,8 @@ void AgLogTransition(const string from_state, const string to_state,
 //| Never suppressed by verbosity, never rate-limited away.          |
 //+------------------------------------------------------------------+
 void AgProofOfLife(const string state_name, const int seconds_in_state,
-                   const string waiting_on, const int interval_seconds)
+                   const string waiting_on, const int interval_seconds,
+                   const string numbers = "")
   {
    datetime now = TimeLocal();   // wall clock: must tick in a dead market too
    if(g_ag_last_life_log != 0 && now - g_ag_last_life_log < interval_seconds)
@@ -74,9 +75,13 @@ void AgProofOfLife(const string state_name, const int seconds_in_state,
    //--- freeze in a dead market while TimeLocal keeps advancing; that is the
    //--- premise the A1/A3 clock exemption rests on, and it is inference until
    //--- a no-tick window puts it on the record.
+   //--- numbers (A6, 4.5): the ACTIVE governing figures, anchor/realized/
+   //--- floating/base/limit/pnl_vs_limit, appended when non-empty. Every
+   //--- other state passes "" and the field is simply absent.
    AgLog("LIFE", "state=" + state_name
          + "|seconds_in_state=" + (string)seconds_in_state
          + "|waiting_on=" + (waiting_on == "" ? "-" : waiting_on)
+         + (numbers == "" ? "" : "|" + numbers)
          + "|server=" + TimeToString(TimeCurrent(), TIME_DATE | TIME_SECONDS)
          + "|local=" + TimeToString(now, TIME_DATE | TIME_SECONDS));
   }

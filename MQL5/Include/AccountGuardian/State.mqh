@@ -76,17 +76,28 @@ void AgTransition(const ENUM_AG_STATE to_state, const string reason, const strin
   }
 
 //+------------------------------------------------------------------+
+//| Dynamic waiting-on detail for SYNCING and ACTIVE, set by the     |
+//| caller each pass before AgProofOfLife (Phase 1, A6 4.4): the     |
+//| live poll count while SYNCING, and the Q8 anchor-sanity or Q10   |
+//| DEGRADED condition while ACTIVE, when either holds. One tick of  |
+//| lag versus the pass that set it, same as every other proof-of-   |
+//| life field, since AgProofOfLife runs before the state dispatch.  |
+//+------------------------------------------------------------------+
+string g_ag_dynamic_waiting_on = "";
+
+//+------------------------------------------------------------------+
 //| What a transitional state is waiting on, for the A3 life line.   |
-//| SYNCING has no exit condition implemented in Phase 0: the sync    |
-//| check and the PnL engine land in Phase 1. Saying so out loud is   |
-//| the point of A3, so the line reports it rather than looking idle. |
 //+------------------------------------------------------------------+
 string AgWaitingOn()
   {
    switch(g_ag_state)
      {
       case AG_STATE_SYNCING:
-         return "Phase1:TERMINAL_CONNECTED+HistoryDealsTotal stable (not implemented in Phase 0, SYNCING is terminal in this build)";
+         return (g_ag_dynamic_waiting_on != "")
+                ? g_ag_dynamic_waiting_on
+                : "history stability poll not yet run this session";
+      case AG_STATE_ACTIVE:
+         return g_ag_dynamic_waiting_on; // "" when no Q8/Q10 condition holds
       case AG_STATE_LOCKED:
          return "expiry: TimeCurrent >= locked_until";
       case AG_STATE_SAFE_HALT:
