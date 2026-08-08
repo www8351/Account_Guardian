@@ -1,6 +1,8 @@
 # Phase 1 Kickoff Plan: Daily PnL Core
 
-Planner output, 2026-08-08, second pass same day. Delivered in plan mode as a session plan file and captured into the repo on explicit owner authorization, the fourth such capture after docs/REVIEW_v0.md, docs/PLAN_PHASE0.md and docs/DESIGN_PHASE1_2.md. This copy is the governance record; implementation is measured against it. Planning only: no code was written and no source file was touched in either pass. The second pass verified the first pass's context alignment against an unmerged branch this plan had not read, corrected a SPEC amendment numbering collision, updated one open question, recorded a process divergence, and added three new open questions; none of it reopens the kickoff ruling itself, which stands FINAL.
+Planner output, 2026-08-08, second pass same day, third pass 2026-08-09. Delivered in plan mode as a session plan file and captured into the repo on explicit owner authorization, the fourth such capture after docs/REVIEW_v0.md, docs/PLAN_PHASE0.md and docs/DESIGN_PHASE1_2.md. This copy is the governance record; implementation is measured against it. Planning only across all three passes: no code was written and no source file outside this document and LEDGER.md was touched. The second pass verified the first pass's context alignment against an unmerged branch this plan had not read, corrected a SPEC amendment numbering collision, updated one open question, recorded a process divergence, and added three new open questions. The third pass banks all ten owner rulings (the original seven plus the three the second pass added), FINAL in LEDGER DECISIONS, translates the three mechanism-only rulings (Q8, Q9, Q10) into exact primitives with SPEC wording and acceptance rows, and records that the branch carrying the Phase 0 remainder has since merged to main (937c604) with the last-used gate independently closed by owner reading, so Phase 0 is closed in full and this plan's own sequencing question (6) is resolved. None of the three passes reopens the kickoff ruling itself, which stands FINAL, and this pass reopens nothing FINAL either; it records rulings, it does not make them.
+
+**All ten questions are RULED FINAL as of 2026-08-08/09; see LEDGER DECISIONS for the verbatim rulings. Section 7 below is kept as the historical record of the questions asked, each annotated with its ruling and a pointer to where the mechanism lives in sections 4 and 5. Phase 0 is CLOSED; section 7's question 6 is resolved. Implementation still awaits a separate, later owner instruction per section 8.**
 
 Planning session only. No code written, no source touched. Everything below was re-derived this session from LEDGER.md (read in full, 434 lines), SPEC_v0.1.md, docs/DESIGN_PHASE1_2.md, docs/PLAN_PHASE0.md, and the seven MQL5 sources. Repo state derived fresh: main at `2291a3b` ("chore: token usage badge"), working tree clean except `.gitignore` modified, four worktrees present (`a9-phantom-audit` 461c415, `phase0-close` 5a1772a, `phase0-plan-capture` 3e18c48, `stage5a-crashloop` 3cdcec9). No commit has touched `MQL5/` since merge `28c29a4`, so the deployed-source lineage statement in the A10 sweep still holds.
 
@@ -84,9 +86,9 @@ Per SPEC section 8, Phase 1 is the PnL engine, read-only. In scope: the day anch
 
 ## 4. Design summary
 
-### 4.1 Clock.mqh, anchor rework (pending ruling Q1)
+### 4.1 Clock.mqh, anchor rework (Q1, RULED FINAL 2026-08-08)
 
-`AG_DAY_ANCHOR_OFFSET_SECONDS = 3600` as a compile-time constant, deliberately not an input: an input that moves the day boundary would let a mid-day change reset the daily window, which is the same inflation-adjacent surface the ratchet ruling exists to close, and the AG_LIFE_INTERVAL/AG_MUTEX_STALE precedent (FINAL) is that a value able to disable a guarantee is core or nowhere.
+`AG_DAY_ANCHOR_OFFSET_SECONDS = 3600` as a compile-time constant, deliberately not an input: an input that moves the day boundary would let a mid-day change reset the daily window, which is the same inflation-adjacent surface the ratchet ruling exists to close, and the AG_LIFE_INTERVAL/AG_MUTEX_STALE precedent (FINAL) is that a value able to disable a guarantee is core or nowhere. Q1 ruled this the fixed 01:00-server operationalization (option a of section 7 item 1 below), confirmed a compile-time constant, with a scheduled REVISIT after the 2026-10-25 to 2026-11-01 harvest measures the broker's actual DST calendar.
 
 ```
 AgDayAnchor(t)     = t - ((t - OFFSET) % 86400)        // last 01:00-server boundary <= t
@@ -95,21 +97,92 @@ AgNextDayAnchor(t) = AgDayAnchor(t) + 86400            // Q1 stays derivable
 
 Both stay pure functions of TimeCurrent, recomputed every evaluation, never persisted (SPEC 4.1 charter clause unchanged).
 
+### 4.1a Anchor high-water-mark sanity check (Q8, RULED FINAL 2026-08-08)
+
+Ruling, verbatim in intent: keep the highest anchor observed in memory; if a fresh computation yields an anchor more than one day above it, HALT the evaluation loudly with an ALERT naming both anchors, never silently narrow the window. The latch is in-memory only, never persisted, per the never-loaded-never-written decision and Phase 1 persisting nothing; a restart clears it, accepted because a restart re-derives everything from history with no anchor yet to sanity-check against.
+
+Mechanism: `g_ag_high_anchor` (datetime, in-memory, seeded to the first `AgDayAnchor` computed this session; no value to compare against on that first pass, so it is simply accepted and never checked backward). Every ACTIVE-state pass computes `fresh = AgDayAnchor(AgServerNow())` exactly as 4.1 already does, then applies the check before using `fresh` for anything:
+
+```
+if fresh <= g_ag_high_anchor:
+    // backward step or same day, the unchanged 2.1 behaviour: widen, use fresh, err strict.
+    // g_ag_high_anchor does NOT recede.
+    window_anchor = fresh
+elif fresh - g_ag_high_anchor <= 86400:
+    // ordinary single-day advance
+    window_anchor = fresh
+    g_ag_high_anchor = fresh
+else:
+    // anomalous forward jump: HALT this pass rather than narrow the window
+    AgAlertEvent("anchor sanity: fresh anchor " + fresh + " exceeds retained high anchor "
+                 + g_ag_high_anchor + " by more than one day, evaluation halted this pass")
+    window_anchor = g_ag_high_anchor   // last known-good anchor, window not narrowed
+    // g_ag_high_anchor does NOT advance; the ALERT repeats every pass while the condition holds
+```
+
+Self-clearing: the moment a later pass's `fresh` falls back within one day of the retained `g_ag_high_anchor`, evaluation resumes normally with no restart required. `AgWaitingOn`/LIFE-line note: while halted, the LIFE line's `waiting_on` field for ACTIVE reads "anchor sanity: retained=<g_ag_high_anchor>, rejected=<fresh>" so the condition is never silent between ALERTs.
+
+SPEC wording, amendment A6, section 4.1 addition: "The day anchor's lower bound never advances by more than one day per evaluation pass. If a freshly computed anchor exceeds the highest anchor yet observed by more than 86400 seconds, that pass halts loudly (ALERT naming both anchors) and uses the retained high anchor for that pass's window instead of narrowing it to the fresh value. The retained high anchor is in-memory only and is not persisted across a restart."
+
+Acceptance row, Stage 2 synthetic vectors, `AgPhase1ClockVectors.mq5`: feed a two-day-plus forward jump after establishing a baseline anchor; expect the halt path (both anchors named, `window_anchor` unchanged, `g_ag_high_anchor` unchanged); then feed a legitimate one-day advance; expect normal acceptance and `g_ag_high_anchor` advancing to the new value. A third vector confirms the unchanged backward-step path still widens using `fresh` and never uses `g_ag_high_anchor` in that direction.
+
 ### 4.2 Evaluation discipline
 
 One `AgServerNow()` sample per timer pass feeds anchor, window, sums, and comparison. No comparison mixes clocks (Stage 5a precedent). The rollover journal line uses the monotonic latch from 2.1. All Phase 1 state is in-memory, derived, and disposable; a restart re-derives everything from TimeCurrent and broker history.
 
 ### 4.3 Pnl.mqh, the engine
 
-* `AgRealized(anchor)`: `HistorySelect(anchor, AG_HISTORY_SELECT_TO)` with `AG_HISTORY_SELECT_TO = D'3000.01.01'`, a clock-independent constant. Proof it cannot exclude deals: selection excludes only deals stamped after the bound; the server cannot stamp a deal beyond real time; the bound exceeds any reachable real time for the life of the product and depends on no clock, so neither a frozen nor a backward-stepping TimeCurrent can move it. (MQL5 datetime domain ends 3000.12.31, platform-documented.) In-loop filter: whitelist per F12, per-deal value per SPEC 4.2, `(DEAL_TIME, DEAL_TICKET)` ordering per the design doc. `HistorySelect` returning false is a loud stability failure, never "zero deals" (design doc item 1, F6).
-* `AgDealsSumAll(anchor)` and `AgDayBase()`: the Q2 identity, all deal types, same per-deal formula.
+* `AgRealized(anchor)`: `HistorySelect(anchor, AG_HISTORY_SELECT_TO)` with `AG_HISTORY_SELECT_TO = D'3000.01.01'`, a clock-independent constant. Proof it cannot exclude deals: selection excludes only deals stamped after the bound; the server cannot stamp a deal beyond real time; the bound exceeds any reachable real time for the life of the product and depends on no clock, so neither a frozen nor a backward-stepping TimeCurrent can move it. (MQL5 datetime domain ends 3000.12.31, platform-documented.) In-loop filter: whitelist per F12, per-deal value per SPEC 4.2 as amended by Q3 (see below), `(DEAL_TIME, DEAL_TICKET)` ordering per the design doc, boundary convention per Q4: `DEAL_TIME >= anchor` counts to the new day, matching `HistorySelect`'s own inclusive-from semantics with no special-cased comparison needed anywhere. `HistorySelect` returning false is a loud stability failure, never "zero deals" (design doc item 1, F6).
+* `AgDealsSumAll(anchor)` and `AgDayBase()`: the Q2 identity, all deal types, same per-deal formula, DEAL_FEE included per Q3.
+* **Per-deal formula, RULED FINAL 2026-08-08 (Q3):** `DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION + DEAL_FEE`, everywhere the formula appears: `AgRealized`, `AgDealsSumAll`/`AgDayBase`, and the design doc item 3 derived-lock replay (Phase 2, cited here since the formula is shared). Supersedes the three-property formula design doc items 1 and 2 stated. SPEC wording, amendment A6, section 4.2: "Per-deal value: DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION + DEAL_FEE, uniformly over every deal type the formula touches (realized whitelist per F12, or all types for the Q2 base sum)." Acceptance row, Stage 3: a synthetic or demo deal carrying a non-zero DEAL_FEE moves `AgDayBase` by exactly the fee amount in addition to profit/swap/commission; static row confirms `DEAL_FEE` is read wherever `DEAL_PROFIT` is in the two functions above.
 * `AgFloating()`: `POSITION_PROFIT + POSITION_SWAP` over open positions.
-* `AgLimitCurrency(base)`: min over enabled candidates only (Q8, naive-min trap avoided).
+* `AgLimitCurrency(base)`: min over enabled candidates only (Q8 of the original architecture review, naive-min trap avoided; unrelated to Phase 1 kickoff's own Q8 anchor ruling in 4.1a, same label from two different rulings, disambiguated here so a later reader does not conflate them).
 * `AgHistoryStable(required_polls)`: poll counter per design doc item 1, reset on count change or disconnection, SYNCING exits at `HistoryStablePolls` consecutive stable connected polls.
+
+### 4.3a Breach-declaration deferral (Q9, RULED FINAL 2026-08-08)
+
+Ruling: on any evaluation pass where the computed result moves abruptly with no new deal visible in the selected history, defer the breach declaration by one timer pass and re-evaluate. Guards against Base moving because current Balance already reflects a deal that local history has not synced yet (Balance-versus-history coherence, the gap `AgHistoryStable`'s one-time SYNCING-exit gate does not cover on every later ACTIVE pass).
+
+Mechanism: coherence signal is deal count, `HistoryDealsTotal()` read immediately after the same `HistorySelect` call `AgRealized` already makes, compared against the prior pass's count (`g_ag_last_deal_count`, in-memory). A one-shot flag, `g_ag_breach_deferred_once` (in-memory, reset whenever no breach is pending that pass):
+
+```
+current_count = HistoryDealsTotal()          // post-HistorySelect, same call AgRealized uses
+breach_now = (AgRealized(anchor) + AgFloating() <= -AgLimitCurrency(base) + EPSILON)
+if breach_now:
+    if current_count == g_ag_last_deal_count and not g_ag_breach_deferred_once:
+        AgInfo/AgWarn: "breach deferred one pass: no new deal visible, count=" + current_count
+        g_ag_breach_deferred_once = true
+        // do not declare this pass
+    else:
+        // declare: either a new deal justifies it, or already deferred once
+        <Q2 interim posture: ALERT + journal arithmetic line>
+        g_ag_breach_deferred_once = false
+else:
+    g_ag_breach_deferred_once = false
+g_ag_last_deal_count = current_count          // every pass
+```
+
+The deferral is bounded at exactly one pass by construction: the second consecutive true evaluation always declares regardless of whether the deal count changed, so a real, sustained breach is delayed by at most one `SweepPeriodSeconds` tick (1 s at the default), never suppressed.
+
+SPEC wording, amendment A6, section 4.4 addition: "A breach evaluation that finds the result crossed the limit with no new deal visible in the selected history (deal count unchanged from the prior pass) defers its declaration by exactly one timer pass. If the condition still evaluates true on the next pass, it declares regardless of the deal count. No breach is deferred twice in a row."
+
+Acceptance row, Stage 4: force two consecutive true breach evaluations with an unchanged deal count between them (synthetic override of the comparison inputs, or a live demo sequence where Balance updates a tick ahead of history); expect exactly one deferral logged, then a declaration on the second pass, never a third pass of silence.
+
+### 4.3b Disconnect handling (Q10, RULED FINAL 2026-08-08)
+
+Ruling: while disconnected, mark the evaluation DEGRADED and take no breach decision from a frozen quote, since no enforcement action is possible without a connection anyway. On reconnect, immediate clean re-evaluation. No ALERT fires from DEGRADED data.
+
+Mechanism: connection check is `TerminalInfoInteger(TERMINAL_CONNECTED)`, the same signal design doc item 1's `AgHistoryStable` already resets on. When false, the ACTIVE-state evaluation is skipped entirely for that pass: no `AgRealized`/`AgFloating`/`AgDayBase`/`AgLimitCurrency` recompute, no 4.1a anchor check, no 4.3a coherence check, none of it runs. The LIFE line and banner show the last-known figures with a DEGRADED marker rather than fresh ones (`waiting_on` field for ACTIVE reads "DEGRADED: disconnected, no breach decisions" while it holds). No ALERT of any kind fires from a DEGRADED pass, including no repeat of a Q2-cadence breach ALERT that was firing before the disconnect; that cadence resumes only from a fresh, connected evaluation. The instant `TERMINAL_CONNECTED` reads true again, the very next pass runs the full evaluation exactly as any other ACTIVE pass; Q8's anchor check and Q9's coherence check both apply normally to it, since disconnection touches neither `g_ag_high_anchor` nor `g_ag_last_deal_count`.
+
+SPEC wording, amendment A6, section 4.4 addition: "While `TERMINAL_INFO_CONNECTED` is false, the ACTIVE state performs no breach evaluation and raises no breach ALERT; the LIFE line and banner mark the state DEGRADED and continue showing the last-known figures. The instant the connection is restored, the next timer pass evaluates cleanly with no additional wait." Also amends section 6 (logging contract): "The DEGRADED marker is part of the existing LIFE line and banner fields, not a new state; SPEC section 2's state machine is unchanged by Q10."
+
+Acceptance row, Stage 5, reusing the existing disconnect procedure already exercised for the A8 weekend harvest and the kill-session work: observe the LIFE line reading DEGRADED throughout a disconnect window, zero ALERTs during it (including zero repeats of a breach ALERT that was firing beforehand), and one clean, fresh evaluation on the first LIFE line after reconnect.
 
 ### 4.4 Wiring and the state seam
 
-OnTimer keeps the existing order: mutex refresh, proof of life, banner, SAFE_HALT early return. **Daily PnL logic never runs in SAFE_HALT** (today's early return at AccountGuardian.mq5:221-222 is kept; the banner keeps showing the halt reason). After it, a per-state dispatch: SYNCING runs the stability check and transitions to ACTIVE when stable (lock witnesses land in Phase 2; the SPEC's "no lock witness" conjunct is vacuously true in a build with no witnesses, stated in a comment naming Phase 2); ACTIVE runs the evaluation and breach arithmetic; LOCKED is an explicit empty case with a comment naming Phase 2, so Phase 2 adds expiry and witness code without touching the SYNCING/ACTIVE branches. `AgWaitingOn` (State.mqh:88-89) starts reporting the live poll count.
+OnTimer keeps the existing order: mutex refresh, proof of life, banner, SAFE_HALT early return. **Daily PnL logic never runs in SAFE_HALT** (today's early return at AccountGuardian.mq5:221-222 is kept; the banner keeps showing the halt reason). After it, a per-state dispatch: SYNCING runs the stability check and transitions to ACTIVE when stable (lock witnesses land in Phase 2; the SPEC's "no lock witness" conjunct is vacuously true in a build with no witnesses, stated in a comment naming Phase 2); ACTIVE runs the evaluation, in this exact order per pass: 4.3b's connection check first (skip everything below and mark DEGRADED if disconnected), then 4.1a's anchor sanity check (halt this pass's window narrowing if an anomalous forward jump fired), then the normal realized/floating/base/limit computation, then 4.3a's coherence-deferral check on the breach conclusion, then the Q2 interim-posture ALERT if a breach still declares; LOCKED is an explicit empty case with a comment naming Phase 2, so Phase 2 adds expiry and witness code without touching the SYNCING/ACTIVE branches. `AgWaitingOn` (State.mqh:88-89) starts reporting the live poll count, and additionally reports the 4.1a and 4.3b conditions when either holds, per their sections above.
+
+**Q2 interim breach posture, RULED FINAL 2026-08-08, cadence made concrete:** loud ALERT plus a journal arithmetic line on breach, state stays ACTIVE, repeated at a bounded cadence while the condition holds. Executor's translation of "bounded cadence," not a re-opening of the ruling: reuse `AG_LIFE_INTERVAL_SECONDS` (30 s, the existing observability-cadence constant, Log.mqh) as the repeat interval for the breach ALERT specifically, distinct from the 1 s per-pass journal arithmetic line, which still logs every ACTIVE pass a breach holds (the arithmetic line is not an Alert popup and carries no popup-fatigue cost). This reuses an existing FINAL constant rather than inventing a new magic number; flagged here as the executor's implementation choice for the owner to confirm or override, not as a new open question blocking anything.
 
 ### 4.5 Observability (SPEC section 6 extension, part of A6)
 
@@ -121,10 +194,12 @@ The ACTIVE proof-of-life line gains the governing numbers: `anchor`, `realized`,
 
 **Ordering, corrected 2026-08-08, third pass.** The number is right; the earlier note said nothing about order and that gap is closed here. Main's `docs/SPEC_v0.1.md` is a strict prefix of the branch's copy (the same 15/2 diff above, a plain addition, not a conflict), so writing A6 onto main's SPEC before the branch merges would leave main jumping A4 straight to A6 and would put the future merge conflict directly inside the amendment block, exactly the collision the LEDGER's split-files entry exists to flag in advance. Phase 1 is already blocked on Phase 0 closing and merging (question 6). The order is therefore: the branch merges first, landing A5 on main; A6 is written afterward, onto a SPEC that already carries A5. This plan writes no amendment to any file at this stage; Stage 2 and Stage 3 below assume A5 is already on main when they run.
 
-1. 4.1: day anchor = 01:00 Israel per the kickoff ruling, operationalized per ruling Q1 below; weekend and frozen-clock behavior as in 2.3.
-2. 4.2: history selection upper bound is the far-future constant, never a clock-derived value; plus rulings Q3 (DEAL_FEE) and Q4 (boundary second) below.
-3. Section 6: LIFE-line and banner field additions of 4.5.
+1. 4.1: day anchor = 01:00 Israel per the kickoff ruling, operationalized as fixed 01:00 server per ruling Q1 (RULED, section 7 item 1); weekend and frozen-clock behavior as in 2.3; the high-water-mark sanity check of 4.1a per ruling Q8 (RULED, section 7 item 8).
+2. 4.2: history selection upper bound is the far-future constant, never a clock-derived value; per-deal formula gains DEAL_FEE per ruling Q3 (RULED, section 7 item 3); boundary-second convention per ruling Q4 (RULED, section 7 item 4).
+3. Section 4.4/6: LIFE-line and banner field additions of 4.5; the DEGRADED marker per ruling Q10 (RULED, section 7 item 10); the breach-deferral note per ruling Q9 (RULED, section 7 item 9).
 4. Section 8, Phase 1 row: "Rollover resets counters at server midnight" reworded to "at the day anchor."
+
+All four items above are now fully specified by rulings; nothing in this list is still pending owner input. The amendment is not written to docs/SPEC_v0.1.md in this planning session (per the 2026-08-08 third-pass ordering correction above: A6 lands only after this document's Stage 2 through 4 work actually implements it, not before), but every sentence it will carry is drafted verbatim in sections 4.1, 4.1a, 4.3, 4.3a and 4.3b above.
 
 ## 5. Stages
 
@@ -140,19 +215,19 @@ Acceptance rows: ledger entries exist with quoted sources; session tables quoted
 ### Stage 2: Clock primitives plus synthetic vectors
 Goal: anchor rework proven against synthetic datetimes before anything live consumes it.
 Surfaces: Clock.mqh; new test script `MQL5/Scripts/AccountGuardian/AgPhase1ClockVectors.mq5` (repo copy committed, terminal copy deployed per the vectors sync-direction ruling). SPEC A6 items 1 and 4 written.
-Vectors (script prints PASS/FAIL per case to the journal): boundary second, one second before and after; frozen input (same t twice); backward step across the boundary (25 h class and 1 s class); forward jump across three anchors; latch behavior for each; `AgNextDayAnchor` equals anchor plus 86400 everywhere.
+Vectors (script prints PASS/FAIL per case to the journal): boundary second, one second before and after; frozen input (same t twice); backward step across the boundary (25 h class and 1 s class); forward jump across three anchors; latch behavior for each; `AgNextDayAnchor` equals anchor plus 86400 everywhere; plus 4.1a's three Q8 vectors (anomalous two-day-plus jump halts and names both anchors without narrowing, legitimate one-day advance accepts and advances the high-water mark, backward step still widens using fresh and never substitutes the high-water mark).
 Evidence: journal lines from one owner double-click of the script, quoted into docs/evidence/ per established practice; compile log 0 errors 0 warnings.
 Rollback: revert branch commits, nothing deployed.
 
 ### Stage 3: History engine
-Goal: Pnl.mqh bodies per 4.3, discharging the frozen-upper-bound obligation.
+Goal: Pnl.mqh bodies per 4.3, discharging the frozen-upper-bound obligation, and the Q3/Q4 formula and boundary changes.
 Surfaces: Pnl.mqh only. SPEC A6 item 2 written.
-Acceptance rows (static, from the repo tree): grep zero trade-API references in Pnl/Clock (S1/S2 class re-run); grep zero TimeLocal/TimeGMT/TimeTradeServer in Clock.mqh and Pnl.mqh; grep zero `HistorySelect` calls whose upper bound derives from any clock call; compile 0 errors 0 warnings (Result line plus fresh ex5 mtime per standing rule 6/7, exit code ignored).
+Acceptance rows (static, from the repo tree): grep zero trade-API references in Pnl/Clock (S1/S2 class re-run); grep zero TimeLocal/TimeGMT/TimeTradeServer in Clock.mqh and Pnl.mqh; grep zero `HistorySelect` calls whose upper bound derives from any clock call; grep confirms `DEAL_FEE` is read alongside `DEAL_PROFIT`/`DEAL_SWAP`/`DEAL_COMMISSION` in both `AgRealized` and `AgDealsSumAll`/`AgDayBase` (Q3); compile 0 errors 0 warnings (Result line plus fresh ex5 mtime per standing rule 6/7, exit code ignored).
 Rollback: revert branch commits.
 
 ### Stage 4: Wiring, states, observability
-Goal: 4.4 and 4.5 in AccountGuardian.mq5, State.mqh, Log.mqh.
-Acceptance rows (static plus journal-format): SYNCING→ACTIVE emits exactly one TRANSITION line matching the SPEC section 2 row; LIFE line carries the A6 field list; SAFE_HALT path provably unchanged (diff scoped review, no PnL call reachable from the SAFE_HALT branch); interim breach posture per ruling Q2 wired exactly as ruled.
+Goal: 4.4 and 4.5 in AccountGuardian.mq5, State.mqh, Log.mqh, including the Q9 coherence-deferral flag and the Q10 DEGRADED dispatch.
+Acceptance rows (static plus journal-format): SYNCING→ACTIVE emits exactly one TRANSITION line matching the SPEC section 2 row; LIFE line carries the A6 field list; SAFE_HALT path provably unchanged (diff scoped review, no PnL call reachable from the SAFE_HALT branch); interim breach posture per ruling Q2 wired exactly as ruled, ALERT repeat cadence at AG_LIFE_INTERVAL_SECONDS; the per-pass check order of 4.4 (connection, then anchor sanity, then computation, then coherence deferral) confirmed by a scoped code read rather than assumed from the design prose; Q9's one-shot deferral flag confirmed to reset whenever no breach is pending (static read of every `g_ag_breach_deferred_once` assignment site).
 Rollback: revert branch commits.
 
 ### Stage 5: Deploy and live acceptance
@@ -164,14 +239,18 @@ Deploy per the standing procedure (owner gate; halt file backed up first with md
 | P1-B weekend absorption | one weekend harvest: anchor holds Friday through the freeze, adopts Monday at reopen, no Sat/Sun rollover lines | journal scan, quoted lines |
 | P1-C restart reconstruction (P1-5) | kill mid-day with deals present, relaunch | PnL figures equal before and after within 0.01, LIFE lines quoted |
 | P1-D zero-deal day | any deal-free day | LIFE lines: realized 0, base = balance, PnL = floating |
-| P1-E deposit/withdrawal neutrality (DN-1/2/3, P1-1/2/3) | demo balance ops, pending Q5 | base and limit unchanged within 0.01 across each |
+| P1-E deposit neutrality (DN-1, P1-1) | demo deposit, Q5 RULED deposit-only, withdrawals unavailable on this demo | base and limit unchanged within 0.01 |
+| P1-E' withdrawal neutrality (DN-2, P1-2) | Q5 RULED: PASS-BY-CONSTRUCTION, not a demo row | closes by the Q2 algebraic identity alone (design doc item 2's derivation is symmetric in sign); no demo evidence exists or is required |
 | P1-F freeze-window balance op | deposit inside the nightly 00:00-00:05 freeze or the weekend freeze | base unchanged, deal present in the sum despite frozen TimeCurrent, proving the upper bound |
-| P1-G whitelist (P1-8) | balance op moves realized by exactly 0 and the base sum by the exact amount | journal arithmetic |
+| P1-G whitelist (P1-8) | balance op moves realized by exactly 0 and the base sum by the exact amount, DEAL_FEE included per Q3 if the deposit carries one | journal arithmetic |
 | P1-H F11 double-count | carry a losing manual position across 01:00, close next day | floating against day N, full realized against day N+1, asserted expected |
 | P1-I partial close (P1-7) | manual partial close | realized plus floating continuous across the boundary |
-| P1-J SYNCING exit (P1-9) | restart with history | poll count visible in AgWaitingOn, exit after HistoryStablePolls stable polls |
-| P1-K HistorySelect false (P1-10) | disconnect mid-session | loud WARN distinct from zero-deals, no ACTIVE transition from that tick |
-| P1-L breach arithmetic | manual losing trades cross the limit on demo | posture per Q2 ruling observed, arithmetic line carries full numbers |
+| P1-J SYNCING exit (P1-9 design-doc numbering) | restart with history | poll count visible in AgWaitingOn, exit after HistoryStablePolls stable polls |
+| P1-K HistorySelect false (P1-10 design-doc numbering) | disconnect mid-session | loud WARN distinct from zero-deals, no ACTIVE transition from that tick |
+| P1-L breach arithmetic | manual losing trades cross the limit on demo | posture per Q2 ruling observed, arithmetic line carries full numbers, ALERT repeats at 30 s while sustained |
+| P1-M anchor sanity live (Q8) | none planned live; Stage 2 synthetic vectors are the acceptance evidence, a live forward jump cannot be manufactured safely on a real broker clock | Stage 2 vectors stand as the closing evidence for this row |
+| P1-N breach deferral live (Q9) | demo sequence where a manual close's Balance update is observed to outrace HistoryDealsTotal by one pass, or a forced synthetic override if no such sequence occurs naturally | exactly one deferral logged, declaration on the following pass, never a third pass of silence |
+| P1-O DEGRADED live (Q10) | reuse the existing disconnect procedure (A8 weekend harvest class) | DEGRADED on the LIFE line throughout, zero ALERTs during the gap, one clean re-evaluation on the first line after reconnect |
 
 Rollback: redeploy prior sources from main (`MQL5/` unchanged since `28c29a4` lineage), recompile, kill/relaunch.
 
@@ -187,27 +266,32 @@ LEDGER sync (rows with evidence pointers and build hash), SPEC A6 committed as r
 | Frozen clock spanning anchor | Decided | Anchor flips at first advancing evaluation; no trading deal can exist inside a freeze on this account (FINAL composition); balance ops covered by the constant upper bound |
 | HistorySelect upper bound | Decided | `D'3000.01.01'` constant, proof in 4.3; static row: zero clock-derived bounds; live row P1-F |
 | History not synced at init | Decided | Stability counter per design doc item 1; HistorySelect false is loud and concludes nothing; SYNCING blocks ACTIVE until stable |
-| Balance ops in history | Decided | F12: excluded from realized, included in base sum; deposit never profit, withdrawal never loss by the Q2 identity; boundary second pending Q4; DEAL_FEE pending Q3 |
-| Partial closes, swaps, commissions, fees | Decided except fees | Per-deal formula plus design doc item 1 partial-close analysis; row P1-I; DEAL_FEE pending Q3 |
+| Balance ops in history | Decided | F12: excluded from realized, included in base sum; deposit never profit, withdrawal never loss by the Q2 identity; boundary second per Q4 (RULED); DEAL_FEE per Q3 (RULED) |
+| Partial closes, swaps, commissions, fees | Decided | Per-deal formula plus design doc item 1 partial-close analysis; row P1-I; DEAL_FEE per Q3 (RULED) |
 | Zero-deal day | Decided | Empty fold: realized 0, base = current balance, PnL = floating; row P1-D |
-| Breach comparison semantics | Decided definition, open interim posture | SPEC 4.2 quoted: "Daily PnL = realized + floating. Never a balance-delta, never a cached day-start equity." SPEC 4.4: "Breach: daily PnL <= -(limit_currency)". Floating included per F11. Evaluated once per timer tick in ACTIVE from a single TimeCurrent sample; epsilon errs toward breach (FINAL). Interim action on true is Q2 |
-| Breach exactly at anchor boundary | Decided for Phase 1 scope | Single-sample rule makes anchor, window, and comparison agree within one pass; at t equal to the anchor the window is empty except per Q4's convention; lock semantics are Phase 2 |
+| Breach comparison semantics | Decided in full | SPEC 4.2 quoted: "Daily PnL = realized + floating. Never a balance-delta, never a cached day-start equity." SPEC 4.4: "Breach: daily PnL <= -(limit_currency)". Floating included per F11. Evaluated once per timer tick in ACTIVE from a single TimeCurrent sample; epsilon errs toward breach (FINAL). Interim action on true is Q2 (RULED: loud ALERT plus journal line, ACTIVE stays ACTIVE, 30 s repeat cadence), gated by Q9's one-pass coherence deferral (RULED, 4.3a) and skipped entirely under Q10's DEGRADED condition (RULED, 4.3b) |
+| Breach exactly at anchor boundary | Decided for Phase 1 scope | Single-sample rule makes anchor, window, and comparison agree within one pass; at t equal to the anchor the window counts to the new day per Q4 (RULED); lock semantics are Phase 2 |
 | SAFE_HALT today, LOCKED seam | Decided | PnL logic never runs in SAFE_HALT (early return kept); LOCKED is an explicit empty dispatch case so Phase 2 adds without refactoring |
-| Restart mid-day | Decided | Nothing persisted, nothing trusted from memory; anchor and sums re-derived every pass; row P1-C |
+| Restart mid-day | Decided | Nothing persisted, nothing trusted from memory; anchor and sums re-derived every pass; row P1-C; 4.1a's high-water anchor and 4.3a's deal-count baseline both reseed from scratch with no false positive on the first pass, since neither check runs until a prior pass's value exists to compare against |
+| Forward clock jump narrowing the window (Q8) | Decided | Anchor high-water-mark latch, section 4.1a; halts loudly rather than narrowing; in-memory only, self-clearing; Stage 2 synthetic vectors |
+| Balance-versus-history coherence (Q9) | Decided | One-pass breach-declaration deferral keyed on unchanged deal count, section 4.3a; bounded at exactly one pass |
+| Floating PnL under a stale quote / intraday disconnect (Q10) | Decided | DEGRADED marker, no breach evaluation and no ALERT while disconnected, immediate clean re-evaluation on reconnect, section 4.3b |
 
-## 7. Open questions for owner ruling (nothing here resolves them)
+## 7. Questions asked, all ten RULED FINAL 2026-08-08 (see LEDGER DECISIONS for the verbatim text)
 
-1. **"01:00 Israel" operationalization.** (a) Fixed `01:00 server` anchor, compile-time constant, accepting the divergence-window drift enumerated in 2.2 (the week-anchor precedent in SPEC 4.1 accepts exactly this class of drift, and it keeps the Monday anchor aligned with the reopen under a US-pegged server), or (b) Israel-civil-corrected anchor via the statutory Israel DST rule, which additionally requires the server DST peg as a fact that cannot be measured before 2026-10-25, or (c) another owner definition. Also confirm the offset stays a compile-time constant, not an input.
-2. **Interim breach posture in the Phase 1 deployed build.** Enforcement lands in Phase 2, so a real breach during the Phase 1 window cannot lock. Options: (a) loud ALERT plus journal arithmetic line, state stays ACTIVE, repeated at a bounded cadence while the condition holds, or (b) silent computation only. Either way the deployed guardian does not enforce until Phase 2; the owner must sanction that window explicitly.
-3. **DEAL_FEE.** MQL5 carries a fourth per-deal money field, DEAL_FEE, absent from SPEC 4.2's three-property formula. The Q2 identity needs every deal's full balance effect, so the recommendation is profit+swap+commission+fee everywhere the formula appears. SPEC wording change, owner rules.
-4. **Anchor-boundary second.** A deal stamped exactly at the anchor second: recommended convention is DEAL_TIME >= anchor counts to the new day (base then equals the balance just before the anchor second). SPEC precision, owner rules.
-5. **Demo balance operations.** P1-E/F/G need deposits or withdrawals on JustMarkets demo 1200252169. Owner confirms the personal-area capability; if unavailable, those rows need alternate vectors and the plan flags them incomplete rather than closing them by reasoning.
-6. **Sequencing versus Phase 0 remainder. DOES NOT CLOSE, still blocking, updated 2026-08-08.** Re-checked against the object store directly rather than against any report. On `main` (`bb956b2`) the Phase 0 remainder is unchanged: A7, A9, and the two A10 rulings are open. On the unmerged branch `worktree-a9-phantom-audit` (tip `461c415`), which this plan's first pass never read, artifact evidence shows more progress and one new blocker: A7 is proven, A9 is proven whole (twelve of twelve vectors), and A10 is ruled and applied as that branch's own amendment A5 (renumbered A6 collision noted in section 4.6). But a 2026-08-06 attempt to close Phase 0 on that branch was itself held open on one gate: whether last-used EA inputs were restored to the ruled defaults is unverified, because the attach that was supposed to write it never happened, and the branch is explicit that the phase is "deliberately not closed and the branch deliberately not merged." So Phase 0 is not closed on any branch, the 2026-07-30 ordering instruction still binds, and this question stays open regardless of which branch's numbers are used. Two governance facts sharpen it further: that branch also carries a FINAL 2026-08-05 ruling that a session report is not evidence for anything, only artifacts are, binding on this plan's own future sessions once merged; and that branch's LEDGER.md and README.md both diverge from main's copies and need a hand union resolve at the next merge, per the ce6964d precedent, before any of this can be read as one file.
-7. **Stage 1 scheduling.** The symbol-specification read (GUI, read-only, also owed to A8) and whether it rides the same owner session as the pending A7/A9 batch. Partly overtaken by 2026-08-06 events on the unmerged branch (A8 was reconfirmed closed there on 2026-08-06 without that read, ruled not needed), but the read is still owed as corroboration until the branch merges and the ledger agrees on one copy.
-8. **Forward clock jump and the window's lower bound, added 2026-08-08.** The far-future upper-bound constant discharges the frozen-upper-bound obligation on the *upper* bound only. The *lower* bound is the anchor itself, derived from `TimeCurrent`. Section 2.1's backward-step analysis (widen, err strict) does not cover a forward jump: a forward jump advances the anchor and excludes real deals of the current day from the window, which is fail-open under-counting, the same failure class the Phase 0 obligation exists to close. The plan currently treats a forward jump only as a rollover-journal-line concern (section 4.1's monotonic latch), not as a correctness one. Owner rules whether a forward jump needs its own defense (for example, latching the anchor's lower bound to the last-observed anchor rather than recomputing it unconditionally downward-only in the jump direction) or is accepted as a documented residual.
-9. **Balance-versus-history coherence within one evaluation pass, added 2026-08-08.** The Q2 identity subtracts a deal sum from a live Balance. If Balance has already updated for a deal that has not yet reached local history (a timing gap between account-info refresh and history sync), Base is wrong by exactly that deal's amount for that one pass, and the limit moves with it. `AgHistoryStable` (design doc item 1) gates only the SYNCING-to-ACTIVE exit, once, not every ACTIVE timer pass. Owner rules whether a per-pass coherence check is needed in Phase 1 (for example, comparing `HistoryDealsTotal()` against the previous pass's count before trusting that pass's Base) or is accepted as a bounded, self-correcting-next-tick residual.
-10. **Floating PnL under a stale quote, added 2026-08-08.** `POSITION_PROFIT` is quote-derived. During an intraday disconnect (not the weekend freeze, where nothing is open on a 24/5-only account by the FINAL Market Watch composition), the floating leg can stand still on a stale quote while the realized leg keeps moving from history, so the two halves of one sum come from different instants. Owner rules whether this needs its own detection (for example, gating the floating leg on `TERMINAL_INFO_CONNECTED` the same tick it gates history) or is accepted as within the existing kill-equivalent/detect-only posture for disconnection (SPEC 4.4).
+Kept as the historical record of what was asked; nothing here is open any longer. Each entry carries its ruling and a pointer to the mechanism.
+
+1. **"01:00 Israel" operationalization. RULED: option (a).** Fixed `01:00 server` anchor, compile-time constant, confirmed not an input. Accepts the divergence-window drift enumerated in 2.2. Owner commits to a REVISIT after the 2026-10-25 to 2026-11-01 harvest measures the broker's actual DST peg. Mechanism unchanged from section 4.1 as originally drafted (option (a) was always the design's own default).
+2. **Interim breach posture in the Phase 1 deployed build. RULED: option (a).** Loud ALERT plus journal arithmetic line, state stays ACTIVE, repeated at a bounded cadence while the condition holds; owner explicitly sanctions the no-enforcement window until Phase 2. Cadence made concrete in section 4.4: 30 s repeat via `AG_LIFE_INTERVAL_SECONDS`, the arithmetic line every pass.
+3. **DEAL_FEE. RULED.** Added to the per-deal formula everywhere it appears (`DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION + DEAL_FEE`). SPEC wording drafted in section 4.3.
+4. **Anchor-boundary second. RULED.** `DEAL_TIME >= anchor` counts to the new day, matching `HistorySelect`'s own inclusive-from semantics. No special-cased comparison needed; documented in section 4.3.
+5. **Demo balance operations. RULED.** Withdrawals unavailable on demo 1200252169; deposits available via the JustMarkets personal area. Rows P1-E/F/G redesigned deposit-only in Stage 5's table; the withdrawal-neutrality direction (P1-E') closes PASS-BY-CONSTRUCTION on the Q2 algebraic identity alone, no demo evidence needed or possible.
+6. **Sequencing versus Phase 0 remainder. RULED CLOSED, resolved twice over.** The branch carrying the Phase 0 remainder (`worktree-a9-phantom-audit`) merged to main as `937c604`, documented and pushed 2026-08-08, carrying A7 proven, A9 proven whole, and A10's amendment A5. Independently, the last-used gate that merge alone could not close on its own artifacts is now closed by the owner's direct dialog reading of the live EA properties, quoted in the Q6 DECISIONS entry: all eight inputs at ruled defaults, `HistoryStablePolls=3` included. Phase 0 is closed in full on main; this question no longer blocks anything.
+7. **Stage 1 scheduling. RULED.** The symbol-specification read rides the owner's next terminal session, whenever that falls; it is corroboration, not a gate, and blocks nothing.
+8. **Forward clock jump and the window's lower bound. RULED.** Anchor high-water-mark latch: retain the highest observed anchor in memory, halt loudly (naming both anchors) rather than narrow the window if a fresh computation exceeds it by more than one day, in-memory only, self-clearing, cleared on restart. Full mechanism, SPEC wording, and Stage 2 acceptance vectors in section 4.1a.
+9. **Balance-versus-history coherence within one evaluation pass. RULED.** Defer a breach declaration by exactly one timer pass when the result moved abruptly with no new deal visible (unchanged `HistoryDealsTotal()`), declare unconditionally on the next pass regardless. Full mechanism, SPEC wording, and Stage 4 acceptance row in section 4.3a.
+10. **Floating PnL under a stale quote. RULED.** Mark the evaluation DEGRADED and take no breach decision while `TERMINAL_INFO_CONNECTED` is false; immediate clean re-evaluation on reconnect; no ALERT fires from DEGRADED data. Full mechanism, SPEC wording, and Stage 5 acceptance row (reusing the existing disconnect procedure) in section 4.3b.
 
 ## 8. After approval
 
-Record the kickoff ruling FINAL in DECISIONS (dated 2026-08-05, done, `bb956b2`), log this plan in LEDGER (ACTIONS entry; ISSUES entries for the open questions and the October measurement obligation, done, `bb956b2`), and stop. Second pass, 2026-08-08: context alignment re-run against `worktree-a9-phantom-audit` per the correction above, three new ledger-verified findings folded in (A5-versus-A6 numbering, Phase 0 not closed on any branch, the LEDGER/README split needing a hand union resolve), three new open questions appended (8, 9, 10). Nothing in this second pass reopens or argues the kickoff ruling itself, which remains FINAL. Implementation begins only on a later, separate owner instruction, and not before Phase 0 closes and merges for real.
+Record the kickoff ruling FINAL in DECISIONS (dated 2026-08-05, done, `bb956b2`), log this plan in LEDGER (ACTIONS entry; ISSUES entries for the open questions and the October measurement obligation, done, `bb956b2`), and stop. Second pass, 2026-08-08: context alignment re-run against `worktree-a9-phantom-audit` per the correction above, three new ledger-verified findings folded in (A5-versus-A6 numbering, Phase 0 not closed on any branch, the LEDGER/README split needing a hand union resolve), three new open questions appended (8, 9, 10). Third pass, 2026-08-08/09: all ten questions banked FINAL in LEDGER DECISIONS; Q8, Q9 and Q10 translated into exact mechanisms, SPEC wording, and acceptance rows across sections 4.1a, 4.3a and 4.3b; `worktree-a9-phantom-audit` merged to main (`937c604`) and the Q6 last-used gate closed by owner reading, so Phase 0 is closed in full and this plan's own question 6 is resolved. Nothing across any pass reopens or argues the kickoff ruling itself, which remains FINAL, and the third pass reopens nothing else either; it records rulings and drafts the mechanisms they require, it does not decide anything an owner has not already decided. Implementation begins only on a later, separate owner instruction; Phase 0 is no longer a precondition standing in its way.
