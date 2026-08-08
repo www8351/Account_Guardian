@@ -132,6 +132,13 @@ double AgFloating()
    int total = PositionsTotal();
    for(int i = 0; i < total; i++)
      {
+      //--- PositionGetTicket(i) both returns the ticket AND selects that
+      //--- position for the PositionGetDouble calls below (MQL5 semantics,
+      //--- same pattern as HistoryDealGetTicket). PositionsTotal() can
+      //--- shrink between this call and the loop's start if a position
+      //--- closes mid-iteration, and PositionGetTicket then legitimately
+      //--- returns 0 for the now-stale index; skipping it is correct, not
+      //--- a bug to "fix" into a re-fetch or an index-shift correction.
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0)
          continue;

@@ -54,6 +54,16 @@ Stage 2's evidence already recorded why: MetaEditor's include resolution roots t
 deployed terminal MQL5 tree, not this worktree, and deploying into that tree is a
 Stage 5 action reserved for the owner. No compile log is claimed for Stage 3 either.
 
+## Owner-review finding 3, fixed 2026-08-09: AgFloating stale-selection comment
+
+Owner review of tip `e5d32bc` flagged `AgFloating()`'s loop with no explanation of why a
+`ticket == 0` skip is correct rather than a bug: `PositionGetTicket(i)` both returns and
+selects the position (MQL5 semantics, same pattern as `HistoryDealGetTicket`), so a
+position closing mid-loop (`PositionsTotal()` having shrunk since the loop started) makes
+`PositionGetTicket` legitimately return 0 for a now-stale index. No logic change; an
+explanatory comment was added inline so a future reader does not "fix" the skip into a
+re-fetch or an index-shift correction.
+
 ## Status
 
 Static evidence: DONE, this session. Live/compile acceptance: OPEN, Stage 5 owner gate.
