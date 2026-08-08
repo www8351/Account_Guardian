@@ -97,7 +97,40 @@ $ grep -n "g_ag_degraded" MQL5/Experts/AccountGuardian/AccountGuardian.mq5
 Exactly one set-true site (the disconnect branch) and one clear site (post-computation
 success); no path clears it before a computation attempt can fail.
 
+## Owner-review finding 2, fixed 2026-08-09: reconnect coherence (NEW owner ruling)
+
+NEW owner ruling 2026-08-09: recovery from DEGRADED requires the same history-stability
+discipline as SYNCING exit, rather than resuming evaluation on the very next connected
+tick. This amends Q10's "immediate clean re-evaluation" wording (SPEC A6, plan 4.3b, and
+the P1-O acceptance row all updated in this commit's parent set) to "immediate re-entry
+to evaluation, gated on history stability." Rationale recorded in the SPEC/plan: a
+disconnect is exactly the condition the stability counter exists for, and Q9's one-pass
+deferral was ruled for a one-tick sync gap, not a post-disconnect resync.
+
+Mechanism added: `g_ag_resyncing`, set true in the disconnect branch alongside
+`g_ag_degraded`. On the first connected pass, before Q8's anchor check, a gate polls
+`AgHistoryStable(HistoryStablePolls)`; while it holds false the pass returns early,
+`waiting_on` reads `RESYNC: polls=<n>/<required>`, no state transition happens, and
+`g_ag_degraded` stays true (unchanged since finding 1's fix moved its clear point to
+after a successful computation, which cannot yet have run). Once stable, `g_ag_resyncing`
+clears and the pass falls through to the pre-existing Q8/computation/Q9/Q2 chain.
+
+```
+$ grep -n "g_ag_resyncing\|RESYNC" MQL5/Experts/AccountGuardian/AccountGuardian.mq5
+48:bool     g_ag_resyncing            = false; // Q10 NEW RULING 2026-08-09: gates reconnect on AgHistoryStable
+121:      g_ag_resyncing         = true;   // Q10 NEW RULING 2026-08-09: reconnect must resync
+134:   //--- ACTIVE); the LIFE line shows the live poll count, prefixed RESYNC
+137:   if(g_ag_resyncing)
+141:         g_ag_dynamic_waiting_on = "RESYNC: polls=" + (string)g_ag_stable_polls
+145:      g_ag_resyncing = false;
+```
+
+Q9's coherence-deferral code is untouched: it sits after this gate in the same order as
+before, so it only ever runs once the resync gate has already cleared, matching "Q9's
+one-pass deferral stays as ruled for the connected steady state."
+
 ## Status
 
 Static evidence: DONE, this session. Live/compile acceptance (LIFE-line field list,
-TRANSITION line content, ALERT cadence, DEGRADED marker): OPEN, Stage 5 owner gate.
+TRANSITION line content, ALERT cadence, DEGRADED marker, RESYNC gate): OPEN, Stage 5
+owner gate.

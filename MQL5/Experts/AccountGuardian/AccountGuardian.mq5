@@ -105,7 +105,8 @@ void AgRefreshBanner()
 
 //+------------------------------------------------------------------+
 //| ACTIVE-state evaluation (A6, 4.4), run in this exact order:      |
-//| Q10 connection check, Q8 anchor sanity, the computation itself,  |
+//| Q10 connection check, Q10 reconnect-coherence RESYNC gate (2026- |
+//| 08-09 owner ruling), Q8 anchor sanity, the computation itself,   |
 //| Q9 coherence deferral, then the Q2 interim breach posture.       |
 //| Sets g_ag_dynamic_waiting_on for the NEXT proof-of-life line     |
 //| (AgProofOfLife runs before this dispatch each tick, so every     |
@@ -118,6 +119,7 @@ void AgEvaluateActive()
    if(!(bool)TerminalInfoInteger(TERMINAL_CONNECTED))
      {
       g_ag_degraded          = true;
+      g_ag_resyncing         = true;   // Q10 NEW RULING 2026-08-09: reconnect must resync
       g_ag_dynamic_waiting_on = "DEGRADED: disconnected, no breach decisions";
       return;
      }
@@ -125,6 +127,24 @@ void AgEvaluateActive()
    //--- computation actually succeeds (owner finding 2026-08-09): clearing
    //--- it here, on entry, let a HistorySelect failure on the reconnect
    //--- pass show a non-degraded banner over stale numbers.
+
+   //--- Q10 NEW RULING 2026-08-09, reconnect coherence: the first connected
+   //--- pass after a disconnect is exactly the condition the SYNCING
+   //--- stability counter exists for, so it is reused rather than resuming
+   //--- evaluation on the very next tick. No state transition (stays
+   //--- ACTIVE); the LIFE line shows the live poll count, prefixed RESYNC
+   //--- to read distinctly from initial SYNCING. Numbers stay DEGRADED and
+   //--- last-known throughout, since g_ag_degraded has not cleared yet.
+   if(g_ag_resyncing)
+     {
+      if(!AgHistoryStable(HistoryStablePolls))
+        {
+         g_ag_dynamic_waiting_on = "RESYNC: polls=" + (string)g_ag_stable_polls
+                                    + "/" + (string)HistoryStablePolls;
+         return;
+        }
+      g_ag_resyncing = false;
+     }
 
    //--- Q8: anchor high-water-mark sanity check ---------------------------
    datetime fresh_anchor  = AgDayAnchor(AgServerNow());
