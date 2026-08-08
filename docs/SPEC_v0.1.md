@@ -75,22 +75,25 @@ Authority order: broker history is the authority; file and GV are witnesses (acc
 ## 4. Core algorithms (obligations)
 
 ### 4.1 Anchors
-- Day anchor: floor of TimeCurrent to server-day midnight. Recomputed every evaluation, never persisted.
+- Day anchor (A6, Q1 FINAL): floor of TimeCurrent to the last 01:00-server boundary, `AG_DAY_ANCHOR_OFFSET_SECONDS = 3600`, a compile-time constant, never an input. Recomputed every evaluation, never persisted. During the twice-weekly freeze the anchor holds the last pre-freeze boundary and adopts the new one at the first advancing evaluation; a backward clock step recomputes a lower anchor and the window widens, erring strict. REVISIT scheduled after the 2026-10-25 to 2026-11-01 broker DST-peg measurement.
+- Anchor high-water-mark sanity check (A6, Q8 FINAL, 4.1a): the highest anchor observed this session is retained in memory. A freshly computed anchor exceeding it by more than 86400 seconds halts that evaluation pass loudly (ALERT naming both the retained and the rejected anchor) and uses the retained anchor for that pass's window instead of narrowing it; a backward step or same-day recompute is unaffected and the retained anchor never recedes. In-memory only, never persisted; a restart re-seeds on its first pass.
 - Week anchor: fixed offset from server time targeting Sunday 00:00 Israel. No DST table. Deviation up to about 2 h across server and Israel DST shifts lands in a dead market and only touches the report-only path. Inert, affirmed.
 
 ### 4.2 Daily PnL
-- Realized(window): HistorySelect(anchor, now); sum DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION over deals whose type is DEAL_TYPE_BUY or DEAL_TYPE_SELL only (F12, FINAL). All balance, credit, charge, correction, bonus, dividend, interest deals excluded from realized.
+- Realized(window): HistorySelect(anchor, AG_HISTORY_SELECT_TO), a clock-independent far-future constant (A6, `D'3000.01.01'`), never TimeCurrent-derived, so neither a frozen nor a backward-stepping clock can truncate the window. Sum DEAL_PROFIT + DEAL_SWAP + DEAL_COMMISSION + DEAL_FEE (A6, Q3 FINAL) over deals whose type is DEAL_TYPE_BUY or DEAL_TYPE_SELL only (F12, FINAL). All balance, credit, charge, correction, bonus, dividend, interest deals excluded from realized. Boundary convention (A6, Q4 FINAL): DEAL_TIME >= anchor counts to the new day, matching HistorySelect's own inclusive-from semantics; no separate comparison is needed. HistorySelect returning false is a loud stability failure, never read as zero deals (F6).
 - Floating: sum over open positions of POSITION_PROFIT + POSITION_SWAP. Position-level commission is not retrievable in MT5; entry commission already lands in realized via the entry deal.
 - Daily PnL = realized + floating. Never a balance-delta, never a cached day-start equity.
 - Pinned behavior (F11, FINAL): a position carried across the rollover counts its floating loss against day N and its full realized result against day N+1. Deliberate conservative double-count, protected by a permanent acceptance test.
 
 ### 4.3 Base and limit (Q2 amendment, FINAL)
-- Base = current balance minus the sum of ALL deals since the day anchor, trading and balance types alike. Algebraically equal to the day-anchor balance, reconstructed live, no caching. Deposits and withdrawals cancel exactly in both directions.
+- Base = current balance minus the sum of ALL deals since the day anchor, trading and balance types alike, same per-deal formula as 4.2 including DEAL_FEE (A6, Q3 FINAL). Algebraically equal to the day-anchor balance, reconstructed live, no caching. Deposits and withdrawals cancel exactly in both directions.
 - limit_currency = min headroom of the enabled limits (Q8, FINAL): percent limit = DailyLossPercent% of base; fixed limit = DailyLossCurrency. Stricter wins. 0 disables each. Both zero refuses init (section 5).
 - Permanent acceptance test: a deposit or withdrawal moves loss headroom in neither direction.
 
 ### 4.4 Breach and sweep
-- Breach: daily PnL <= -(limit_currency). On breach: snapshot, persist, lock, delete all pending orders, flatten all positions.
+- Breach: daily PnL <= -(limit_currency), epsilon 0.01 account-currency units errs toward breach. On breach: snapshot, persist, lock, delete all pending orders, flatten all positions. **Phase 1 interim posture (A6, Q2 FINAL):** enforcement lands in Phase 2; the deployed Phase 1 build takes no lock action on breach. It raises a loud ALERT plus a per-pass journal arithmetic line, repeated at `AG_LIFE_INTERVAL_SECONDS` (30 s) while the condition holds, and stays ACTIVE. Owner-sanctioned no-enforcement window.
+- Breach-declaration deferral (A6, Q9 FINAL): a pass where the result crosses the limit with no new deal visible in the selected history (HistoryDealsTotal() unchanged from the prior pass) defers its declaration by exactly one timer pass; the following pass declares unconditionally regardless of deal count. Guards Balance-versus-history coherence; never suppresses two passes running.
+- DEGRADED (A6, Q10 FINAL): while TERMINAL_INFO_CONNECTED is false, ACTIVE performs no breach evaluation and raises no breach ALERT; the LIFE line and banner mark the state DEGRADED and continue showing the last-known figures. The instant the connection returns, the next pass evaluates cleanly with no additional wait.
 - Sweep (behavior of LOCKED): every timer tick while anything is open, one pass over all positions and pendings; per-position backoff; a distinct log line per failure retcode; no unbounded tight retry.
 - Trade-disallowed states (Q3, FINAL), each enumerated and logged distinctly: TERMINAL_TRADE_ALLOWED false, MQL_TRADE_ALLOWED false, ACCOUNT_TRADE_ALLOWED false, ACCOUNT_TRADE_EXPERT false, investor-password login, symbol session closed or close-only. All are kill-equivalent: detect-only, continuous loud alerting (journal + Alert + chart banner), immediate sweep the moment trading is restored. The formal promise: flattened within seconds of the platform accepting a close for that symbol.
 - Disconnection: mobile trades run unswept while the terminal is offline. Kill-equivalent, accepted. On reconnect: SYNCING, then immediate sweep, and the coverage gap logged with timestamps.
@@ -131,7 +134,7 @@ No symbol filter, no magic filter. Scope is everything on the account. Single in
 - Sweep: one line per close or delete attempt with retcode; failure reasons distinct; trade-disallowed states enumerated by name.
 - Alert popups mandatory for: breach, lock, unlock, state-write failure, cannot-trade-while-locked, SAFE_HALT.
 - Chart banner always shows: current state, lock reason, locked_until, daily PnL vs limit.
-- Proof-of-life journal line in every state at a fixed interval (amendment A3, which supersedes the earlier ACTIVE-only scoping).
+- Proof-of-life journal line in every state at a fixed interval (amendment A3, which supersedes the earlier ACTIVE-only scoping). In ACTIVE it additionally carries the governing numbers (A6, 4.5): anchor, realized, floating, base, limit, pnl_vs_limit. The day-rollover journal line logs old anchor, new anchor, and jump width. The DEGRADED marker (A6, Q10) is part of these existing LIFE-line and banner fields, not a new state.
 - No secrets, no credentials, ever. v0 has no network path; the clause stays dormant but is tested by a journal scan in the DoD.
 
 ## 7. Threat model summary
@@ -153,7 +156,7 @@ The guardian must never be the hazard: no spurious flatten from deposits or with
 
 ### Phase 1, PnL engine, read-only
 - Deposit and withdrawal neutrality, both directions, on demo: headroom and limit unchanged. The permanent acceptance test.
-- Rollover resets counters at server midnight.
+- Rollover resets counters at the day anchor (A6: 01:00 server, not server midnight).
 - Restart reconstruction: figures before kill equal figures after restart once SYNCING exits.
 - Carried-position double-count pinned as expected behavior (F11).
 - Deal whitelist matrix: balance, credit, correction deals move realized by nothing and base reconstruction by the exact deal amount.
@@ -232,6 +235,23 @@ Ground, and it is the load-bearing sentence: the from-state of a transition line
 - Third edit, riding along from a side observation recorded with the same sweep: the SAFE_HALT action cell said "periodic Alert" while the code raises one Alert per session at entry or re-entry and none from OnTimer. The cell now reads "one Alert at entry or re-entry". The document was describing behaviour the code never had.
 
 Evidence: docs/evidence/a10-transition-conformance-2026-08-04.md. Note carried for anyone re-deriving this later: only the re-entry line exists in the deployed build's own output, because the 16:37:04 trip session was hard killed before its output flushed, so the trip line rests on the halt file as read back by the next image.
+
+### A6, 2026-08-09, owner ruling: Phase 1 day anchor, PnL engine, interim breach posture
+
+Delivered by the Phase 1 kickoff plan (docs/PLAN_PHASE1_PNL_CORE.md), all ten questions RULED FINAL 2026-08-08/09 (LEDGER DECISIONS). Numbered A6 rather than A5 because A5 (above) already belongs to the unrelated A10 transition-table findings, merged to main first per the ledger's split-files ordering so this amendment lands onto a SPEC that already carries it. Implemented in Stage 2 through 4 of the same plan (worktree-phase1-pnl-core).
+
+- **Q1 (day anchor):** section 4.1's server-midnight floor is replaced by a fixed 01:00-server floor, `AG_DAY_ANCHOR_OFFSET_SECONDS`, a compile-time constant deliberately not an input, per the AG_LIFE_INTERVAL/AG_MUTEX_STALE precedent that a value able to disable a guarantee is core or nowhere. Owner commits to a REVISIT after the 2026-10-25 to 2026-11-01 broker DST-peg harvest.
+- **Q8 (anchor sanity, 4.1a):** an in-memory high-water-mark latch added alongside the anchor. A forward jump of more than one day halts the pass loudly rather than narrowing the window; a backward step is unaffected. Self-clearing, never persisted.
+- **Q3 (DEAL_FEE):** the per-deal formula in 4.2 and 4.3 gains DEAL_FEE, applied uniformly everywhere DEAL_PROFIT is read.
+- **Q4 (boundary second):** DEAL_TIME >= anchor counts to the new day, which is HistorySelect's own inclusive-from semantics; no special-cased comparison was added anywhere.
+- **History upper bound:** 4.2's `HistorySelect(anchor, now)` is replaced by `HistorySelect(anchor, AG_HISTORY_SELECT_TO)`, a clock-independent `D'3000.01.01'` constant, discharging the Phase 0 ISSUES obligation that a frozen or backward-stepping clock must never truncate the selection window.
+- **Q2 (interim breach posture):** the deployed Phase 1 build takes no lock action on breach; enforcement is Phase 2. Loud ALERT plus a journal arithmetic line, repeated at `AG_LIFE_INTERVAL_SECONDS`, state stays ACTIVE. Owner-sanctioned window, section 4.4.
+- **Q9 (coherence deferral):** a breach conclusion with an unchanged `HistoryDealsTotal()` from the prior pass defers its declaration by exactly one pass; the next pass always declares. Section 4.4.
+- **Q10 (DEGRADED):** while disconnected, ACTIVE performs no breach evaluation and raises no ALERT; LIFE line and banner show DEGRADED with the last-known figures; the first pass after reconnect evaluates cleanly. Section 4.4, and section 6 records the marker as an existing-field addition, not a new state.
+- **Observability (4.5):** the ACTIVE proof-of-life line and the banner gain the governing numbers, anchor/realized/floating/base/limit/pnl_vs_limit; the day-rollover line logs old anchor, new anchor, jump width. Section 6.
+- **Section 8:** the Phase 1 "rollover resets counters at server midnight" row is reworded to "at the day anchor," since Q1 moved what the anchor means.
+
+Nothing in this amendment reopens or argues Q5, Q6 or Q7, which touch Phase 1 only as constraints already satisfied by the design above (Q5: the deposit/withdrawal-neutrality acceptance test in 4.3 is unchanged in form; Q6: the LOCKED/snapshot seam this amendment's ACTIVE-only logic does not touch; Q7: every clock decision above uses TimeCurrent exclusively, per the existing Clock.mqh prohibition). Evidence: docs/evidence/phase1-stage2-clock-vectors-2026-08-09.md, docs/evidence/phase1-stage3-pnl-engine-2026-08-09.md, docs/evidence/phase1-stage4-wiring-2026-08-09.md.
 
 ### Threat-model additions, 2026-07-29
 
