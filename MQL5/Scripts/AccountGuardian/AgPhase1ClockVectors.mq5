@@ -2,9 +2,11 @@
 //| AgPhase1ClockVectors.mq5                                         |
 //| Stage 2 synthetic test vectors for Clock.mqh's anchor rework     |
 //| (Q1 FINAL, 01:00-server offset) and the Q8 high-water-mark latch |
-//| (4.1a). Prints one AGVEC line per case and a final summary line  |
-//| to the journal; makes no trade calls, opens no chart, and writes |
-//| no file. Double-click from the Navigator to run.                 |
+//| (4.1a), as AMENDED by the owner ruling of 2026-08-09 to          |
+//| alert-and-advance. 26 checks: one AGVEC line per case plus a     |
+//| final AGVEC|SUMMARY|<pass>/<total> line. Makes no trade calls,   |
+//| opens no chart, and writes no file.                             |
+//| Double-click from the Navigator to run.                          |
 //+------------------------------------------------------------------+
 #property copyright "AccountGuardian"
 #property version   "1.00"
@@ -81,21 +83,26 @@ void OnStart()
    AgVecCheckDT("q8_one_day_advance_accepts", advanced, A1);
    AgVecCheck("q8_one_day_advance_moves_high_anchor", g_ag_high_anchor == A1, "");
 
-   //--- 4.1a Q8 vector 2: anomalous two-day-plus jump halts, names both,  -
-   //--- and does NOT narrow the window or advance the high-water mark ----
+   //--- 4.1a Q8 vector 2, AMENDED 2026-08-09 (alert-and-advance): an
+   //--- anomalous two-day-plus jump names both anchors in the jump note,
+   //--- then ACCEPTS fresh and ADVANCES the high-water mark. No pass is
+   //--- halted and the window is never pinned to a stale anchor.
    datetime before_jump_high = g_ag_high_anchor;
    datetime jumped = AgAnchorSanityCheck(A3);   // A3 is two boundaries past A1
-   AgVecCheckDT("q8_forward_jump_halts_uses_retained", jumped, before_jump_high);
-   AgVecCheck("q8_forward_jump_high_anchor_unchanged", g_ag_high_anchor == before_jump_high, "");
-   AgVecCheck("q8_forward_jump_waiting_on_names_both",
-              StringFind(g_ag_anchor_waiting_on, "retained=") >= 0
-              && StringFind(g_ag_anchor_waiting_on, "rejected=") >= 0, g_ag_anchor_waiting_on);
+   AgVecCheckDT("q8_forward_jump_accepts_fresh", jumped, A3);
+   AgVecCheck("q8_forward_jump_high_anchor_advances", g_ag_high_anchor == A3, "");
+   AgVecCheck("q8_forward_jump_note_names_both",
+              StringFind(g_ag_anchor_jump_note, "previous_high=") >= 0
+              && StringFind(g_ag_anchor_jump_note, "accepted=") >= 0, g_ag_anchor_jump_note);
+   AgVecCheck("q8_forward_jump_note_carries_previous_value",
+              StringFind(g_ag_anchor_jump_note,
+                         TimeToString(before_jump_high, TIME_DATE | TIME_SECONDS)) >= 0,
+              g_ag_anchor_jump_note);
 
-   //--- self-clearing: a later pass back within one day of the retained --
-   //--- high-water mark resumes normally with no restart -----------------
-   datetime resumed = AgAnchorSanityCheck(before_jump_high + 3600);
-   AgVecCheck("q8_self_clears_within_one_day",
-              resumed == before_jump_high + 3600 && g_ag_anchor_waiting_on == "", "");
+   //--- the condition clears on the very next ordinary pass, no restart --
+   datetime resumed = AgAnchorSanityCheck(A3 + 3600);
+   AgVecCheck("q8_note_clears_on_next_ordinary_pass",
+              resumed == A3 + 3600 && g_ag_anchor_jump_note == "", g_ag_anchor_jump_note);
 
    //--- 4.1a Q8 vector 3: backward step still widens using fresh and never
    //--- substitutes the high-water mark -----------------------------------
@@ -103,6 +110,27 @@ void OnStart()
    datetime backstepped = AgAnchorSanityCheck(A0);   // well behind the retained high mark
    AgVecCheckDT("q8_backward_step_still_widens", backstepped, A0);
    AgVecCheck("q8_backward_step_high_anchor_unchanged", g_ag_high_anchor == high_before_backstep, "");
+   AgVecCheck("q8_backward_step_sets_no_note", g_ag_anchor_jump_note == "", g_ag_anchor_jump_note);
+
+   //--- 4.1a Q8 vector 4, NEW 2026-08-09: the weekend reopen, which is the
+   //--- exact live signature the original halt rule stalled on permanently.
+   //--- Friday 01:00 is held through the measured freeze and Monday 01:00
+   //--- lands at the reopen, a three-day advance. Must announce, accept,
+   //--- advance, and clear on the following pass. These are the real dates
+   //--- of the session that found the defect, not invented ones.
+   g_ag_high_anchor_seeded = false;
+   g_ag_high_anchor        = 0;
+   datetime friday = D'2026.08.07 01:00:00';
+   datetime monday = D'2026.08.10 01:00:00';
+   AgAnchorSanityCheck(friday);                 // seeds exactly as the live session did
+   datetime reopen = AgAnchorSanityCheck(monday);
+   AgVecCheckDT("q8_weekend_reopen_accepts_monday", reopen, monday);
+   AgVecCheck("q8_weekend_reopen_high_anchor_advances", g_ag_high_anchor == monday, "");
+   AgVecCheck("q8_weekend_reopen_note_names_jump",
+              StringFind(g_ag_anchor_jump_note, "jump=259200s") >= 0, g_ag_anchor_jump_note);
+   datetime after_reopen = AgAnchorSanityCheck(monday + 3600);
+   AgVecCheck("q8_weekend_reopen_clears_next_pass",
+              after_reopen == monday + 3600 && g_ag_anchor_jump_note == "", g_ag_anchor_jump_note);
 
    PrintFormat("AGVEC|SUMMARY|%d/%d", g_pass, g_total);
   }

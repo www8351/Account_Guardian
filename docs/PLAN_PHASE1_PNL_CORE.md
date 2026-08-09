@@ -99,7 +99,9 @@ Both stay pure functions of TimeCurrent, recomputed every evaluation, never pers
 
 ### 4.1a Anchor high-water-mark sanity check (Q8, RULED FINAL 2026-08-08)
 
-Ruling, verbatim in intent: keep the highest anchor observed in memory; if a fresh computation yields an anchor more than one day above it, HALT the evaluation loudly with an ALERT naming both anchors, never silently narrow the window. The latch is in-memory only, never persisted, per the never-loaded-never-written decision and Phase 1 persisting nothing; a restart clears it, accepted because a restart re-derives everything from history with no anchor yet to sanity-check against.
+**AMENDED 2026-08-09 by owner ruling: alert-and-advance.** The original Q8 ruling below halted the pass; that is superseded. A forward jump of more than one day now raises the loud ALERT naming both anchors, then ACCEPTS the fresh anchor and advances the high-water mark, so evaluation continues and the condition self-clears after one pass. No pass is ever halted, and the ALERT is cadence-capped at `AG_LIFE_INTERVAL_SECONDS` like the Q2 breach ALERT while the journal line still writes on every occurrence. Ground: the halt could not self-clear against a forward-only clock, since self-clearing required `fresh` to fall BACK within one day of the retained mark; the measured weekend freeze advances the anchor three days at the Monday reopen (2.3), so any weekend-spanning instance stalled evaluation permanently while emitting an uncapped popup every tick. Owner's ground for the direction: a guardian that stops computing is fail-open and worse than a widened window, per the A4 precedent that the system errs toward staying live and loud. Found by source read during the Stage 5 deploy of 2026-08-09, hours before the reopen it would have fired at.
+
+Original ruling, kept for the record: keep the highest anchor observed in memory; if a fresh computation yields an anchor more than one day above it, HALT the evaluation loudly with an ALERT naming both anchors, never silently narrow the window. The latch is in-memory only, never persisted, per the never-loaded-never-written decision and Phase 1 persisting nothing; a restart clears it, accepted because a restart re-derives everything from history with no anchor yet to sanity-check against. Everything in that ruling except the halt survives the amendment unchanged.
 
 Mechanism: `g_ag_high_anchor` (datetime, in-memory, seeded to the first `AgDayAnchor` computed this session; no value to compare against on that first pass, so it is simply accepted and never checked backward). Every ACTIVE-state pass computes `fresh = AgDayAnchor(AgServerNow())` exactly as 4.1 already does, then applies the check before using `fresh` for anything:
 
@@ -113,18 +115,28 @@ elif fresh - g_ag_high_anchor <= 86400:
     window_anchor = fresh
     g_ag_high_anchor = fresh
 else:
-    // anomalous forward jump: HALT this pass rather than narrow the window
-    AgAlertEvent("anchor sanity: fresh anchor " + fresh + " exceeds retained high anchor "
-                 + g_ag_high_anchor + " by more than one day, evaluation halted this pass")
-    window_anchor = g_ag_high_anchor   // last known-good anchor, window not narrowed
-    // g_ag_high_anchor does NOT advance; the ALERT repeats every pass while the condition holds
+    // anomalous forward jump (AMENDED 2026-08-09): announce loudly, then ACCEPT.
+    // The pass is never halted. Caller announces, because the cadence cap needs
+    // the local clock and TimeLocal is forbidden inside Clock.mqh.
+    g_ag_anchor_jump_note = "anchor jump accepted: previous_high=" + g_ag_high_anchor
+                            + ", accepted=" + fresh
+                            + ", jump=" + (fresh - g_ag_high_anchor) + "s"
+    window_anchor    = fresh            // accepted: the window is never pinned to a stale anchor
+    g_ag_high_anchor = fresh            // the mark ADVANCES, so the condition clears next pass
+
+// in the caller, AgEvaluateActive:
+if g_ag_anchor_jump_note != "":
+    AgInfo(g_ag_anchor_jump_note)                          // journal line, every occurrence
+    if now_local - g_ag_last_anchor_alert >= AG_LIFE_INTERVAL_SECONDS:
+        AgAlertEvent(g_ag_anchor_jump_note + " (jump exceeds one day; evaluation continues)")
+        g_ag_last_anchor_alert = now_local                 // popup capped, as Q2 already does
 ```
 
-Self-clearing: the moment a later pass's `fresh` falls back within one day of the retained `g_ag_high_anchor`, evaluation resumes normally with no restart required. `AgWaitingOn`/LIFE-line note: while halted, the LIFE line's `waiting_on` field for ACTIVE reads "anchor sanity: retained=<g_ag_high_anchor>, rejected=<fresh>" so the condition is never silent between ALERTs.
+Self-clearing (AMENDED 2026-08-09): the mark advances on the anomalous pass itself, so the condition clears on that same pass and the next ordinary pass carries an empty note. No restart is required, and unlike the original rule this holds against a clock that only ever moves forward. LIFE-line note: on the announcing pass the ACTIVE `waiting_on` field carries the jump note, "anchor jump accepted: previous_high=<...>, accepted=<...>, jump=<n>s", so the event is never silent; on every other pass it is empty.
 
-SPEC wording, amendment A6, section 4.1 addition: "The day anchor's lower bound never advances by more than one day per evaluation pass. If a freshly computed anchor exceeds the highest anchor yet observed by more than 86400 seconds, that pass halts loudly (ALERT naming both anchors) and uses the retained high anchor for that pass's window instead of narrowing it to the fresh value. The retained high anchor is in-memory only and is not persisted across a restart."
+SPEC wording, amendment A6, section 4.1 addition (as amended 2026-08-09): "If a freshly computed day anchor exceeds the highest anchor yet observed by more than 86400 seconds, that pass announces the jump loudly, with a journal line on every occurrence and an ALERT naming both the previous high anchor and the accepted one, capped at `AG_LIFE_INTERVAL_SECONDS`. The fresh anchor is then accepted and the high-water mark advances to it; no evaluation pass is halted. The retained high anchor is in-memory only and is not persisted across a restart."
 
-Acceptance row, Stage 2 synthetic vectors, `AgPhase1ClockVectors.mq5`: feed a two-day-plus forward jump after establishing a baseline anchor; expect the halt path (both anchors named, `window_anchor` unchanged, `g_ag_high_anchor` unchanged); then feed a legitimate one-day advance; expect normal acceptance and `g_ag_high_anchor` advancing to the new value. A third vector confirms the unchanged backward-step path still widens using `fresh` and never uses `g_ag_high_anchor` in that direction.
+Acceptance rows, Stage 2 synthetic vectors, `AgPhase1ClockVectors.mq5`, 26 checks total: feed a two-day-plus forward jump after establishing a baseline anchor; expect acceptance (`window_anchor` equals `fresh`, `g_ag_high_anchor` advanced to `fresh`, the note naming both anchors and carrying the previous value); then an ordinary pass, expecting the note to clear with no restart. A further vector confirms the unchanged backward-step path still widens using `fresh`, never substitutes `g_ag_high_anchor`, and sets no note. A fourth vector, added 2026-08-09, replays the exact live signature the original rule stalled on: seed Friday `2026.08.07 01:00:00`, then feed Monday `2026.08.10 01:00:00`, expecting acceptance, the mark advancing, `jump=259200s` named in the note, and the note cleared on the following pass.
 
 ### 4.2 Evaluation discipline
 
@@ -248,7 +260,7 @@ Deploy per the standing procedure (owner gate; halt file backed up first with md
 | P1-J SYNCING exit (P1-9 design-doc numbering) | restart with history | poll count visible in AgWaitingOn, exit after HistoryStablePolls stable polls |
 | P1-K HistorySelect false (P1-10 design-doc numbering) | disconnect mid-session | loud WARN distinct from zero-deals, no ACTIVE transition from that tick |
 | P1-L breach arithmetic | manual losing trades cross the limit on demo | posture per Q2 ruling observed, arithmetic line carries full numbers, ALERT repeats at 30 s while sustained |
-| P1-M anchor sanity live (Q8) | none planned live; Stage 2 synthetic vectors are the acceptance evidence, a live forward jump cannot be manufactured safely on a real broker clock | Stage 2 vectors stand as the closing evidence for this row |
+| P1-M anchor sanity live (Q8, amended 2026-08-09) | the Monday reopen IS the live test, and it arrives free every week: the anchor advances three days from the held Friday boundary, which is exactly the more-than-one-day condition | one ALERT naming both anchors with `jump=259200s`, then acceptance, then a normal rollover line and a fresh Monday computation on the next LIFE line; the note absent from every later pass. Stage 2's 26 synthetic vectors, including the Friday-to-Monday replay, remain the corroborating evidence |
 | P1-N breach deferral live (Q9) | demo sequence where a manual close's Balance update is observed to outrace HistoryDealsTotal by one pass, or a forced synthetic override if no such sequence occurs naturally | exactly one deferral logged, declaration on the following pass, never a third pass of silence |
 | P1-O DEGRADED live (Q10, amended 2026-08-09) | reuse the existing disconnect procedure (A8 weekend harvest class) | DEGRADED prefix on both the numbers field group and waiting_on throughout the gap, zero ALERTs during it, RESYNC-prefixed poll count on reconnect until HistoryStablePolls consecutive stable polls, exactly one clean evaluation once the RESYNC gate clears (no immediate re-evaluation on the raw reconnect tick) |
 
@@ -273,9 +285,9 @@ LEDGER sync (rows with evidence pointers and build hash), SPEC A6 committed as r
 | Breach exactly at anchor boundary | Decided for Phase 1 scope | Single-sample rule makes anchor, window, and comparison agree within one pass; at t equal to the anchor the window counts to the new day per Q4 (RULED); lock semantics are Phase 2 |
 | SAFE_HALT today, LOCKED seam | Decided | PnL logic never runs in SAFE_HALT (early return kept); LOCKED is an explicit empty dispatch case so Phase 2 adds without refactoring |
 | Restart mid-day | Decided | Nothing persisted, nothing trusted from memory; anchor and sums re-derived every pass; row P1-C; 4.1a's high-water anchor and 4.3a's deal-count baseline both reseed from scratch with no false positive on the first pass, since neither check runs until a prior pass's value exists to compare against |
-| Forward clock jump narrowing the window (Q8) | Decided | Anchor high-water-mark latch, section 4.1a; halts loudly rather than narrowing; in-memory only, self-clearing; Stage 2 synthetic vectors |
+| Forward clock jump narrowing the window (Q8, amended 2026-08-09) | Decided | Anchor high-water-mark latch, section 4.1a; announces loudly (cadence-capped ALERT plus a per-occurrence journal line) then accepts and advances, so no pass is ever halted and the condition clears itself; in-memory only; Stage 2 synthetic vectors plus the weekly Monday reopen as the live row |
 | Balance-versus-history coherence (Q9) | Decided | One-pass breach-declaration deferral keyed on unchanged deal count, section 4.3a; bounded at exactly one pass |
-| Floating PnL under a stale quote / intraday disconnect (Q10) | Decided | DEGRADED marker, no breach evaluation and no ALERT while disconnected, immediate clean re-evaluation on reconnect, section 4.3b |
+| Floating PnL under a stale quote / intraday disconnect (Q10, amended 2026-08-09) | Decided | DEGRADED marker on the numbers field group itself, no breach evaluation and no ALERT while disconnected; on reconnect, re-entry gated on `AgHistoryStable(HistoryStablePolls)` with a RESYNC-prefixed poll count, not an immediate re-evaluation; section 4.3b |
 
 ## 7. Questions asked, all ten RULED FINAL 2026-08-08 (see LEDGER DECISIONS for the verbatim text)
 
@@ -288,7 +300,7 @@ Kept as the historical record of what was asked; nothing here is open any longer
 5. **Demo balance operations. RULED.** Withdrawals unavailable on demo 1200252169; deposits available via the JustMarkets personal area. Rows P1-E/F/G redesigned deposit-only in Stage 5's table; the withdrawal-neutrality direction (P1-E') closes PASS-BY-CONSTRUCTION on the Q2 algebraic identity alone, no demo evidence needed or possible.
 6. **Sequencing versus Phase 0 remainder. RULED CLOSED, resolved twice over.** The branch carrying the Phase 0 remainder (`worktree-a9-phantom-audit`) merged to main as `937c604`, documented and pushed 2026-08-08, carrying A7 proven, A9 proven whole, and A10's amendment A5. Independently, the last-used gate that merge alone could not close on its own artifacts is now closed by the owner's direct dialog reading of the live EA properties, quoted in the Q6 DECISIONS entry: all eight inputs at ruled defaults, `HistoryStablePolls=3` included. Phase 0 is closed in full on main; this question no longer blocks anything.
 7. **Stage 1 scheduling. RULED.** The symbol-specification read rides the owner's next terminal session, whenever that falls; it is corroboration, not a gate, and blocks nothing.
-8. **Forward clock jump and the window's lower bound. RULED.** Anchor high-water-mark latch: retain the highest observed anchor in memory, halt loudly (naming both anchors) rather than narrow the window if a fresh computation exceeds it by more than one day, in-memory only, self-clearing, cleared on restart. Full mechanism, SPEC wording, and Stage 2 acceptance vectors in section 4.1a.
+8. **Forward clock jump and the window's lower bound. RULED, then AMENDED 2026-08-09.** Anchor high-water-mark latch: retain the highest observed anchor in memory, in-memory only, cleared on restart. The original ruling halted the pass rather than narrowing the window; the 2026-08-09 amendment replaces the halt with alert-and-advance, because the halt could not self-clear against a forward-only clock and would have stalled evaluation permanently at every weekend reopen. Full mechanism, SPEC wording, and Stage 2 acceptance vectors in section 4.1a.
 9. **Balance-versus-history coherence within one evaluation pass. RULED.** Defer a breach declaration by exactly one timer pass when the result moved abruptly with no new deal visible (unchanged `HistoryDealsTotal()`), declare unconditionally on the next pass regardless. Full mechanism, SPEC wording, and Stage 4 acceptance row in section 4.3a.
 10. **Floating PnL under a stale quote. RULED.** Mark the evaluation DEGRADED and take no breach decision while `TERMINAL_INFO_CONNECTED` is false; immediate clean re-evaluation on reconnect; no ALERT fires from DEGRADED data. Full mechanism, SPEC wording, and Stage 5 acceptance row (reusing the existing disconnect procedure) in section 4.3b.
 

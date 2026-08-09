@@ -6,7 +6,7 @@
 #property copyright "AccountGuardian"
 #property version   "1.00"
 #property strict
-#property description "Account-level lockout guardian. Phase 1: PnL engine, read-only. No trading calls anywhere in the build."
+#property description "Account-level lockout guardian. Phase 0 skeleton, no trading calls."
 
 #include <AccountGuardian/Log.mqh>
 #include <AccountGuardian/Clock.mqh>
@@ -36,25 +36,6 @@ bool g_init_refused        = false;
 
 #define AG_LIFE_INTERVAL_SECONDS 30
 
-//--- Phase 1 PnL evaluation state (A6, 4.3a/4.3b/4.4). All in-memory,
-//--- none persisted (never-loaded-never-written): a restart re-derives
-//--- everything from TimeCurrent and broker history.
-long     g_ag_last_deal_count      = -1;    // Q9 coherence baseline
-bool     g_ag_breach_deferred_once = false; // Q9 one-shot deferral flag
-bool     g_ag_degraded             = false; // Q10 DEGRADED marker
-datetime g_ag_last_logged_anchor   = 0;     // monotonic rollover-line latch (2.1)
-bool     g_ag_rollover_seeded      = false; // latch seeded on the first ACTIVE pass, logging nothing
-datetime g_ag_last_breach_alert    = 0;     // Q2 ALERT cadence, local clock
-datetime g_ag_last_anchor_alert    = 0;     // Q8-amendment ALERT cadence, local clock
-bool     g_ag_have_pnl_numbers     = false; // false until the first ACTIVE pass completes
-bool     g_ag_resyncing            = false; // Q10 NEW RULING 2026-08-09: gates reconnect on AgHistoryStable
-datetime g_ag_last_anchor          = 0;
-double   g_ag_last_realized        = 0.0;
-double   g_ag_last_floating        = 0.0;
-double   g_ag_last_base            = 0.0;
-double   g_ag_last_limit           = 0.0;
-double   g_ag_last_pnl             = 0.0;
-
 //+------------------------------------------------------------------+
 //| Single arming point for the timer, return value checked and      |
 //| logged. A timer that silently fails to arm freezes the mutex     |
@@ -72,174 +53,12 @@ void AgArmTimer()
   }
 
 //+------------------------------------------------------------------+
-//| ACTIVE governing numbers as a LIFE-line field group (A6, 4.5).   |
-//| Empty until the first completed ACTIVE pass, or outside ACTIVE.  |
-//| Prefixed DEGRADED| whenever g_ag_degraded holds (Q10 FINAL,      |
-//| owner finding 2026-08-09): the numbers are last-known figures    |
-//| from before a disconnect, and a reader of the numbers field      |
-//| alone, without cross-referencing waiting_on, must not be able    |
-//| to mistake them for a fresh, live evaluation.                    |
-//+------------------------------------------------------------------+
-string AgPnlNumbersString()
-  {
-   if(g_ag_state != AG_STATE_ACTIVE || !g_ag_have_pnl_numbers)
-      return "";
-   string prefix = g_ag_degraded ? "DEGRADED|" : "";
-   return prefix + "anchor=" + TimeToString(g_ag_last_anchor, TIME_DATE | TIME_SECONDS)
-        + "|realized=" + DoubleToString(g_ag_last_realized, 2)
-        + "|floating=" + DoubleToString(g_ag_last_floating, 2)
-        + "|base=" + DoubleToString(g_ag_last_base, 2)
-        + "|limit=" + DoubleToString(g_ag_last_limit, 2)
-        + "|pnl_vs_limit=" + DoubleToString(g_ag_last_pnl, 2) + " vs -" + DoubleToString(g_ag_last_limit, 2);
-  }
-
-//+------------------------------------------------------------------+
 void AgRefreshBanner()
   {
-   string pnl = "n/a (Phase 1, no ACTIVE pass has completed yet)";
+   string pnl = "n/a (Phase 0, PnL engine lands in Phase 1)";
    if(g_ag_state == AG_STATE_SAFE_HALT)
       pnl = "halted: " + g_ag_halt_reason + " (delete " + AgHaltPath() + " to resume)";
-   else if(g_ag_state == AG_STATE_ACTIVE && g_ag_have_pnl_numbers)
-      pnl = (g_ag_degraded ? "DEGRADED: " : "")
-          + DoubleToString(g_ag_last_pnl, 2) + " vs -" + DoubleToString(g_ag_last_limit, 2);
    AgBanner(AgStateName(g_ag_state), AgLockReasonName(g_ag_lock_reason), g_ag_locked_until, pnl);
-  }
-
-//+------------------------------------------------------------------+
-//| ACTIVE-state evaluation (A6, 4.4), run in this exact order:      |
-//| Q10 connection check, Q10 reconnect-coherence RESYNC gate (2026- |
-//| 08-09 owner ruling), Q8 anchor sanity, the computation itself,   |
-//| Q9 coherence deferral, then the Q2 interim breach posture.       |
-//| Sets g_ag_dynamic_waiting_on for the NEXT proof-of-life line     |
-//| (AgProofOfLife runs before this dispatch each tick, so every     |
-//| field here lags the pass that computed it by one tick, same as   |
-//| the rest of the proof-of-life contract).                        |
-//+------------------------------------------------------------------+
-void AgEvaluateActive()
-  {
-   //--- Q10: DEGRADED, no breach decisions from a frozen quote -----------
-   if(!(bool)TerminalInfoInteger(TERMINAL_CONNECTED))
-     {
-      g_ag_degraded          = true;
-      g_ag_resyncing         = true;   // Q10 NEW RULING 2026-08-09: reconnect must resync
-      g_ag_dynamic_waiting_on = "DEGRADED: disconnected, no breach decisions";
-      return;
-     }
-   //--- g_ag_degraded is cleared further below, only once this pass's
-   //--- computation actually succeeds (owner finding 2026-08-09): clearing
-   //--- it here, on entry, let a HistorySelect failure on the reconnect
-   //--- pass show a non-degraded banner over stale numbers.
-
-   //--- Q10 NEW RULING 2026-08-09, reconnect coherence: the first connected
-   //--- pass after a disconnect is exactly the condition the SYNCING
-   //--- stability counter exists for, so it is reused rather than resuming
-   //--- evaluation on the very next tick. No state transition (stays
-   //--- ACTIVE); the LIFE line shows the live poll count, prefixed RESYNC
-   //--- to read distinctly from initial SYNCING. Numbers stay DEGRADED and
-   //--- last-known throughout, since g_ag_degraded has not cleared yet.
-   if(g_ag_resyncing)
-     {
-      if(!AgHistoryStable(HistoryStablePolls))
-        {
-         g_ag_dynamic_waiting_on = "RESYNC: polls=" + (string)g_ag_stable_polls
-                                    + "/" + (string)HistoryStablePolls;
-         return;
-        }
-      g_ag_resyncing = false;
-     }
-
-   //--- Q8 (AMENDED 2026-08-09, alert-and-advance): anchor high-water-mark
-   //--- sanity check. The pass is NEVER halted. An anomalous forward jump is
-   //--- announced loudly and then accepted, so evaluation continues and the
-   //--- condition clears itself on this same pass. The original halt could
-   //--- not self-clear against a forward-only clock and stalled evaluation
-   //--- permanently at every weekend reopen, which is fail-open.
-   datetime fresh_anchor   = AgDayAnchor(AgServerNow());
-   datetime window_anchor  = AgAnchorSanityCheck(fresh_anchor);
-   g_ag_dynamic_waiting_on = g_ag_anchor_jump_note;
-   if(g_ag_anchor_jump_note != "")
-     {
-      //--- journal line every occurrence, popup capped: the same split the
-      //--- Q2 interim breach posture already uses below.
-      AgInfo(g_ag_anchor_jump_note);
-      datetime now_local_anchor = TimeLocal();
-      if(g_ag_last_anchor_alert == 0
-         || now_local_anchor - g_ag_last_anchor_alert >= AG_LIFE_INTERVAL_SECONDS)
-        {
-         AgAlertEvent(g_ag_anchor_jump_note
-                      + " (jump exceeds one day; evaluation continues, Q8 amendment 2026-08-09)");
-         g_ag_last_anchor_alert = now_local_anchor;
-        }
-     }
-
-   //--- day-rollover journal line, monotonic latch (2.1): fires only when
-   //--- the anchor actually advances, never on a backward step. Seeded on
-   //--- the first ACTIVE pass WITHOUT logging, so a session start no longer
-   //--- reports a rollover that never happened with a jump measured from
-   //--- the epoch (owner finding 2026-08-09).
-   if(!g_ag_rollover_seeded)
-     {
-      g_ag_rollover_seeded    = true;
-      g_ag_last_logged_anchor = window_anchor;
-     }
-   else if(window_anchor > g_ag_last_logged_anchor)
-     {
-      AgInfo("day rollover|old_anchor=" + TimeToString(g_ag_last_logged_anchor, TIME_DATE | TIME_SECONDS)
-             + "|new_anchor=" + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
-             + "|jump=" + (string)(long)(window_anchor - g_ag_last_logged_anchor) + "s");
-      g_ag_last_logged_anchor = window_anchor;
-     }
-
-   //--- the computation itself --------------------------------------------
-   bool ok = true;
-   double realized = AgRealized(window_anchor, ok);
-   if(!ok)
-      return;   // loud WARN already logged inside AgRealized (F6)
-   double base = AgDayBase(window_anchor, ok);
-   if(!ok)
-      return;   // loud WARN already logged inside AgDayBase/AgDealsSumAll
-   double floating = AgFloating();
-   double limit     = AgLimitCurrency(base, DailyLossPercent, DailyLossCurrency);
-   double pnl       = realized + floating;
-
-   g_ag_last_anchor      = window_anchor;
-   g_ag_last_realized    = realized;
-   g_ag_last_floating    = floating;
-   g_ag_last_base        = base;
-   g_ag_last_limit       = limit;
-   g_ag_last_pnl         = pnl;
-   g_ag_have_pnl_numbers = true;
-   g_ag_degraded         = false;   // cleared here, not on entry: see the note above
-
-   //--- Q9: coherence-deferral, then the Q2 interim breach posture -------
-   long current_count = HistoryDealsTotal();
-   bool breach_now = (pnl <= -limit + AG_PNL_EPSILON);
-   if(breach_now)
-     {
-      if(current_count == g_ag_last_deal_count && !g_ag_breach_deferred_once)
-        {
-         AgWarn("breach deferred one pass: no new deal visible, count=" + (string)current_count);
-         g_ag_breach_deferred_once = true;
-        }
-      else
-        {
-         datetime now_local = TimeLocal();
-         if(g_ag_last_breach_alert == 0 || now_local - g_ag_last_breach_alert >= AG_LIFE_INTERVAL_SECONDS)
-           {
-            AgAlertEvent("DAILY_BREACH (interim posture, no enforcement in Phase 1): pnl="
-                         + DoubleToString(pnl, 2) + " limit=" + DoubleToString(limit, 2)
-                         + " anchor=" + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS));
-            g_ag_last_breach_alert = now_local;
-           }
-         AgInfo("breach arithmetic|realized=" + DoubleToString(realized, 2)
-                + "|floating=" + DoubleToString(floating, 2) + "|base=" + DoubleToString(base, 2)
-                + "|limit=" + DoubleToString(limit, 2) + "|pnl=" + DoubleToString(pnl, 2));
-         g_ag_breach_deferred_once = false;
-        }
-     }
-   else
-      g_ag_breach_deferred_once = false;
-   g_ag_last_deal_count = current_count;
   }
 
 //+------------------------------------------------------------------+
@@ -281,7 +100,7 @@ int OnInit()
   {
    g_ag_verbosity = LogVerbosity;
    g_ag_login     = AccountInfoInteger(ACCOUNT_LOGIN);
-   AgInfo("init|build=Phase1|account=" + (string)g_ag_login + "|server=" + AccountInfoString(ACCOUNT_SERVER));
+   AgInfo("init|build=Phase0|account=" + (string)g_ag_login + "|server=" + AccountInfoString(ACCOUNT_SERVER));
 
    //--- core config validation (Q4): refuse to run, visibly
    string why = "";
@@ -395,37 +214,15 @@ void OnTimer()
 
    //--- second, in every state including SYNCING and SAFE_HALT:
    //--- proof of life (SPEC A3). A stuck guardian and a healthy one
-   //--- must never look identical from outside. Renders last-known
-   //--- state, waiting_on, and PnL numbers, i.e. this pass's own
-   //--- dispatch below is what the NEXT proof-of-life line reflects.
-   AgProofOfLife(AgStateName(g_ag_state), AgSecondsInState(), AgWaitingOn(),
-                 AG_LIFE_INTERVAL_SECONDS, AgPnlNumbersString());
+   //--- must never look identical from outside.
+   AgProofOfLife(AgStateName(g_ag_state), AgSecondsInState(), AgWaitingOn(), AG_LIFE_INTERVAL_SECONDS);
    AgRefreshBanner();
 
    if(g_ag_state == AG_STATE_SAFE_HALT)
-      return;   // closes nothing, sweeps nothing, no expiry: daily PnL logic never runs here
+      return;   // closes nothing, sweeps nothing, no expiry
 
-   //--- per-state dispatch (A6, 4.4). LOCKED is an explicit empty case so
-   //--- Phase 2 adds expiry and witness code without touching this branch.
-   if(g_ag_state == AG_STATE_SYNCING)
-     {
-      if(AgHistoryStable(HistoryStablePolls))
-        {
-         AgTransition(AG_STATE_ACTIVE, "history stable",
-                      "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls);
-         g_ag_dynamic_waiting_on = "";
-        }
-      else
-         g_ag_dynamic_waiting_on = "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls;
-     }
-   else if(g_ag_state == AG_STATE_ACTIVE)
-      AgEvaluateActive();
-   else if(g_ag_state == AG_STATE_LOCKED)
-     {
-      // Phase 2 adds expiry and lock-witness reconciliation here.
-     }
-
-   // Phase 3 adds: sweep acceleration on OnTradeTransaction.
+   // Phase 1 adds: SYNCING exit condition, PnL evaluation, breach check.
+   // Phase 2 adds: lock persistence and expiry. Phase 3 adds: sweep.
   }
 
 //+------------------------------------------------------------------+
