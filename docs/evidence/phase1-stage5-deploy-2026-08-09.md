@@ -548,14 +548,237 @@ Deploy, compile, vectors and relaunch rows are closed on the artifacts above. Th
 carries the work; nothing is merged and nothing is pushed. The running instance stays running
 at session end, carrying the amended build, so the reopen is observed rather than staged.
 
-## 6. Owner GUI reads, symbol session tables (Q7)
+---
 
-PENDING, owner GUI action.
+# The Monday reopen, 2026-08-10
 
-## 7. Quick live rows
+Appended to this document rather than written to a new one, because section 7 above set the
+reopen up as this deploy's standing live test and named its four falsifiable points in advance.
+Closing it here keeps the prediction and its outcome in one place.
 
-PENDING.
+Joint session again. The owner watched the reopen in real time and took a screenshot. Every
+claim below is re-derived by the executor from the journal file rather than from the owner's
+account of it, per the standing rule. The two channels agree on every point; where they read
+different clocks that is stated rather than smoothed over.
 
-## 8. Close-out
+## 9. Primary artifact
 
-PENDING.
+The live journal was snapshotted before it could grow further:
+
+```
+docs/evidence/journal-20260810-monday-reopen.txt
+90424 bytes   md5 244CB38E4E5CA75AE13140FCDBC84A30   157 non-empty lines
+span local 00:00:20.036 to 01:16:20.038
+```
+
+Stored with a `.txt` extension although it is an MT5 `.log`, and the reason is recorded so
+nobody renames it back: `.gitignore` carries `*.log` under its junk rules, so a `.log` copy is
+IGNORED and would never enter history, leaving this document citing a path and an md5 for an
+artifact no future session could retrieve. That is precisely the phantom-pointer failure this
+project has three recorded incidents of. The convention was already set by the deploy session,
+whose compile log is banked as `terminal-pre-phase1-2026-08-09/compile-log-pre-phase1.txt`, and
+zero `.log` files are tracked anywhere in the repository. The rename is byte-preserving: the md5
+above is identical before and after it, verified rather than assumed. Contents are still
+UTF-16LE and still need an explicit decode.
+
+Read with an explicit UTF-16LE decode per standing rule 5, and copied through a shared-read
+handle because the running terminal holds the file open; a plain read fails with "The process
+cannot access the file ... because it is being used by another process", which is itself
+confirmation the instance was still live when the copy was taken. Every count below is
+re-derived from the SNAPSHOT, so the numbers and the banked artifact cannot drift apart.
+
+Line census of the snapshot:
+
+| Class | Count |
+|---|---|
+| `LIFE` | 153 |
+| `ALERT` | 1 |
+| MT5's own `Alert:` popup echo | 1 |
+| `INFO` | 2 (the jump note, and the day rollover) |
+| `day rollover` | 1 |
+| `TRANSITION` | 0 |
+| `init` | 0 |
+
+## 9a. The instance is the same one, which is what makes this a live test
+
+Four cross-witnesses, each independent of the journal narrative, establish that no restart,
+re-init or recompile intervened between the deploy session and the reopen:
+
+- Process `terminal64` pid **11028**, start time **2026-08-09 22:45:14**. That is relaunch 2
+  of section 5c exactly, pid and wall clock both.
+- Halt file BYTE-UNTOUCHED across the reopen: 283 bytes, md5
+  `96440737734328DBE095BDC476898C83`, mtime still 2026-08-09 22:45:19, 15 session records with
+  the newest `S|1786315519|0` still unclean because still live, halt flag still `H|0||0`.
+  Identical in every field to the section 5c record. No sixteenth record exists, so no init
+  ran; `OnDeinit` never ran either.
+- Loaded `AccountGuardian.ex5` unchanged at mtime 2026-08-09 19:10:59, md5
+  `AC19EAEA1A65E3C4D052E151C21502E9`, which is the post-amendment compile of section 5b.
+- All seven terminal sources still md5-match the worktree pairwise, the three amended ones at
+  the section 5b values: `Clock.mqh` `31BAD26357DDF6E973DFAA1D49C337DB`,
+  `AccountGuardian.mq5` `EB646E20A17BF806C803C12A4C6878F4`, and `Pnl.mqh`, `State.mqh`,
+  `Log.mqh`, `Persist.mqh`, `Sweep.mqh` unchanged.
+
+Zero `init` and zero `TRANSITION` lines in the whole day's journal is the fifth witness and
+the strongest, because it is a property of the artifact rather than of the file system: the
+reopen was absorbed entirely inside ACTIVE, with no state change of any kind.
+
+Build identity therefore rests on all three instruments standing rule 7 permits and on none
+that it forbids: source md5 against the committed tree, ex5 modification timestamp, and
+runtime behaviour in the journal.
+
+## 9b. The event, four lines at one millisecond
+
+Quoted verbatim from the snapshot. Local clock `00:59:59.037`, server clock
+`2026.08.10 01:00:00`:
+
+```
+FG 0 00:59:59.037 AccountGuardian (XAUUSD.ecn,M5) AG|2026.08.10 01:00:00|INFO|anchor jump accepted: previous_high=2026.08.07 01:00:00, accepted=2026.08.10 01:00:00, jump=259200s
+JR 0 00:59:59.037 AccountGuardian (XAUUSD.ecn,M5) AG|2026.08.10 01:00:00|ALERT|anchor jump accepted: previous_high=2026.08.07 01:00:00, accepted=2026.08.10 01:00:00, jump=259200s (jump exceeds one day; evaluation continues, Q8 amendment 2026-08-09)
+HN 0 00:59:59.037 AccountGuardian (XAUUSD.ecn,M5) Alert: AccountGuardian: anchor jump accepted: previous_high=2026.08.07 01:00:00, accepted=2026.08.10 01:00:00, jump=259200s (jump exceeds one day; evaluation continues, Q8 amendment 2026-08-09)
+QM 0 00:59:59.037 AccountGuardian (XAUUSD.ecn,M5) AG|2026.08.10 01:00:00|INFO|day rollover|old_anchor=2026.08.07 01:00:00|new_anchor=2026.08.10 01:00:00|jump=259200s
+```
+
+The `Alert:` line is MT5's own echo of the `Alert()` call, not one of ours, so it is an
+independent witness that a real modal popup was raised. There is exactly ONE of them in the
+file, which is the artifact form of the owner's "no popup storm". The owner read the popup on
+screen and its text matches the echo character for character.
+
+The straddling LIFE lines, quoted for the transition itself:
+
+```
+FG 0 00:59:50.050 ... LIFE|state=ACTIVE|seconds_in_state=8068|waiting_on=-|anchor=2026.08.07 01:00:00|...|server=2026.08.07 23:57:59|local=2026.08.10 00:59:50
+DQ 0 01:00:20.040 ... LIFE|state=ACTIVE|seconds_in_state=8098|waiting_on=-|anchor=2026.08.10 01:00:00|...|server=2026.08.10 01:00:21|local=2026.08.10 01:00:20
+```
+
+## 9c. The four falsifiable points of section 7, each answered
+
+| Predicted in advance | Measured | Verdict |
+|---|---|---|
+| 1. Exactly ONE ALERT naming both anchors, `previous_high=2026.08.07 01:00:00`, `accepted=2026.08.10 01:00:00`, `jump=259200s` | one `ALERT` line and one MT5 `Alert:` echo, both at 00:59:59.037, both carrying all three fields verbatim; whole-file count is 1 and 1 | PASS |
+| 2. The matching INFO line carrying the same note | `INFO` at the same millisecond carrying the note | PASS, with a precision below |
+| 3. A genuine `day rollover` line, `old_anchor=2026.08.07 01:00:00`, `new_anchor=2026.08.10 01:00:00`, `jump=259200s` | present verbatim, and it is the only `day rollover` line in the file | PASS, P1-A's artifact |
+| 4. The next ACTIVE LIFE line computing fresh against the Monday anchor, `waiting_on=-`, note gone | 01:00:20.040, `anchor=2026.08.10 01:00:00`, `waiting_on=-` | PASS on the cleared half, see 9f |
+
+Precision on point 2, stated so a future grep expecting two identical strings is not surprised:
+the INFO and the ALERT do NOT carry the same text, and that is by design, verified in source
+rather than assumed. `AccountGuardian.mq5:164` emits `AgInfo(g_ag_anchor_jump_note)` bare,
+while `:169-170` emits `AgAlertEvent(g_ag_anchor_jump_note + " (jump exceeds one day;
+evaluation continues, Q8 amendment 2026-08-09)")`. The INFO carries the note core, the ALERT
+appends the amendment annotation. The journal matches that split exactly.
+
+Jump arithmetic checked independently rather than read off the line: 2026-08-07 01:00:00 to
+2026-08-10 01:00:00 is 259200 seconds, three days, against the 86400 bound at `Clock.mqh:100`.
+
+## 9d. Continuity across all 153 LIFE lines, measured not sampled
+
+Every LIFE line in the snapshot was parsed. Zero anomalies of any kind:
+
+| Check | Result |
+|---|---|
+| `seconds_in_state` | 4498 to 9058, **152 consecutive steps of exactly 30**, zero off-cadence steps. Span 4560 equals 152 x 30 |
+| continuity back to the ACTIVE entry | 22:45:22 plus 4498 s is 00:00:20 and plus 9058 s is 01:16:20, both matching their own line's local stamp to the second, so the counter never reset across the reopen |
+| `state` | `ACTIVE` on all 153 |
+| `waiting_on` | `-` on all 153 |
+| `anchor` | 120 lines `2026.08.07 01:00:00`, 33 lines `2026.08.10 01:00:00`, zero other values, the split falling exactly at the event |
+| `base` | `2003.46` on all 153 |
+| `limit` | `100.17` on all 153 |
+| `realized`, `floating` | `0.00` on all 153 |
+| `pnl_vs_limit` | `0.00 vs -100.17` on all 153 |
+
+Limit arithmetic re-derived: 2003.46 x 5 percent is 100.173, rendered `100.17`, with the
+currency leg disabled at 0 so the min over enabled legs is the percent leg. Unchanged across
+the day boundary, which is correct, since the base did not move.
+
+The owner's own reading, `seconds_in_state=8638` at 01:09:21, is confirmed against the file
+and the clock it was read from is identified: line `CM` at local 01:09:20.032 carries
+`seconds_in_state=8638` with `server=2026.08.10 01:09:21`, so the owner read the AG server
+field. No discrepancy.
+
+## 9e. The reopen boundary, and the prior 01:00:20 figure reinterpreted rather than refuted
+
+The owner noted that the reopen tick landed at 00:59:59, a second before the nominal 01:00 and
+earlier than the previously measured 01:00:20. Both halves resolve, and neither is a fault.
+
+`00:59:59.037` is the LOCAL clock. On that same line the server clock reads exactly
+`2026.08.10 01:00:00`. So the resumed server clock came back precisely on the boundary, and
+local trails server by about one second: the first Monday LIFE line pairs
+`local=2026.08.10 01:00:20` with `server=2026.08.10 01:00:21`, and the offset holds on every
+subsequent line. Recorded as an observation, not a defect. It is also the reason the anchor
+arithmetic was unaffected: `AgDayAnchor` floors server time, and every candidate instant in
+the 01:00:00 to 01:00:21 range floors to the same `2026.08.10 01:00:00`.
+
+The A8-harvested "Monday reopen at server 01:00:20" figure is therefore NOT contradicted, it is
+explained: that figure was read off a LIFE line, and LIFE lines land on a 30 second grid. The
+first Monday LIFE line here stamps server 01:00:21, within one second of the historical figure,
+while the actual first evaluated pass fell 21 seconds earlier at server 01:00:00. The earlier
+number was never the resume instant, it was the earliest SAMPLED instant. Consequence carried
+forward rather than left implicit: the reopen boundary is server 01:00:00 to within the 1 second
+timer resolution, and any future analysis wanting the resume instant must read the event lines
+rather than the lattice.
+
+This also settles, by measurement, the absorption clause of plan section 2.3. The rollover line
+steps `2026.08.07` straight to `2026.08.10` with `jump=259200s` and no intervening anchor was
+ever logged or observed, which is precisely "Saturday's and Sunday's anchors are never observed;
+they are absorbed as zero-deal spans inside the Friday-anchored window". The absorption
+MECHANISM is now measured; the full-weekend lattice harvest P1-B asks for is separate and is
+still owed.
+
+## 9f. Two things this event could not prove, recorded as limitations rather than omitted
+
+Both are consequences of the amendment working as ruled, so neither is a defect, and neither is
+reported as proven.
+
+**The cadence cap was not exercised, and cannot be exercised live.** Exactly one qualifying pass
+occurred, so the 30 second suppression window never had a second candidate to suppress. This is
+what section 7's own point 1 predicted, "in practice not repeating at all because the condition
+clears on the same pass", so it is the predicted outcome and not a gap. But it must not be
+reported as the cap having been tested live. Stronger, and this is the part worth carrying: the
+cap is UNFALSIFIABLE in the live channel BY CONSTRUCTION, because `Clock.mqh:91` clears the note
+at the top of every call and the pass advances the high mark, so a second qualifying jump inside
+30 seconds cannot arise from a resumed clock. The cap stands proven on the 26/26 vector run and
+on source read, and it belongs in the same category as amendment A5's PASS-BY-CONSTRUCTION and
+the bypass demonstration's permanent scope limit. No further action is possible by design.
+
+**The note was never seen in a LIFE line's `waiting_on` field.** `AccountGuardian.mq5:159`
+assigns the note to `g_ag_dynamic_waiting_on`, and `Clock.mqh:91` clears it at the top of the
+next call, so the note is visible for exactly one pass of a 1 second timer while LIFE emits every
+30 seconds. The odds of coincidence were about one in thirty and it did not happen: the event was
+at 00:59:59.037 and the next LIFE line at 01:00:20.040, by which time the note was correctly
+gone. All 153 LIFE lines read `waiting_on=-`. So the live channel confirms the CLEARED half of
+point 4 and is structurally unable to confirm the note-visible half, which rests on vectors
+`q8_forward_jump_note_names_both` and `q8_weekend_reopen_note_names_jump` from the 26/26 run.
+Stated plainly rather than left for a reader to infer from an absence.
+
+**And what this event does not measure at all:** the original build's behaviour at this instant.
+That image is not running and cannot be made to run against a reopen that has now passed. The
+contrast in section 7, an unbounded one-per-second popup with a window pinned to Friday until
+restart, remains a source-derived counterfactual exactly as section 5b framed it, and is not
+upgraded by today's measurement.
+
+## 9g. Row status after the reopen
+
+| Row | Status | Basis |
+|---|---|---|
+| P1-A first rollover | **CLOSED 2026-08-10** | the single `day rollover\|old_anchor=2026.08.07 01:00:00\|new_anchor=2026.08.10 01:00:00\|jump=259200s` at 00:59:59.037, in a process that emitted ZERO init lines that day, so it cannot be a session-start artifact. Strong form: exactly one rollover line in the file, with the unfixed build's spurious line still on record three hours earlier in the previous log for contrast |
+| P1-M anchor sanity (Q8, amended) | **CLOSED WHOLE 2026-08-10** | synthetic half on the 26/26 run of 22:30:07.433; live half on this event, all four predicted points answered, with the cap and the note-visible half classified in 9f rather than claimed |
+| P1-D zero-deal day | **CLOSED 2026-08-10** | `realized=0.00`, `floating=0.00` and `pnl_vs_limit=0.00 vs -100.17` on all 153 lines, so PnL equals floating and realized is zero; and the base-equals-balance half closes on the owner's balance reading of **2003.46** against `base=2003.46` on all 153 lines, two independent channels concurring. Boundary stated: with zero deals the reconstruction reduces to base equals balance identically, so this proves the reduction and NOT the "minus all deals since the anchor" arithmetic, which still needs deals present |
+| P1-B weekend absorption | OPEN, advanced | both edges of the freeze are now observed, the held-Friday half on 2026-08-09 and the absorption at the reopen today, and the absorption mechanism of plan 2.3 is measured. The full-weekend LIFE-lattice harvest across the 2026-08-08 and 2026-08-09 logs is still owed |
+| P1-J SYNCING exit | CLOSED 2026-08-09 | unchanged |
+| P1-C restart reconstruction | OPEN | needs deals present. Today adds supporting weight only: base, limit and the zero figures held across a genuine day boundary, not merely across a restart |
+| P1-E, P1-F, P1-G | OPEN | need a personal-area deposit |
+| P1-H, P1-I, P1-L, P1-N | OPEN | need manual trades |
+| P1-K, P1-O | OPEN | need a deliberate disconnect |
+| Q7 symbol session tables | OPEN | still not read, still carrying the A8 corroboration debt |
+
+## 9h. Close-out of the reopen
+
+Three rows closed on artifacts: P1-A, the live half of P1-M which closes that row whole, and
+the second half of P1-D. The instance is still running, still pid 11028, still carrying the
+amended build, with the anchor now on Monday and the lattice unbroken. Nothing was merged and
+nothing was pushed.
+
+One documentation defect fixed in this pass and recorded rather than silently corrected: this
+file previously ended with duplicate template stubs, a second "## 6. Owner GUI reads", "## 7.
+Quick live rows" and "## 8. Close-out", all reading PENDING, sitting after the real sections 6,
+7 and 8 that were filled in during the deploy session. They were scaffolding residue and they
+contradicted the filled sections above them. Removed.
