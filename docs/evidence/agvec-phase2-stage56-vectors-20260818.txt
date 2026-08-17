@@ -1,0 +1,87 @@
+IG	0	00:09:57.573	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|v0_synthetic_login_range_cannot_hit_live_account|PASS
+ME	0	00:09:57.573	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|a1_state_path_differs_from_halt_path|PASS
+NM	0	00:09:57.573	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|a2_state_path_names_the_login|PASS
+GN	0	00:09:57.573	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|a3_magic_is_agstate_not_aghalt|PASS
+FF	0	00:09:57.575	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|state file NOT written: the lock state model was never loaded this session, so writing it would overwrite a real lock with a default-constructed empty one
+GD	0	00:09:57.575	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|b1_save_refuses_when_model_never_loaded|PASS
+OG	0	00:09:57.575	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|b2_refused_save_left_the_file_byte_identical|PASS
+FF	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c1_save_succeeds_when_loaded|PASS
+IR	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c2_roundtrip_load_returns_loaded|PASS
+FP	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c3_roundtrip_reason|PASS
+PF	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c4_roundtrip_locked_until|PASS
+OS	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c5_roundtrip_breach_time|PASS
+GP	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c6_roundtrip_limit_snapshot|PASS
+JJ	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c7_roundtrip_base_snapshot|PASS
+CE	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|c8_limit_snapshot_keeps_sub_cent_precision|PASS
+MI	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|d1_missing_file_returns_missing|PASS
+PQ	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|d2_missing_file_sets_loaded_true|PASS
+GL	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|d3_missing_file_model_is_neutral|PASS
+OJ	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|d4_missing_file_locked_until_is_zero|PASS
+FJ	0	00:09:57.578	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|d5_missing_file_wrote_nothing|PASS
+EN	0	00:09:57.581	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|state file failed checksum or does not parse, quarantined as AccountGuardian\state_990000002.dat.bad.5, locking via CORRUPT_STATE until 2026.08.18 01:00:00 and writing a fresh file
+HH	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e1_bad_checksum_returns_corrupt|PASS
+GL	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e2_bad_checksum_locks_via_corrupt_state|PASS
+RL	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e3_corrupt_locked_until_is_next_day_anchor|PASS
+ED	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e4_corrupt_carries_no_breach_time|PASS
+QH	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e5_corrupt_carries_no_limit_snapshot|PASS
+PK	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e6_corrupt_carries_no_base_snapshot|PASS
+DO	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e7_corrupt_file_was_quarantined_not_deleted|PASS
+CO	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e8_a_fresh_file_was_written|PASS
+DF	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e9_fresh_file_reloads_cleanly|PASS
+LH	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e10_fresh_file_still_says_corrupt_state|PASS
+QG	0	00:09:57.582	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e11_fresh_file_preserves_locked_until|PASS
+IP	0	00:09:57.583	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|e12_quarantine_holds_the_original_bytes|PASS
+NR	0	00:09:57.585	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|state file failed checksum or does not parse, quarantined as AccountGuardian\state_990000002.dat.bad.6, locking via CORRUPT_STATE until 2026.08.18 01:00:00 and writing a fresh file
+KP	0	00:09:57.588	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|f1_second_corruption_did_not_reuse_the_first_quarantine_name|PASS
+PL	0	00:09:57.591	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|state file carries login 990000004 but this account is 990000003, quarantined as AccountGuardian\state_990000003.dat.bad.3, locking via CORRUPT_STATE until 2026.08.18 01:00:00 and writing a fresh file
+MF	0	00:09:57.593	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|g1_login_mismatch_returns_its_own_code|PASS
+PM	0	00:09:57.593	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|g2_login_mismatch_locks_via_corrupt_state|PASS
+QR	0	00:09:57.593	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|g3_login_mismatch_locked_until_is_next_day_anchor|PASS
+QS	0	00:09:57.593	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|g4_foreign_lock_values_were_not_adopted|PASS
+CF	0	00:09:57.593	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|g5_foreign_file_was_quarantined|PASS
+OD	0	00:09:57.593	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|g6_fresh_file_after_mismatch_reloads_cleanly|PASS
+NH	0	00:09:57.596	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|state file failed checksum or does not parse, quarantined as AccountGuardian\state_990000005.dat.bad.3, locking via CORRUPT_STATE until 2026.08.18 01:00:00 and writing a fresh file
+HH	0	00:09:57.598	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|h1_unknown_format_version_is_rejected|PASS
+CG	0	00:09:57.598	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|h2_unknown_version_locks_via_corrupt_state|PASS
+IL	0	00:09:57.602	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|state file failed checksum or does not parse, quarantined as AccountGuardian\state_990000006.dat.bad.3, locking via CORRUPT_STATE until 2026.08.18 01:00:00 and writing a fresh file
+QP	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|h3_halt_file_at_the_state_path_is_rejected|PASS
+CL	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|h4_cross_read_locks_via_corrupt_state|PASS
+NM	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i1_q1_base_is_next_day_anchor|PASS
+NF	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i2_latch_floor_is_zero_while_unseeded|PASS
+GG	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i3_ruling_three_frozen_adds_a_full_day|PASS
+JE	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i4_ruling_three_is_exactly_one_extra_day|PASS
+IS	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i5_pre_anchor_breach_does_not_lock_for_minutes|PASS
+HS	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i6_pre_anchor_unfrozen_still_takes_the_imminent_anchor|PASS
+PO	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i7_ruling_four_floors_a_stale_computed_value|PASS
+NQ	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i8_ruling_four_is_a_floor_not_a_replacement|PASS
+KJ	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i9_witness_value_beyond_the_ceiling_is_clamped|PASS
+GE	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i10_witness_value_inside_the_bounds_is_untouched|PASS
+EG	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i11_rewound_clock_floor_sits_above_the_clamp_ceiling|PASS
+EE	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i12_rewound_clock_floor_wins_over_the_clamp|PASS
+PG	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i13_rewound_clock_floor_wins_even_for_an_inflated_witness|PASS
+MH	0	00:09:57.604	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|i14_computed_path_is_not_clamped|PASS
+GN	0	00:09:57.605	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|INFO|ratchet seeded|anchor=2026.02.10 01:00:00|floor=100.00
+IS	0	00:09:57.605	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j1_seed_takes_the_live_limit|PASS
+GS	0	00:09:57.605	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j1b_seed_stores_the_floor|PASS
+DK	0	00:09:57.605	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j1c_seed_stores_the_day_anchor|PASS
+FK	0	00:09:57.609	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j2_lowers_on_a_decrease|PASS
+KR	0	00:09:57.609	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j2b_enforces_the_lowered_value|PASS
+HQ	0	00:09:57.609	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|ratchet HOLDING against a raised limit (question SEVEN): live=150.00 floor=80.00; the floor is enforced until the next day anchor
+JG	0	00:09:57.609	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j3_holds_the_floor_against_a_raised_limit|PASS
+KH	0	00:09:57.609	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j3b_enforces_the_floor_not_the_raised_limit|PASS
+OD	0	00:09:57.609	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|INFO|ratchet reseeded at rollover|old_anchor=2026.02.10 01:00:00|new_anchor=2026.02.11 01:00:00|old_floor=80.00|new_floor=150.00
+EN	0	00:09:57.611	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j4_reseeds_at_rollover|PASS
+RG	0	00:09:57.611	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j4b_reseed_moves_the_day_anchor|PASS
+IG	0	00:09:57.611	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j4c_reseed_enforces_the_new_live_limit|PASS
+DN	0	00:09:57.613	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j5_no_reseed_on_a_backward_step|PASS
+EN	0	00:09:57.613	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j5b_backward_step_does_not_move_the_anchor|PASS
+IS	0	00:09:57.614	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j5c_backward_step_still_enforces_the_held_floor|PASS
+KE	0	00:09:57.629	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j6_floor_file_reloads|PASS
+QD	0	00:09:57.629	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j6b_floor_survives_a_restart|PASS
+PP	0	00:09:57.629	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j7_stale_floor_is_declined|PASS
+KQ	0	00:09:57.629	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j7b_same_day_floor_is_applied|PASS
+LF	0	00:09:57.638	AgPhase2StateVectors (XAGUSD.ecn,M5)	AG|2026.08.17 23:57:59|WARN|floor file failed checksum or does not parse, quarantined as AccountGuardian\floor_990000011.dat.bad, the ratchet reseeds from the live limit on the next completed pass (no lock follows: the floor is not lock state)
+JM	0	00:09:57.640	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j8_corrupt_floor_is_quarantined|PASS
+OS	0	00:09:57.640	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j8b_corrupt_floor_resets_to_nothing|PASS
+NK	0	00:09:57.640	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|j8c_corrupt_floor_file_was_not_deleted|PASS
+MF	0	00:09:57.640	AgPhase2StateVectors (XAGUSD.ecn,M5)	AGVEC|SUMMARY|76/76
