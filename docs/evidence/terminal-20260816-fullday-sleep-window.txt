@@ -1,0 +1,49 @@
+NM	0	00:32:21.069	Network	'1200252169': scanning network for access points
+NK	0	00:32:29.793	Network	'1200252169': scanning network finished
+IP	1	01:40:07.063	Network	'1200252169': connection to JustMarkets-Demo3 lost
+FH	0	01:41:40.874	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 73.00 ms, build 5800)
+JG	0	01:41:40.874	Network	'1200252169': previous successful authorization performed from 5.29.18.75 on 2026.08.14 12:32:26
+OH	0	01:41:41.174	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 271 symbols, 0 spreads
+II	0	01:41:41.174	Network	'1200252169': trading has been enabled, demo account - hedging mode
+ML	0	01:41:41.174	Network	'1200252169': balance management has been disabled - demo account
+LO	0	01:41:43.125	Network	'1200252169': scanning network for access points
+MF	0	01:41:50.814	Network	'1200252169': scanning network finished
+DN	1	01:52:24.723	Network	'1200252169': connection to JustMarkets-Demo3 lost
+IE	0	01:52:25.352	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 71.34 ms, build 5800)
+LI	0	01:52:25.352	Network	'1200252169': previous successful authorization performed from 5.29.18.75 on 2026.08.16 01:41:42
+NJ	0	01:52:25.571	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 271 symbols, 0 spreads
+DG	0	01:52:25.571	Network	'1200252169': trading has been enabled, demo account - hedging mode
+DK	0	01:52:25.571	Network	'1200252169': balance management has been disabled - demo account
+JN	1	05:30:17.549	Network	'1200252169': connection to JustMarkets-Demo3 lost
+JE	0	05:31:38.409	Network	'1200252169': authorized on JustMarkets-Demo3 through UK8 (ping: 78.58 ms, build 5800)
+GI	0	05:31:38.409	Network	'1200252169': previous successful authorization performed from 5.29.18.75 on 2026.08.16 01:52:27
+PE	0	05:31:38.624	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 271 symbols, 0 spreads
+JG	0	05:31:38.624	Network	'1200252169': trading has been enabled, demo account - hedging mode
+JK	0	05:31:38.624	Network	'1200252169': balance management has been disabled - demo account
+LP	0	05:31:40.190	Network	'1200252169': scanning network for access points
+PD	0	05:31:48.284	Network	'1200252169': scanning network finished
+EM	0	05:31:48.284	Network	'1200252169': auto connecting to a better access point with 89 % quality (previous: 87 %)
+MO	1	05:31:48.284	Network	'1200252169': connection to JustMarkets-Demo3 lost
+CD	0	05:31:49.033	Network	'1200252169': authorized on JustMarkets-Demo3 through UK3 (ping: 65.60 ms, build 5800)
+CH	0	05:31:49.033	Network	'1200252169': previous successful authorization performed from 5.29.18.75 on 2026.08.16 05:31:38
+ED	0	05:31:49.238	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 271 symbols, 0 spreads
+KD	0	05:31:49.238	Network	'1200252169': trading has been enabled, demo account - hedging mode
+KH	0	05:31:49.238	Network	'1200252169': balance management has been disabled - demo account
+ES	0	11:31:41.474	Network	'1200252169': scanning network for access points
+CE	0	11:31:49.722	Network	'1200252169': scanning network finished
+DJ	1	12:33:14.992	Network	'1200252169': connection to JustMarkets-Demo3 lost
+MQ	0	15:51:11.765	Network	'1200252169': authorized on JustMarkets-Demo3 through UK8 (ping: 77.33 ms, build 5800)
+EM	0	15:51:11.765	Network	'1200252169': previous successful authorization performed from 5.29.18.75 on 2026.08.16 05:31:49
+QF	0	15:51:12.226	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 271 symbols, 0 spreads
+GS	0	15:51:12.226	Network	'1200252169': trading has been enabled, demo account - hedging mode
+CG	0	15:51:12.226	Network	'1200252169': balance management has been disabled - demo account
+KE	0	15:51:13.525	Network	'1200252169': scanning network for access points
+KP	0	15:51:21.876	Network	'1200252169': scanning network finished
+QH	1	16:47:31.535	Network	'1200252169': connection to JustMarkets-Demo3 lost
+JO	0	16:47:32.077	Network	'1200252169': authorized on JustMarkets-Demo3 through UK8 (ping: 79.40 ms, build 5800)
+GO	0	16:47:32.077	Network	'1200252169': previous successful authorization performed from 5.29.18.75 on 2026.08.16 15:51:12
+LS	0	16:47:32.393	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 271 symbols, 0 spreads
+FQ	0	16:47:32.393	Network	'1200252169': trading has been enabled, demo account - hedging mode
+FE	0	16:47:32.393	Network	'1200252169': balance management has been disabled - demo account
+LF	0	21:51:14.827	Network	'1200252169': scanning network for access points
+CN	0	21:51:23.596	Network	'1200252169': scanning network finished
