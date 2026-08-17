@@ -3,7 +3,6 @@
 !README.md
 !docs/**/*.md
 !LEDGER.md
-!CLAUDE.md
 
 # Build artifacts
 *.ex5
