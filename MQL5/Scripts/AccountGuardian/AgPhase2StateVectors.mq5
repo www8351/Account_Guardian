@@ -321,6 +321,93 @@ void OnStart()
    AgVecCheckInt("h4_cross_read_locks_via_corrupt_state",
                  (long)g_ag_state_reason, (long)AG_LOCK_CORRUPT_STATE);
 
+   //================================================================
+   //--- I. locked_until BOUNDS (Phase 2 Stage 3, reachable from a script
+   //--- since the owner ruling of 2026-08-18 moved both helpers into
+   //--- Clock.mqh). These encode three FINAL rulings and were previously
+   //--- provable by source reading alone.
+   //================================================================
+   //--- Anchor boundaries off the same reference A0 the fixtures above use,
+   //--- named as the Phase 1 clock vectors name theirs so the two vector
+   //--- sets read side by side.
+   datetime A1 = A0 + 86400;    // next boundary
+   datetime A3 = A0 + 259200;   // three boundaries forward
+
+   datetime saved_high   = g_ag_high_anchor;
+   bool     saved_seeded = g_ag_high_anchor_seeded;
+
+   //--- Q1 base, with the latch unseeded so ruling FOUR contributes nothing
+   g_ag_high_anchor_seeded = false;
+   g_ag_high_anchor        = 0;
+   AgVecCheckDT("i1_q1_base_is_next_day_anchor",
+                AgLockedUntilComputed(A0 + 3600, false), AgNextDayAnchor(A0 + 3600));
+   AgVecCheck("i2_latch_floor_is_zero_while_unseeded", AgLatchFloor() == 0, "");
+
+   //--- RULING THREE: a frozen quote takes the anchor AFTER the imminent one
+   AgVecCheckDT("i3_ruling_three_frozen_adds_a_full_day",
+                AgLockedUntilComputed(A0 + 3600, true),
+                AgNextDayAnchor(AgNextDayAnchor(A0 + 3600)));
+   AgVecCheck("i4_ruling_three_is_exactly_one_extra_day",
+              (long)(AgLockedUntilComputed(A0 + 3600, true)
+                     - AgLockedUntilComputed(A0 + 3600, false)) == 86400, "");
+
+   //--- The measured signature ruling THREE exists for: a breach at 00:58
+   //--- inside the pre-anchor freeze must NOT lock for the two minutes left
+   //--- until the imminent anchor.
+   datetime breach_0058 = A1 - 120;   // two minutes before the 01:00 boundary
+   AgVecCheck("i5_pre_anchor_breach_does_not_lock_for_minutes",
+              (long)(AgLockedUntilComputed(breach_0058, true) - breach_0058) > 86400,
+              "lock duration was " + (string)(long)(AgLockedUntilComputed(breach_0058, true) - breach_0058) + "s");
+   AgVecCheckDT("i6_pre_anchor_unfrozen_still_takes_the_imminent_anchor",
+                AgLockedUntilComputed(breach_0058, false), A1);
+
+   //--- RULING FOUR: the latch floor raises a value that would fall below it
+   g_ag_high_anchor_seeded = true;
+   g_ag_high_anchor        = A3;                  // latch well ahead of the breach
+   AgVecCheckDT("i7_ruling_four_floors_a_stale_computed_value",
+                AgLockedUntilComputed(A0 + 3600, false), AgNextDayAnchor(A3));
+   AgVecCheck("i8_ruling_four_is_a_floor_not_a_replacement",
+              AgLockedUntilComputed(A3 + 200000, false) > AgNextDayAnchor(A3), "");
+
+   //--- WITNESS PATH: clamp first as the upper bound
+   datetime ceiling = AgNextDayAnchor(AgServerNow());
+   g_ag_high_anchor_seeded = false;               // floor out of the way
+   g_ag_high_anchor        = 0;
+   AgVecCheckDT("i9_witness_value_beyond_the_ceiling_is_clamped",
+                AgLockedUntilFromWitness(ceiling + 8640000), ceiling);
+   AgVecCheckDT("i10_witness_value_inside_the_bounds_is_untouched",
+                AgLockedUntilFromWitness(ceiling - 3600), ceiling - 3600);
+
+   //--- WITNESS PATH under a REWOUND CLOCK, the case the precedence ruling of
+   //--- 2026-08-18 was made for. The latch never recedes, so after a backward
+   //--- step its next-day anchor sits ABOVE the clamp's ceiling and the two
+   //--- bounds point in opposite directions. The floor is applied last and
+   //--- must win; if the clamp won, the lock would be cut back using the very
+   //--- reading the floor exists to defend against.
+   g_ag_high_anchor_seeded = true;
+   g_ag_high_anchor        = ceiling + 172800;    // latch two days past the ceiling
+   datetime floor_above    = AgNextDayAnchor(g_ag_high_anchor);
+   AgVecCheck("i11_rewound_clock_floor_sits_above_the_clamp_ceiling",
+              floor_above > ceiling, "fixture is wrong: floor is not above the ceiling");
+   AgVecCheckDT("i12_rewound_clock_floor_wins_over_the_clamp",
+                AgLockedUntilFromWitness(ceiling - 3600), floor_above);
+   AgVecCheckDT("i13_rewound_clock_floor_wins_even_for_an_inflated_witness",
+                AgLockedUntilFromWitness(ceiling + 8640000), floor_above);
+
+   //--- THE DOMAIN SPLIT ITSELF: a value the guardian computes for itself
+   //--- takes NO clamp, so a frozen-quote breach may legitimately land beyond
+   //--- the ceiling. If the clamp leaked into the computed path this fails.
+   g_ag_high_anchor_seeded = false;
+   g_ag_high_anchor        = 0;
+   datetime computed_frozen = AgLockedUntilComputed(AgServerNow(), true);
+   AgVecCheck("i14_computed_path_is_not_clamped",
+              computed_frozen > ceiling,
+              "computed=" + TimeToString(computed_frozen, TIME_DATE | TIME_SECONDS)
+              + " ceiling=" + TimeToString(ceiling, TIME_DATE | TIME_SECONDS));
+
+   g_ag_high_anchor        = saved_high;
+   g_ag_high_anchor_seeded = saved_seeded;
+
    PrintFormat("AGVEC|SUMMARY|%d/%d", g_pass, g_total);
   }
 //+------------------------------------------------------------------+

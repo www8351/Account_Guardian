@@ -111,4 +111,73 @@ datetime AgAnchorSanityCheck(const datetime fresh)
    return fresh;
   }
 
+//+------------------------------------------------------------------+
+//| THE locked_until BOUNDS (Phase 2). Moved here from the EA by      |
+//| owner ruling 2026-08-18 so a script can reach them: they are pure |
+//| functions of their arguments and the latch above, which is the    |
+//| shape a synthetic vector proves best, and while they sat in the   |
+//| EA no script could include them and the three rulings they encode |
+//| were provable by source reading alone.                            |
+//|                                                                   |
+//| This file still performs NO LOGGING and still touches no clock    |
+//| but TimeCurrent through AgServerNow, so the Q7 header contract    |
+//| above and the static acceptance row that greps for TimeLocal,     |
+//| TimeGMT and TimeTradeServer are both unaffected by the move.      |
+//+------------------------------------------------------------------+
+
+//--- Ruling FOUR's floor: the next day anchor of Q8's high-water latch.
+//--- The latch never recedes by construction, so this is monotone even
+//--- while the clock itself steps backward, which is the whole property
+//--- ruling FOUR needs. Returns 0 when the latch has not been seeded,
+//--- i.e. before the first ACTIVE pass, where there is nothing to floor
+//--- against and claiming a floor would invent one.
+datetime AgLatchFloor()
+  {
+   return g_ag_high_anchor_seeded ? AgNextDayAnchor(g_ag_high_anchor) : 0;
+  }
+
+datetime AgApplyLatchFloor(const datetime t)
+  {
+   datetime floor_value = AgLatchFloor();
+   return (floor_value > 0 && t < floor_value) ? floor_value : t;
+  }
+
+//+------------------------------------------------------------------+
+//| A value the guardian computes for itself, at a breach it saw.     |
+//| Q1 is the base. RULING THREE takes the anchor AFTER the imminent  |
+//| one when the quote is frozen at the breach instant, a full        |
+//| trading day, which is what stops the measured 62-minute pre-      |
+//| anchor freeze producing a lock that expires minutes later at the  |
+//| reopen. RULING FOUR floors it.                                     |
+//|                                                                   |
+//| The 2026-07-30 clamp is deliberately ABSENT: the precedence       |
+//| ruling of 2026-08-18 gives it the witness domain only, and a      |
+//| value computed here takes the floor alone.                        |
+//+------------------------------------------------------------------+
+datetime AgLockedUntilComputed(const datetime breach_time, const bool quote_frozen)
+  {
+   datetime until = AgNextDayAnchor(breach_time);   // Q1
+   if(quote_frozen)
+      until = AgNextDayAnchor(until);               // ruling THREE
+   return AgApplyLatchFloor(until);                 // ruling FOUR
+  }
+
+//+------------------------------------------------------------------+
+//| A value arriving from a witness, file or GV, which a local        |
+//| attacker can write. Order per the precedence ruling of            |
+//| 2026-08-18, quoted: "clamp first as the upper bound, floor        |
+//| second as the lower bound, so the floor wins any conflict by      |
+//| being applied last". Under a rewound clock the clamp's ceiling    |
+//| sits BELOW the floor, and applying the floor last is precisely    |
+//| the mechanism by which the floor wins that case.                  |
+//+------------------------------------------------------------------+
+datetime AgLockedUntilFromWitness(const datetime raw)
+  {
+   datetime until   = raw;
+   datetime ceiling = AgNextDayAnchor(AgServerNow());   // clamp, 2026-07-30
+   if(until > ceiling)
+      until = ceiling;
+   return AgApplyLatchFloor(until);                     // ruling FOUR, applied last
+  }
+
 #endif // AG_CLOCK_MQH

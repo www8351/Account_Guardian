@@ -71,14 +71,16 @@ double   g_ag_last_pnl             = 0.0;
 datetime g_ag_last_server_seen     = 0;
 datetime g_ag_last_tick_local      = 0;
 
-//--- UNRULED 2026-08-18, flagged rather than presented as ratified: ruling
-//--- THREE names the frozen-clock CONDITION as the trigger but does not name
-//--- a threshold. The four-part proposal named 120 s, and its parts three and
-//--- four were declared MOOT by the stale quote ruling only in their role as
-//--- a GATE, which is not the role here. 120 s cannot false-fire on XAUUSD in
-//--- an open session where ticks arrive many times a second, and it catches
-//--- the measured 62-minute break within two LIFE lines. Carries an ISSUES
-//--- entry; no session may cite this value as ruled.
+//--- RATIFIED 2026-08-18, FINAL in DECISIONS of that date. Ruling THREE
+//--- named the frozen-clock CONDITION as the trigger without naming a
+//--- threshold, and this value closed that gap on its own ruling rather
+//--- than by inheritance from the four-part proposal, whose threshold the
+//--- stale quote ruling had declared MOOT in its role as a GATE. Grounds
+//--- on the record: 120 s cannot false-fire on XAUUSD in an open session
+//--- where ticks arrive many times a second, and it catches the measured
+//--- 62-minute break within two LIFE lines. Compile-time constant and
+//--- deliberately not an input, the AG_LIFE_INTERVAL and AG_MUTEX_STALE
+//--- precedent: a value able to disable a guarantee is core or nowhere.
 #define AG_QUOTE_FROZEN_SECONDS 120
 
 //--- Q6 input-change-while-locked witness. The two limit inputs as they read
@@ -160,64 +162,137 @@ bool AgQuoteFrozen()
   }
 
 //+------------------------------------------------------------------+
-//| THE locked_until BOUNDS, all three rulings of 2026-08-18 in one  |
-//| place so the composition order is stated once and cannot drift.  |
+//| BOOT LOCK DERIVATION (Phase 2 Stage 4, design doc item 4, F4).   |
+//| Three witnesses, OR'd, STRICTEST WINS.                           |
 //|                                                                  |
-//| Q1 (FINAL) is the base: locked_until = next day anchor.          |
+//| The OR can only ADD a lock, never subtract one. There is no path |
+//| here by which a witness UNLOCKS: unlock is exclusively the       |
+//| TimeCurrent >= locked_until comparison in AgEvaluateLocked, and  |
+//| an absence of derived evidence is never read as a conclusion     |
+//| that no lock exists.                                             |
 //|                                                                  |
-//| RULING THREE adds a floor for ONE named condition. A breach      |
-//| declared while TimeCurrent is FROZEN takes the anchor AFTER the  |
-//| imminent one, a full trading day. Without it the measured case   |
-//| is enforcement in name only: the clock froze 62 minutes straight |
-//| into the 01:00 anchor on the night of 2026-08-13, so a breach at |
-//| 00:58 would lock until 01:00 and the new day would open carrying |
-//| the same loss with the lock already spent.                       |
+//| Authority order, and why it is not the obvious one. Broker deal  |
+//| history is the AUTHORITY because it is server-side and a local-  |
+//| machine attacker cannot forge or delete it. The file and the GV  |
+//| live entirely on this machine and are locally writable, so they  |
+//| are witnesses and accelerators rather than authority: they exist |
+//| so a lock is recognized instantly without a full replay, and so  |
+//| recognition works even before history stability is established.  |
 //|                                                                  |
-//| RULING FOUR adds a second floor, always: never below             |
-//| AgNextDayAnchor of Q8's high-water latch, which never recedes by |
-//| construction and so stays monotone even while the clock steps    |
-//| backward. Without it a breach declared after a rewind computes   |
-//| an already-past locked_until and unlocks instantly and silently. |
-//|                                                                  |
-//| THE 2026-07-30 CLAMP IS DELIBERATELY ABSENT HERE. The precedence |
-//| ruling of 2026-08-18 gives each bound a domain: the clamp is an  |
-//| upper bound on WITNESS-SUPPLIED values against a forged or       |
-//| inflated one, and a value the guardian computes for itself takes |
-//| the floor alone. See AgLockedUntilFromWitness for the other      |
-//| domain and for the order the two apply in.                       |
+//| Returns 0 = no lock, 1 = lock, 2 = NOT EVALUABLE. The third is   |
+//| the F6 obligation and is why this is not a bool: a failed        |
+//| HistorySelect must never be read as "no deals, therefore no      |
+//| breach", so it blocks the SYNCING exit for another pass instead  |
+//| of licensing an unlock.                                          |
 //+------------------------------------------------------------------+
-datetime AgLockedUntilComputed(const datetime breach_time, const bool quote_frozen)
+int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out)
   {
-   datetime until = AgNextDayAnchor(breach_time);              // Q1
-   if(quote_frozen)
-      until = AgNextDayAnchor(until);                          // ruling THREE
-   datetime latch_floor = AgNextDayAnchor(g_ag_high_anchor);   // ruling FOUR
-   if(g_ag_high_anchor_seeded && until < latch_floor)
-      until = latch_floor;
-   return until;
-  }
+   reason_out = AG_LOCK_NONE;
+   until_out  = 0;
+   datetime now = AgServerNow();
+   bool fired   = false;
 
-//+------------------------------------------------------------------+
-//| Stage 4's entry point, written here so the two domains sit side  |
-//| by side. NOT REACHED IN STAGE 3: no witness is read yet.         |
-//|                                                                  |
-//| Order per the precedence ruling of 2026-08-18, quoted: "for a    |
-//| witness supplied value the two apply in order, clamp first as    |
-//| the upper bound, floor second as the lower bound, so the floor   |
-//| wins any conflict by being applied last". Under a rewound clock  |
-//| the clamp's ceiling sits BELOW the floor, and applying the floor |
-//| last is exactly what makes the floor win that case.              |
-//+------------------------------------------------------------------+
-datetime AgLockedUntilFromWitness(const datetime raw)
-  {
-   datetime until = raw;
-   datetime ceiling = AgNextDayAnchor(AgServerNow());          // clamp, 2026-07-30
-   if(until > ceiling)
-      until = ceiling;
-   datetime latch_floor = AgNextDayAnchor(g_ag_high_anchor);   // ruling FOUR, applied last
-   if(g_ag_high_anchor_seeded && until < latch_floor)
-      until = latch_floor;
-   return until;
+   //--- WITNESS 1, the state file. AgStateLoad already ran in OnInit and has
+   //--- already applied its own corruption policy, so by here the model is
+   //--- either a clean load or the CORRUPT_STATE the quarantine branch wrote.
+   //--- Fires on locked_until > now rather than on reason != NONE, so an
+   //--- expired lock's stale record reads as not-locked with no rewrite.
+   if(g_ag_state_reason != AG_LOCK_NONE && g_ag_state_locked_until > now)
+     {
+      datetime u = AgLockedUntilFromWitness(g_ag_state_locked_until);
+      AgInfo("boot witness FILE fired|reason=" + AgLockReasonName(g_ag_state_reason)
+             + "|raw=" + TimeToString(g_ag_state_locked_until, TIME_DATE | TIME_SECONDS)
+             + "|bounded=" + TimeToString(u, TIME_DATE | TIME_SECONDS));
+      fired      = true;
+      until_out  = u;
+      reason_out = g_ag_state_reason;
+     }
+
+   //--- WITNESS 2, the GV mirror. Bare timestamp, no reason, so DAILY_BREACH.
+   double gv_raw = 0.0;
+   if(GlobalVariableGet(AgGvLock(), gv_raw) && (datetime)(long)gv_raw > now)
+     {
+      datetime u = AgLockedUntilFromWitness((datetime)(long)gv_raw);
+      AgInfo("boot witness GV fired|raw=" + TimeToString((datetime)(long)gv_raw, TIME_DATE | TIME_SECONDS)
+             + "|bounded=" + TimeToString(u, TIME_DATE | TIME_SECONDS));
+      if(!fired || u > until_out)   // strictest wins
+        {
+         until_out  = u;
+         reason_out = AG_LOCK_DAILY_BREACH;
+        }
+      fired = true;
+     }
+
+   //--- WITNESS 3, derived from broker history. The authority.
+   //--- Anchor is computed directly and NOT through the Q8 latch: the latch
+   //--- is seeded on the first ACTIVE evaluation pass and moving that here
+   //--- would change when Phase 1's seeding happens for no gain, while
+   //--- AgLatchFloor correctly contributes nothing while unseeded.
+   datetime anchor = AgDayAnchor(now);
+   bool ok = true;
+   double running_min = 0.0;
+   double realized = AgRealizedFold(anchor, ok, running_min);
+   if(!ok)
+     {
+      AgWarn("boot derivation NOT EVALUABLE: the replay's HistorySelect failed,"
+             " which is never read as zero deals (F6); staying in SYNCING this pass");
+      return 2;
+     }
+   double base = AgDayBase(anchor, ok);
+   if(!ok)
+     {
+      AgWarn("boot derivation NOT EVALUABLE: the day-base read failed;"
+             " staying in SYNCING this pass");
+      return 2;
+     }
+
+   //--- Q6 as clarified 2026-07-30: a valid unexpired DAILY_BREACH snapshot
+   //--- governs the comparison. With no snapshot to apply it to, the rule has
+   //--- nothing to govern and the comparison falls back to the LIVE limit.
+   //--- That fallback is what makes file plus GV deletion ALONE, inputs
+   //--- untouched, fully defended by history: the live limit equals the
+   //--- original when nothing was tampered with. Deletion COMBINED with input
+   //--- inflation is the accepted residual and is not closed here.
+   bool   have_snapshot = (g_ag_state_reason == AG_LOCK_DAILY_BREACH
+                           && g_ag_state_locked_until > now
+                           && g_ag_state_limit_snap > 0.0);
+   double limit_cmp = have_snapshot
+                      ? g_ag_state_limit_snap
+                      : AgLimitCurrency(base, DailyLossPercent, DailyLossCurrency);
+
+   double floating = AgFloating();
+   bool disjunct_live   = (realized + floating <= -limit_cmp + AG_PNL_EPSILON);
+   bool disjunct_replay = (running_min        <= -limit_cmp + AG_PNL_EPSILON);
+   if(disjunct_live || disjunct_replay)
+     {
+      //--- A value the guardian computes for itself: floor only, no clamp.
+      datetime u = AgApplyLatchFloor(AgNextDayAnchor(now));
+      AgInfo("boot witness DERIVED fired|live=" + (disjunct_live ? "1" : "0")
+             + "|replay=" + (disjunct_replay ? "1" : "0")
+             + "|realized=" + DoubleToString(realized, 2)
+             + "|floating=" + DoubleToString(floating, 2)
+             + "|running_min=" + DoubleToString(running_min, 2)
+             + "|limit_cmp=" + DoubleToString(limit_cmp, 2)
+             + "|snapshot=" + (have_snapshot ? "1" : "0")
+             + "|bounded=" + TimeToString(u, TIME_DATE | TIME_SECONDS));
+      if(!fired || u > until_out)   // strictest wins
+        {
+         until_out  = u;
+         reason_out = AG_LOCK_DAILY_BREACH;
+        }
+      fired = true;
+     }
+
+   //--- STRICTEST WINS on the duration, and CORRUPT_STATE wins the reason
+   //--- when the file witness reaches the same instant: it is the more
+   //--- serious finding and it is the one that says the record cannot be
+   //--- trusted, which a DAILY_BREACH label would hide.
+   if(fired && g_ag_state_reason == AG_LOCK_CORRUPT_STATE
+      && g_ag_state_locked_until > now
+      && AgLockedUntilFromWitness(g_ag_state_locked_until) >= until_out)
+      reason_out = AG_LOCK_CORRUPT_STATE;
+
+   return fired ? 1 : 0;
   }
 
 //+------------------------------------------------------------------+
@@ -261,6 +336,48 @@ void AgDeclareLock(const datetime breach_time, const double limit, const double 
                 + TimeToString(until, TIME_DATE | TIME_SECONDS)
                 + " (pnl=" + DoubleToString(pnl, 2) + " limit=" + DoubleToString(limit, 2)
                 + "). Phase 2 locks the state machine and sends no order:"
+                " open positions stay open until you close them by hand.");
+   g_ag_dynamic_waiting_on = "";
+  }
+
+//+------------------------------------------------------------------+
+//| Enter LOCKED from the boot derivation rather than from a breach  |
+//| this session saw. Separate from AgDeclareLock because there is   |
+//| no fresh computation behind it: the limit and base snapshots are |
+//| whatever the file already held, and inventing new ones from live |
+//| inputs would be exactly the substitution Q6 forbids.             |
+//|                                                                  |
+//| The bounded locked_until IS persisted, including when the lock   |
+//| came from the derived witness with the file silent, so the next  |
+//| boot recognizes it without a second full replay. That write is   |
+//| legitimate under never-loaded-never-written because AgStateLoad  |
+//| ran in OnInit.                                                   |
+//+------------------------------------------------------------------+
+void AgEnterLockFromBoot(const ENUM_AG_LOCK_REASON reason, const datetime until)
+  {
+   g_ag_lock_reason  = reason;
+   g_ag_locked_until = until;
+
+   //--- Seed the Q6 input witness from the live inputs, per the note the
+   //--- Stage 3 entry left for this stage: without it the first LOCKED pass
+   //--- would compare live inputs against a default-constructed 0.0 and warn
+   //--- about a change nobody made.
+   g_ag_locked_in_percent    = DailyLossPercent;
+   g_ag_locked_in_currency   = DailyLossCurrency;
+   g_ag_lock_inputs_captured = true;
+
+   if(reason == AG_LOCK_CORRUPT_STATE)
+      AgStateSetCorrupt(until);
+   else
+      AgStateSetBreach(until, g_ag_state_breach_time, g_ag_state_limit_snap, g_ag_state_base_snap);
+   if(!AgStateSave())
+      AgWarn("boot-derived lock was NOT persisted; it holds in memory for this session");
+
+   AgTransition(AG_STATE_LOCKED, "boot derivation: " + AgLockReasonName(reason),
+                "locked_until=" + TimeToString(until, TIME_DATE | TIME_SECONDS));
+   AgAlertEvent("LOCKED at boot by derivation (" + AgLockReasonName(reason) + ") until "
+                + TimeToString(until, TIME_DATE | TIME_SECONDS)
+                + ". Phase 2 locks the state machine and sends no order:"
                 " open positions stay open until you close them by hand.");
    g_ag_dynamic_waiting_on = "";
   }
@@ -551,26 +668,24 @@ int OnInit()
    if(load_result == 1)
       AgVerbose("no halt file, first session on this account");
 
-   //--- Lock state file (Phase 2 Stage 3). LOADED, DELIBERATELY NOT ACTED ON.
-   //--- The load is required before any write can be legitimate: the FINAL
-   //--- never-loaded-never-written rule names this file explicitly, and
-   //--- AgStateSave refuses while g_ag_state_loaded is false, so without this
-   //--- call a declared lock would fail to persist on every breach.
-   //--- ACTING on what it says is Stage 4's boot derivation, which ORs this
-   //--- file witness with the GV witness and the derived-history witness.
-   //--- UNTIL STAGE 4 LANDS, A PERSISTED LOCK IS NOT HONOURED AT BOOT: this
-   //--- build reads the file, reports it, and still starts in SYNCING->ACTIVE.
-   //--- That gap is recorded in ISSUES rather than papered over here.
+   //--- Lock state file. The load is required before any write can be
+   //--- legitimate: the FINAL never-loaded-never-written rule names this file
+   //--- explicitly and AgStateSave refuses while g_ag_state_loaded is false.
+   //--- What the file SAYS is acted on at the SYNCING exit, by the boot
+   //--- derivation, which ORs this file witness with the GV witness and the
+   //--- derived-history witness. It is deliberately not acted on here: a lock
+   //--- conclusion belongs after history stability, not during OnInit.
    int state_result = AgStateLoad();
    if(state_result == 0)
       AgInfo("lock state file loaded|reason=" + AgLockReasonName(g_ag_state_reason)
              + "|locked_until=" + TimeToString(g_ag_state_locked_until, TIME_DATE | TIME_SECONDS)
-             + "|NOT acted on in this build, Stage 4 adds boot derivation");
+             + "|weighed by the boot derivation at the SYNCING exit");
    else if(state_result == 1)
       AgVerbose("no lock state file, first session on this account");
    else
       AgWarn("lock state file was quarantined at load (code " + (string)state_result
-             + "); a fresh CORRUPT_STATE file was written and is NOT acted on in this build");
+             + "); a fresh CORRUPT_STATE file was written and the boot derivation"
+             " will weigh it at the SYNCING exit");
 
    double gv_halt = 0.0;
    bool   was_halted_before = (GlobalVariableGet(AgGvHaltFlag(), gv_halt) && gv_halt > 0.5);
@@ -646,6 +761,23 @@ void OnTimer()
       g_ag_last_tick_local  = TimeLocal();   // A1/A3 clock class: a liveness measure
      }
 
+   //--- GV lock mirror (Phase 2 Stage 4, design doc item 4). Rewritten from
+   //--- the authoritative in-memory lock state every tick, unconditionally,
+   //--- mirroring the mutex-heartbeat pattern directly above. That is what
+   //--- makes it SELF-HEALING against live tampering: a GV cleared through
+   //--- the terminal's Global Variables window while the EA is alive is
+   //--- restored within one tick, so no separate re-derivation is needed.
+   //--- The state FILE is deliberately not rewritten per tick; it is written
+   //--- at breach, at expiry and at corruption handling only, matching the
+   //--- halt file's event-triggered pattern. Deleting the file while the EA
+   //--- is alive and LOCKED changes nothing, since enforcement runs from
+   //--- memory and restart recovery is what the boot derivation covers.
+   if(g_owns_mutex)
+     {
+      GlobalVariableSet(AgGvLock(), (double)(long)g_ag_locked_until);
+      GlobalVariablesFlush();
+     }
+
    //--- second, in every state including SYNCING and SAFE_HALT:
    //--- proof of life (SPEC A3). A stuck guardian and a healthy one
    //--- must never look identical from outside. Renders last-known
@@ -664,9 +796,29 @@ void OnTimer()
      {
       if(AgHistoryStable(HistoryStablePolls))
         {
-         AgTransition(AG_STATE_ACTIVE, "history stable",
-                      "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls);
-         g_ag_dynamic_waiting_on = "";
+         //--- Phase 2 Stage 4: boot lock derivation at the SYNCING exit.
+         //--- The transition table's own structure is what guarantees a
+         //--- "no breach found" conclusion can never be acted on before
+         //--- stability: leaving SYNCING requires BOTH stability and no
+         //--- witness firing, so an unevaluable pass simply is not yet
+         //--- eligible to leave rather than being licensed to unlock.
+         ENUM_AG_LOCK_REASON boot_reason = AG_LOCK_NONE;
+         datetime            boot_until  = 0;
+         int derived = AgBootDerivation(boot_reason, boot_until);
+         if(derived == 2)
+           {
+            g_ag_dynamic_waiting_on = "boot derivation not evaluable, retrying";
+           }
+         else if(derived == 1)
+           {
+            AgEnterLockFromBoot(boot_reason, boot_until);
+           }
+         else
+           {
+            AgTransition(AG_STATE_ACTIVE, "history stable",
+                         "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls);
+            g_ag_dynamic_waiting_on = "";
+           }
         }
       else
          g_ag_dynamic_waiting_on = "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls;

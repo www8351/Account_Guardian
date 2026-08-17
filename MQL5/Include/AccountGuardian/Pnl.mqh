@@ -49,9 +49,42 @@ double AgDealValue(const ulong ticket)
 //| a loud stability failure and is never read as zero deals (F6):   |
 //| ok is set false and the caller must not use the return value.    |
 //+------------------------------------------------------------------+
-double AgRealized(const datetime anchor, bool &ok)
+//+------------------------------------------------------------------+
+//| THE ONE REPLAY (Phase 2 Stage 4, design doc items 1 and 3).      |
+//| Single fold over the whitelisted deals since the anchor,         |
+//| returning BOTH the realized sum and the running minimum of the   |
+//| cumulative realized. AgRealized and the derived lock witness are |
+//| the two callers, so the F12 whitelist and the Q3 per-deal        |
+//| formula exist once here and cannot drift between them, which is  |
+//| the whole reason this is a shared helper rather than a second    |
+//| loop written beside the first.                                   |
+//|                                                                  |
+//| running_min is M_n from design item 3: M_0 = 0 and               |
+//| M_k = min(M_{k-1}, R_k), monotonically non-increasing. Once the  |
+//| cumulative dips below -limit it STAYS below, no matter what      |
+//| later deals do to the final total. That is what makes a realized |
+//| loss survive a recovery: a check on current PnL alone sees the   |
+//| recovered total and no breach, while the running minimum still   |
+//| carries the dip.                                                 |
+//|                                                                  |
+//| ORDER MATTERS HERE AND ONLY HERE. A sum is order-independent, a  |
+//| running minimum is not, so the deals are sorted (DEAL_TIME,      |
+//| DEAL_TICKET) ascending per design item 1's tiebreak before the   |
+//| fold; ticket assignment reflects true broker-side sequencing     |
+//| when wall-clock seconds tie, and an intra-second dip is exactly  |
+//| the case where transient ordering changes whether it is visible. |
+//| MQL5 does not document HistoryDealGetTicket's order, so it is    |
+//| established here rather than assumed. Insertion sort is O(n^2)   |
+//| and deliberate: this runs at boot only, never per tick, and n is |
+//| one day's deals on one account.                                  |
+//|                                                                  |
+//| Failure discipline is unchanged from Phase 1 (F6): a false       |
+//| HistorySelect is a stability failure, never zero deals.          |
+//+------------------------------------------------------------------+
+double AgRealizedFold(const datetime anchor, bool &ok, double &running_min)
   {
-   ok = true;
+   ok          = true;
+   running_min = 0.0;
    if(!HistorySelect(anchor, AG_HISTORY_SELECT_TO))
      {
       ok = false;
@@ -60,19 +93,63 @@ double AgRealized(const datetime anchor, bool &ok)
              + ": treated as a stability failure, never as zero deals");
       return 0.0;
      }
-   double sum = 0.0;
-   int total = HistoryDealsTotal();
+
+   //--- collect the whitelisted deals first, so the fold can run in order
+   ulong    tickets[];
+   datetime times[];
+   int      n     = 0;
+   int      total = HistoryDealsTotal();
+   ArrayResize(tickets, total);
+   ArrayResize(times,   total);
    for(int i = 0; i < total; i++)
      {
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0)
          continue;
       long type = HistoryDealGetInteger(ticket, DEAL_TYPE);
-      if(type != DEAL_TYPE_BUY && type != DEAL_TYPE_SELL)
+      if(type != DEAL_TYPE_BUY && type != DEAL_TYPE_SELL)   // F12 whitelist
          continue;
-      sum += AgDealValue(ticket);
+      tickets[n] = ticket;
+      times[n]   = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      n++;
      }
-   return sum;
+
+   //--- (DEAL_TIME, DEAL_TICKET) ascending, insertion sort
+   for(int i = 1; i < n; i++)
+     {
+      ulong    kt = tickets[i];
+      datetime km = times[i];
+      int      j  = i - 1;
+      while(j >= 0 && (times[j] > km || (times[j] == km && tickets[j] > kt)))
+        {
+         tickets[j + 1] = tickets[j];
+         times[j + 1]   = times[j];
+         j--;
+        }
+      tickets[j + 1] = kt;
+      times[j + 1]   = km;
+     }
+
+   double cumulative = 0.0;
+   for(int i = 0; i < n; i++)
+     {
+      cumulative += AgDealValue(tickets[i]);   // Q3 per-deal formula
+      if(cumulative < running_min)
+         running_min = cumulative;
+     }
+   return cumulative;
+  }
+
+//+------------------------------------------------------------------+
+//| Phase 1's realized sum, unchanged in behaviour: it is the same   |
+//| fold with the running minimum discarded. Sorting cannot change a |
+//| sum, so every Phase 1 figure this function has ever produced is  |
+//| reproduced exactly.                                              |
+//+------------------------------------------------------------------+
+double AgRealized(const datetime anchor, bool &ok)
+  {
+   double discard_min = 0.0;
+   return AgRealizedFold(anchor, ok, discard_min);
   }
 
 //+------------------------------------------------------------------+

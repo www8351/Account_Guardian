@@ -79,6 +79,10 @@ string AgStatePath()   { return AG_FILES_DIR + "\\state_" + (string)g_ag_login +
 string AgGvHeartbeat() { return "AG_HB_" + (string)g_ag_login; }
 string AgGvInstance()  { return "AG_ID_" + (string)g_ag_login; }
 string AgGvHaltFlag()  { return "AG_HALT_" + (string)g_ag_login; }
+//--- Lock mirror (design doc item 4). Carries a bare locked_until and no
+//--- reason, which is why the GV witness defaults to DAILY_BREACH: a GV has
+//--- no CORRUPT_STATE concept to express.
+string AgGvLock()      { return "AG_LOCK_" + (string)g_ag_login; }
 
 //+------------------------------------------------------------------+
 //| FNV-1a over a string. Torn-write detector, not tamper defense:   |
