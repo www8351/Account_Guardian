@@ -6,7 +6,7 @@
 #property copyright "AccountGuardian"
 #property version   "1.00"
 #property strict
-#property description "Account-level lockout guardian. Phase 1: PnL engine, read-only. No trading calls anywhere in the build."
+#property description "Account-level lockout guardian. Phase 2: PnL engine plus lock semantics. Locks the state machine and sends no order; open positions stay open until closed by hand. No trading calls anywhere in the build."
 
 #include <AccountGuardian/Log.mqh>
 #include <AccountGuardian/Clock.mqh>
@@ -54,6 +54,48 @@ double   g_ag_last_floating        = 0.0;
 double   g_ag_last_base            = 0.0;
 double   g_ag_last_limit           = 0.0;
 double   g_ag_last_pnl             = 0.0;
+
+//--- Phase 2 Stage 3 (lock semantics). All in-memory, none persisted.
+//--- QUOTE FRESHNESS, ruling THREE 2026-08-18. Measured as a purely local
+//--- delta and never by clock arithmetic, so it cannot inherit the broker
+//--- DST peg this ledger still has open until the October harvest. This is
+//--- the A1/A3 clock class, a liveness measure and not an anchor decision,
+//--- so TimeLocal is the correct source here exactly as it is for the
+//--- proof-of-life interval.
+//---
+//--- IT NEVER GATES A DECISION. The stale quote ruling of 2026-08-18 is
+//--- explicit that the mechanism may log but may never suppress, delay or
+//--- gate a breach decision, and ruling THREE reads it only to SIZE the
+//--- consequence after the decision has already been taken. The breach
+//--- itself is declared from the frozen quote exactly as ruled.
+datetime g_ag_last_server_seen     = 0;
+datetime g_ag_last_tick_local      = 0;
+
+//--- UNRULED 2026-08-18, flagged rather than presented as ratified: ruling
+//--- THREE names the frozen-clock CONDITION as the trigger but does not name
+//--- a threshold. The four-part proposal named 120 s, and its parts three and
+//--- four were declared MOOT by the stale quote ruling only in their role as
+//--- a GATE, which is not the role here. 120 s cannot false-fire on XAUUSD in
+//--- an open session where ticks arrive many times a second, and it catches
+//--- the measured 62-minute break within two LIFE lines. Carries an ISSUES
+//--- entry; no session may cite this value as ruled.
+#define AG_QUOTE_FROZEN_SECONDS 120
+
+//--- Q6 input-change-while-locked witness. The two limit inputs as they read
+//--- at the moment of breach, held in memory only. NOT persisted: the state
+//--- file is charter-constrained to lock state (Amendment 2a FINAL) and the
+//--- snapshot it does carry is limit and base, which is what Q6 requires for
+//--- judging the window. These two exist solely so a change can be NAMED in
+//--- the WARN; enforcement never reads them.
+double   g_ag_locked_in_percent    = 0.0;
+double   g_ag_locked_in_currency   = 0.0;
+datetime g_ag_last_inputchg_warn   = 0;   // cadence, local clock
+//--- False until a lock is declared in THIS session's image. Without it, a
+//--- Stage 4 boot that restores a lock from the file witness would compare
+//--- live inputs against a default-constructed 0.0 and emit a change WARN
+//--- that names a change nobody made. Stage 4 seeds the two values above
+//--- from the live inputs at restore and sets this true.
+bool     g_ag_lock_inputs_captured = false;
 
 //+------------------------------------------------------------------+
 //| Single arming point for the timer, return value checked and      |
@@ -103,6 +145,180 @@ void AgRefreshBanner()
       pnl = (g_ag_degraded ? "DEGRADED: " : "")
           + DoubleToString(g_ag_last_pnl, 2) + " vs -" + DoubleToString(g_ag_last_limit, 2);
    AgBanner(AgStateName(g_ag_state), AgLockReasonName(g_ag_lock_reason), g_ag_locked_until, pnl);
+  }
+
+//+------------------------------------------------------------------+
+//| Is the server clock frozen right now? Ruling THREE's trigger.    |
+//| Pure read of the local tick-age measure, no side effects, and it |
+//| is never consulted before a breach decision, only after one.     |
+//+------------------------------------------------------------------+
+bool AgQuoteFrozen()
+  {
+   if(g_ag_last_tick_local == 0)
+      return false;   // nothing observed yet this session: never claim frozen
+   return (TimeLocal() - g_ag_last_tick_local) >= AG_QUOTE_FROZEN_SECONDS;
+  }
+
+//+------------------------------------------------------------------+
+//| THE locked_until BOUNDS, all three rulings of 2026-08-18 in one  |
+//| place so the composition order is stated once and cannot drift.  |
+//|                                                                  |
+//| Q1 (FINAL) is the base: locked_until = next day anchor.          |
+//|                                                                  |
+//| RULING THREE adds a floor for ONE named condition. A breach      |
+//| declared while TimeCurrent is FROZEN takes the anchor AFTER the  |
+//| imminent one, a full trading day. Without it the measured case   |
+//| is enforcement in name only: the clock froze 62 minutes straight |
+//| into the 01:00 anchor on the night of 2026-08-13, so a breach at |
+//| 00:58 would lock until 01:00 and the new day would open carrying |
+//| the same loss with the lock already spent.                       |
+//|                                                                  |
+//| RULING FOUR adds a second floor, always: never below             |
+//| AgNextDayAnchor of Q8's high-water latch, which never recedes by |
+//| construction and so stays monotone even while the clock steps    |
+//| backward. Without it a breach declared after a rewind computes   |
+//| an already-past locked_until and unlocks instantly and silently. |
+//|                                                                  |
+//| THE 2026-07-30 CLAMP IS DELIBERATELY ABSENT HERE. The precedence |
+//| ruling of 2026-08-18 gives each bound a domain: the clamp is an  |
+//| upper bound on WITNESS-SUPPLIED values against a forged or       |
+//| inflated one, and a value the guardian computes for itself takes |
+//| the floor alone. See AgLockedUntilFromWitness for the other      |
+//| domain and for the order the two apply in.                       |
+//+------------------------------------------------------------------+
+datetime AgLockedUntilComputed(const datetime breach_time, const bool quote_frozen)
+  {
+   datetime until = AgNextDayAnchor(breach_time);              // Q1
+   if(quote_frozen)
+      until = AgNextDayAnchor(until);                          // ruling THREE
+   datetime latch_floor = AgNextDayAnchor(g_ag_high_anchor);   // ruling FOUR
+   if(g_ag_high_anchor_seeded && until < latch_floor)
+      until = latch_floor;
+   return until;
+  }
+
+//+------------------------------------------------------------------+
+//| Stage 4's entry point, written here so the two domains sit side  |
+//| by side. NOT REACHED IN STAGE 3: no witness is read yet.         |
+//|                                                                  |
+//| Order per the precedence ruling of 2026-08-18, quoted: "for a    |
+//| witness supplied value the two apply in order, clamp first as    |
+//| the upper bound, floor second as the lower bound, so the floor   |
+//| wins any conflict by being applied last". Under a rewound clock  |
+//| the clamp's ceiling sits BELOW the floor, and applying the floor |
+//| last is exactly what makes the floor win that case.              |
+//+------------------------------------------------------------------+
+datetime AgLockedUntilFromWitness(const datetime raw)
+  {
+   datetime until = raw;
+   datetime ceiling = AgNextDayAnchor(AgServerNow());          // clamp, 2026-07-30
+   if(until > ceiling)
+      until = ceiling;
+   datetime latch_floor = AgNextDayAnchor(g_ag_high_anchor);   // ruling FOUR, applied last
+   if(g_ag_high_anchor_seeded && until < latch_floor)
+      until = latch_floor;
+   return until;
+  }
+
+//+------------------------------------------------------------------+
+//| Declare the lock. Q6 (FINAL): limit and base are snapshotted     |
+//| here and the locked window is judged by that snapshot, never by  |
+//| live inputs. Ruling TWO (FINAL 2026-08-18): the state machine    |
+//| locks and NO ORDER IS SENT. Positions stay open until the owner  |
+//| closes them by hand, the floating loss keeps moving, and that is |
+//| sanctioned rather than a defect. Sweep, flatten and pending      |
+//| deletion are Phase 3 and nothing here may reach for them.        |
+//+------------------------------------------------------------------+
+void AgDeclareLock(const datetime breach_time, const double limit, const double base,
+                   const double pnl, const double realized, const double floating)
+  {
+   bool     frozen = AgQuoteFrozen();
+   datetime until  = AgLockedUntilComputed(breach_time, frozen);
+
+   g_ag_lock_reason      = AG_LOCK_DAILY_BREACH;
+   g_ag_locked_until     = until;
+   g_ag_locked_in_percent  = DailyLossPercent;
+   g_ag_locked_in_currency = DailyLossCurrency;
+   g_ag_lock_inputs_captured = true;
+
+   AgStateSetBreach(until, breach_time, limit, base);
+   if(!AgStateSave())
+      AgAlertEvent("LOCK DECLARED BUT THE STATE FILE WAS NOT WRITTEN: the lock holds in memory"
+                   " for this session and will not survive a restart from the file witness");
+
+   AgInfo("breach arithmetic|realized=" + DoubleToString(realized, 2)
+          + "|floating=" + DoubleToString(floating, 2) + "|base=" + DoubleToString(base, 2)
+          + "|limit=" + DoubleToString(limit, 2) + "|pnl=" + DoubleToString(pnl, 2));
+   AgInfo("lock bounds|breach_time=" + TimeToString(breach_time, TIME_DATE | TIME_SECONDS)
+          + "|quote_frozen=" + (frozen ? "1" : "0")
+          + "|latch_floor=" + TimeToString(AgNextDayAnchor(g_ag_high_anchor), TIME_DATE | TIME_SECONDS)
+          + "|locked_until=" + TimeToString(until, TIME_DATE | TIME_SECONDS));
+
+   AgTransition(AG_STATE_LOCKED, "DAILY_BREACH",
+                "pnl=" + DoubleToString(pnl, 2) + "|limit=" + DoubleToString(limit, 2)
+                + "|locked_until=" + TimeToString(until, TIME_DATE | TIME_SECONDS));
+   AgAlertEvent("DAILY_BREACH: account LOCKED until "
+                + TimeToString(until, TIME_DATE | TIME_SECONDS)
+                + " (pnl=" + DoubleToString(pnl, 2) + " limit=" + DoubleToString(limit, 2)
+                + "). Phase 2 locks the state machine and sends no order:"
+                " open positions stay open until you close them by hand.");
+   g_ag_dynamic_waiting_on = "";
+  }
+
+//+------------------------------------------------------------------+
+//| LOCKED-state dispatch. EXPIRY IS THE ONLY UNLOCK PATH and the    |
+//| comparison is TimeCurrent >= locked_until, per Q7 (FINAL) which  |
+//| makes TimeCurrent the only permitted clock in an expiry          |
+//| decision. Nothing else here may leave LOCKED: no input, no       |
+//| absence of evidence, no reconnect, no operator convenience.      |
+//|                                                                  |
+//| A frozen or backward-stepping clock therefore DELAYS an unlock,  |
+//| which errs locked and needs no special case. The Friday breach   |
+//| that outlives its computed expiry by about 48 hours across the   |
+//| weekend freeze is that behaviour working, not a defect.          |
+//+------------------------------------------------------------------+
+void AgEvaluateLocked()
+  {
+   //--- Q6: an input change while locked is logged loudly. The snapshot
+   //--- still governs and nothing about enforcement moves; this is a
+   //--- witness, not a control path.
+   if(g_ag_lock_inputs_captured
+      && (DailyLossPercent != g_ag_locked_in_percent || DailyLossCurrency != g_ag_locked_in_currency))
+     {
+      datetime now_local = TimeLocal();
+      if(g_ag_last_inputchg_warn == 0
+         || now_local - g_ag_last_inputchg_warn >= AG_LIFE_INTERVAL_SECONDS)
+        {
+         AgWarn("input changed while LOCKED and is being IGNORED (Q6): percent "
+                + DoubleToString(g_ag_locked_in_percent, 2) + "->" + DoubleToString(DailyLossPercent, 2)
+                + ", currency " + DoubleToString(g_ag_locked_in_currency, 2) + "->"
+                + DoubleToString(DailyLossCurrency, 2)
+                + "; the locked window is judged by the breach snapshot limit="
+                + DoubleToString(g_ag_state_limit_snap, 2) + " base="
+                + DoubleToString(g_ag_state_base_snap, 2));
+         g_ag_last_inputchg_warn = now_local;
+        }
+     }
+
+   datetime now_server = AgServerNow();
+   if(now_server >= g_ag_locked_until)
+     {
+      AgInfo("lock expired|locked_until=" + TimeToString(g_ag_locked_until, TIME_DATE | TIME_SECONDS)
+             + "|server=" + TimeToString(now_server, TIME_DATE | TIME_SECONDS));
+      g_ag_lock_reason  = AG_LOCK_NONE;
+      g_ag_locked_until = 0;
+      AgStateResetModel();
+      if(!AgStateSave())
+         AgWarn("lock expiry was NOT persisted: the state file still names the expired lock,"
+                " which is self-correcting on read since a past locked_until reads as not-locked");
+      //--- Re-entering ACTIVE re-derives everything from history; nothing is
+      //--- carried across the boundary. The Q9 baseline is deliberately reset
+      //--- so the first ACTIVE pass cannot inherit a stale deal count.
+      g_ag_last_deal_count      = -1;
+      g_ag_breach_deferred_once = false;
+      AgTransition(AG_STATE_ACTIVE, "lock expired", "");
+      g_ag_dynamic_waiting_on = "";
+     }
   }
 
 //+------------------------------------------------------------------+
@@ -223,18 +439,18 @@ void AgEvaluateActive()
         }
       else
         {
-         datetime now_local = TimeLocal();
-         if(g_ag_last_breach_alert == 0 || now_local - g_ag_last_breach_alert >= AG_LIFE_INTERVAL_SECONDS)
-           {
-            AgAlertEvent("DAILY_BREACH (interim posture, no enforcement in Phase 1): pnl="
-                         + DoubleToString(pnl, 2) + " limit=" + DoubleToString(limit, 2)
-                         + " anchor=" + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS));
-            g_ag_last_breach_alert = now_local;
-           }
-         AgInfo("breach arithmetic|realized=" + DoubleToString(realized, 2)
-                + "|floating=" + DoubleToString(floating, 2) + "|base=" + DoubleToString(base, 2)
-                + "|limit=" + DoubleToString(limit, 2) + "|pnl=" + DoubleToString(pnl, 2));
+         //--- PHASE 2 STAGE 3 replaces the Q2 interim posture here. Phase 1
+         //--- shouted and stayed ACTIVE because it had no lock to take; this
+         //--- build takes the lock. The Q9 deferral above is untouched and
+         //--- still bounds the delay at exactly one pass.
+         //--- The breach time is TimeCurrent, per Q7 (FINAL): it feeds
+         //--- AgNextDayAnchor and no other clock may reach an anchor
+         //--- decision. It is read once here so every bound below and the
+         //--- persisted breach_time all refer to the same instant.
          g_ag_breach_deferred_once = false;
+         g_ag_last_deal_count      = current_count;
+         AgDeclareLock(AgServerNow(), limit, base, pnl, realized, floating);
+         return;   // LOCKED from this pass on; nothing further is ACTIVE work
         }
      }
    else
@@ -281,7 +497,7 @@ int OnInit()
   {
    g_ag_verbosity = LogVerbosity;
    g_ag_login     = AccountInfoInteger(ACCOUNT_LOGIN);
-   AgInfo("init|build=Phase1|account=" + (string)g_ag_login + "|server=" + AccountInfoString(ACCOUNT_SERVER));
+   AgInfo("init|build=Phase2|account=" + (string)g_ag_login + "|server=" + AccountInfoString(ACCOUNT_SERVER));
 
    //--- core config validation (Q4): refuse to run, visibly
    string why = "";
@@ -334,6 +550,27 @@ int OnInit()
    int load_result = AgHaltLoad();
    if(load_result == 1)
       AgVerbose("no halt file, first session on this account");
+
+   //--- Lock state file (Phase 2 Stage 3). LOADED, DELIBERATELY NOT ACTED ON.
+   //--- The load is required before any write can be legitimate: the FINAL
+   //--- never-loaded-never-written rule names this file explicitly, and
+   //--- AgStateSave refuses while g_ag_state_loaded is false, so without this
+   //--- call a declared lock would fail to persist on every breach.
+   //--- ACTING on what it says is Stage 4's boot derivation, which ORs this
+   //--- file witness with the GV witness and the derived-history witness.
+   //--- UNTIL STAGE 4 LANDS, A PERSISTED LOCK IS NOT HONOURED AT BOOT: this
+   //--- build reads the file, reports it, and still starts in SYNCING->ACTIVE.
+   //--- That gap is recorded in ISSUES rather than papered over here.
+   int state_result = AgStateLoad();
+   if(state_result == 0)
+      AgInfo("lock state file loaded|reason=" + AgLockReasonName(g_ag_state_reason)
+             + "|locked_until=" + TimeToString(g_ag_state_locked_until, TIME_DATE | TIME_SECONDS)
+             + "|NOT acted on in this build, Stage 4 adds boot derivation");
+   else if(state_result == 1)
+      AgVerbose("no lock state file, first session on this account");
+   else
+      AgWarn("lock state file was quarantined at load (code " + (string)state_result
+             + "); a fresh CORRUPT_STATE file was written and is NOT acted on in this build");
 
    double gv_halt = 0.0;
    bool   was_halted_before = (GlobalVariableGet(AgGvHaltFlag(), gv_halt) && gv_halt > 0.5);
@@ -393,6 +630,22 @@ void OnTimer()
    if(g_owns_mutex)
       AgMutexRefresh();
 
+   //--- Quote-freshness measure (Phase 2 Stage 3, ruling THREE 2026-08-18).
+   //--- Deliberately here rather than inside AgEvaluateActive, for two
+   //--- reasons. It must keep measuring in EVERY state, including LOCKED,
+   //--- since ruling THREE reads it at a breach that may follow any state
+   //--- history. And AgEvaluateActive's pre-breach-tail region is required
+   //--- to stay byte-identical across this stage, which a tracker inserted
+   //--- there would have broken for no gain.
+   //--- Purely local delta, never clock arithmetic, so it inherits nothing
+   //--- from the unmeasured broker DST peg. Records only; gates nothing.
+   datetime server_now_tick = AgServerNow();
+   if(server_now_tick != g_ag_last_server_seen)
+     {
+      g_ag_last_server_seen = server_now_tick;
+      g_ag_last_tick_local  = TimeLocal();   // A1/A3 clock class: a liveness measure
+     }
+
    //--- second, in every state including SYNCING and SAFE_HALT:
    //--- proof of life (SPEC A3). A stuck guardian and a healthy one
    //--- must never look identical from outside. Renders last-known
@@ -421,9 +674,7 @@ void OnTimer()
    else if(g_ag_state == AG_STATE_ACTIVE)
       AgEvaluateActive();
    else if(g_ag_state == AG_STATE_LOCKED)
-     {
-      // Phase 2 adds expiry and lock-witness reconciliation here.
-     }
+      AgEvaluateLocked();   // Phase 2 Stage 3: expiry only. Stage 4 adds witness reconciliation.
 
    // Phase 3 adds: sweep acceleration on OnTradeTransaction.
   }
