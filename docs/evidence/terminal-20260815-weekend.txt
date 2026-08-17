@@ -1,0 +1,8 @@
+PM	0	00:32:18.636	Network	'1200252169': scanning network for access points
+RK	0	00:32:27.106	Network	'1200252169': scanning network finished
+IO	0	06:32:19.094	Network	'1200252169': scanning network for access points
+PI	0	06:32:27.331	Network	'1200252169': scanning network finished
+GN	0	12:32:20.187	Network	'1200252169': scanning network for access points
+GG	0	12:32:28.826	Network	'1200252169': scanning network finished
+EP	0	18:32:21.364	Network	'1200252169': scanning network for access points
+IE	0	18:32:29.632	Network	'1200252169': scanning network finished

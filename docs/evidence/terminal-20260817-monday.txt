@@ -1,0 +1,2 @@
+CM	0	03:51:15.050	Network	'1200252169': scanning network for access points
+QK	0	03:51:23.224	Network	'1200252169': scanning network finished
