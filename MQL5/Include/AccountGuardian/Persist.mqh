@@ -1,21 +1,39 @@
 //+------------------------------------------------------------------+
 //| AccountGuardian - Persist.mqh                                    |
-//| Atomic file writes, checksums, halt file (Amendment A1),         |
-//| single-instance mutex heartbeat. SPEC v0.1 sections 3 and 9.     |
+//| Atomic file writes, checksums, halt file (Amendment A1), lock    |
+//| state file (Phase 2 Stage 2, design doc item 5), single-instance |
+//| mutex heartbeat. SPEC v0.1 sections 3 and 9.                     |
 //| Clock exemption (A1): session timestamps and the mutex heartbeat |
 //| use TimeLocal; TimeCurrent freezes in dead markets, which would  |
 //| fake staleness and make crash timestamps unrecordable offline.   |
+//| THE A1 EXEMPTION STOPS AT THE HALT FILE AND THE MUTEX. The lock  |
+//| state file's locked_until and breach_time are Q7 (FINAL) fields  |
+//| and use TimeCurrent through AgServerNow exclusively; copying the |
+//| TimeLocal pattern below into them by analogy is the one mistake  |
+//| the design doc names in advance.                                 |
 //| No trade calls in this file (static-structure rule, SPEC 1).     |
 //+------------------------------------------------------------------+
 #ifndef AG_PERSIST_MQH
 #define AG_PERSIST_MQH
 
 #include <AccountGuardian/Log.mqh>
+#include <AccountGuardian/Clock.mqh>
+#include <AccountGuardian/State.mqh>
 
 #define AG_FILES_DIR            "AccountGuardian"
 #define AG_HALT_FORMAT_VERSION  1
+#define AG_STATE_FORMAT_VERSION 1
 #define AG_MAX_SESSIONS         32
 #define AG_MUTEX_STALE_SECONDS  10
+
+//--- Money fields are persisted at 8 decimals, not 2. The limit snapshot
+//--- is a derived value (base * percent / 100) that carries more precision
+//--- than the cent the banner prints: base 1985.97 at 5 percent is 99.2985,
+//--- displayed 99.30. Q6 says the locked window is judged by the snapshot,
+//--- so rounding it on the way to disk would change the enforced limit on
+//--- every restart. The 0.01 epsilon of 2026-07-30 is a comparison rule,
+//--- not a storage format.
+#define AG_STATE_MONEY_DIGITS   8
 
 // --- halt file in-memory model -------------------------------------
 long     g_ag_login = 0;
@@ -38,7 +56,26 @@ bool     g_ag_halt_loaded = false;
 // --- mutex ----------------------------------------------------------
 double   g_ag_instance_id = 0.0;
 
+// --- lock state file in-memory model (design doc item 5) -------------
+// Its own model, mirroring the halt file's, rather than writing State.mqh's
+// live globals straight to disk. Stage 3 copies between the two at the one
+// point that declares a lock; keeping them separate is what lets this file
+// be loaded, quarantined and reset without touching the running state
+// machine, which is exactly what the corrupt branch below has to do.
+ENUM_AG_LOCK_REASON g_ag_state_reason        = AG_LOCK_NONE;
+datetime            g_ag_state_locked_until  = 0;   // Q7: TimeCurrent basis
+datetime            g_ag_state_breach_time   = 0;   // Q7: TimeCurrent basis
+double              g_ag_state_limit_snap    = 0.0; // Q6 snapshot
+double              g_ag_state_base_snap     = 0.0; // Q6 snapshot
+
+// Same obligation as g_ag_halt_loaded, and FINAL in its own right since
+// 2026-07-29: "a persistence model that was never loaded is never written",
+// stated there as binding beyond the halt file and naming the lock state
+// file explicitly.
+bool     g_ag_state_loaded = false;
+
 string AgHaltPath()    { return AG_FILES_DIR + "\\halt_" + (string)g_ag_login + ".dat"; }
+string AgStatePath()   { return AG_FILES_DIR + "\\state_" + (string)g_ag_login + ".dat"; }
 string AgGvHeartbeat() { return "AG_HB_" + (string)g_ag_login; }
 string AgGvInstance()  { return "AG_ID_" + (string)g_ag_login; }
 string AgGvHaltFlag()  { return "AG_HALT_" + (string)g_ag_login; }
@@ -257,6 +294,256 @@ void AgHaltSetFlag(const string reason)
    g_ag_halt_flag   = true;
    g_ag_halt_reason = reason;
    g_ag_halt_time   = TimeLocal();   // A1 clock exemption
+  }
+
+//+------------------------------------------------------------------+
+//| LOCK STATE FILE (Phase 2 Stage 2, design doc item 5, SPEC 3)     |
+//|                                                                  |
+//| Charter-constrained to lock state only. SAFE_HALT evidence lives |
+//| in the halt file and does not belong here (Amendment 2a FINAL:   |
+//| "the state file is charter-constrained to lock state only and    |
+//| SAFE_HALT is explicitly not a lock"). No freshness field either: |
+//| the stale quote ruling of 2026-08-18 makes a snapshot taken from |
+//| a frozen quote valid BY DESIGN, so there is nothing to record.   |
+//| No floating baseline either, per question FIVE of the same date. |
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//| A free quarantine name, never one that would overwrite an        |
+//| existing quarantine.                                             |
+//|                                                                  |
+//| The design doc says to reuse the halt file's plain ".bad" move.  |
+//| Deviating deliberately, and the ground is a FINAL entry that     |
+//| outranks the convenience: "lock artifacts are never deleted,     |
+//| only quarantined" (2026-07-29), which a FileMove FILE_REWRITE    |
+//| onto an existing .bad would silently break on the second         |
+//| corruption. The halt file's own single-name pattern is left      |
+//| exactly as it is; SAFE_HALT evidence is not a lock artifact and  |
+//| that path is out of Stage 2's scope.                             |
+//+------------------------------------------------------------------+
+string AgStateQuarantinePath(const string path)
+  {
+   string candidate = path + ".bad";
+   if(!FileIsExist(candidate))
+      return candidate;
+   for(int i = 2; i < 1000; i++)
+     {
+      candidate = path + ".bad." + (string)i;
+      if(!FileIsExist(candidate))
+         return candidate;
+     }
+   return path + ".bad.overflow";
+  }
+
+//+------------------------------------------------------------------+
+//| Serialize the lock state model. Checksum line last, same shape   |
+//| as AgHaltSerialize so the two read alike.                        |
+//| Magic is AGSTATE, deliberately distinct from AGHALT, so the two  |
+//| formats can never cross-read even if the paths were swapped.     |
+//+------------------------------------------------------------------+
+string AgStateSerialize()
+  {
+   string body = "AGSTATE|" + (string)AG_STATE_FORMAT_VERSION + "|" + (string)g_ag_login + "\n";
+   body += "L|" + (string)(int)g_ag_state_reason
+           + "|" + (string)((long)g_ag_state_locked_until)
+           + "|" + (string)((long)g_ag_state_breach_time) + "\n";
+   body += "N|" + DoubleToString(g_ag_state_limit_snap, AG_STATE_MONEY_DIGITS)
+           + "|" + DoubleToString(g_ag_state_base_snap, AG_STATE_MONEY_DIGITS) + "\n";
+   body += "C|" + (string)AgChecksum(body) + "\n";
+   return body;
+  }
+
+//+------------------------------------------------------------------+
+//| Write the lock state file. Refuses loudly, never silently, if    |
+//| the model was never loaded (FINAL 2026-07-29, binding on this    |
+//| file by name). Mirrors the OnDeinit gate on the halt file.       |
+//+------------------------------------------------------------------+
+bool AgStateSave()
+  {
+   if(!g_ag_state_loaded)
+     {
+      AgWarn("state file NOT written: the lock state model was never loaded this session,"
+             " so writing it would overwrite a real lock with a default-constructed empty one");
+      return false;
+     }
+   return AgAtomicWrite(AgStatePath(), AgStateSerialize());
+  }
+
+void AgStateResetModel()
+  {
+   g_ag_state_reason       = AG_LOCK_NONE;
+   g_ag_state_locked_until = 0;
+   g_ag_state_breach_time  = 0;
+   g_ag_state_limit_snap   = 0.0;
+   g_ag_state_base_snap    = 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Q6 (FINAL): at breach, limit and base are snapshotted here and   |
+//| the locked window is judged by the snapshot, never by live       |
+//| inputs. Model mutator only, no I/O, mirroring AgHaltSetFlag.     |
+//| Both datetimes are TimeCurrent-basis values supplied by the      |
+//| caller; this function reads no clock at all, which is what keeps |
+//| the A1 TimeLocal exemption out of Q7's fields.                   |
+//+------------------------------------------------------------------+
+void AgStateSetBreach(const datetime locked_until, const datetime breach_time,
+                      const double limit_snapshot, const double base_snapshot)
+  {
+   g_ag_state_reason       = AG_LOCK_DAILY_BREACH;
+   g_ag_state_locked_until = locked_until;
+   g_ag_state_breach_time  = breach_time;
+   g_ag_state_limit_snap   = limit_snapshot;
+   g_ag_state_base_snap    = base_snapshot;
+  }
+
+//+------------------------------------------------------------------+
+//| CORRUPT_STATE carries no snapshots: there was no breach          |
+//| computation behind it, so limit and base are unset rather than   |
+//| zero-as-a-value (design doc item 5, "unset/0 for CORRUPT_STATE").|
+//+------------------------------------------------------------------+
+void AgStateSetCorrupt(const datetime locked_until)
+  {
+   g_ag_state_reason       = AG_LOCK_CORRUPT_STATE;
+   g_ag_state_locked_until = locked_until;
+   g_ag_state_breach_time  = 0;
+   g_ag_state_limit_snap   = 0.0;
+   g_ag_state_base_snap    = 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Quarantine the current file, reset the model to CORRUPT_STATE,   |
+//| and write a fresh valid file. Shared by the corrupt branch and   |
+//| the login-mismatch branch, which the 2026-07-30 FINAL ruling     |
+//| makes the same outcome.                                          |
+//|                                                                  |
+//| The fresh write is legitimate under never-loaded-never-written   |
+//| because g_ag_state_loaded was set true earlier in this same      |
+//| call: this is the "reset after quarantine" deliberate            |
+//| initialization branch, exactly as AgHaltLoad already does it.    |
+//|                                                                  |
+//| locked_until is computed NOW from AgServerNow and is never read  |
+//| back from the failed file, which is the SPEC's own explicit rule |
+//| and the reason a corrupt file cannot dictate its own lock        |
+//| window. On a later restart still inside that window this fresh   |
+//| file is itself valid and loads cleanly, so there is no           |
+//| re-corruption loop.                                              |
+//+------------------------------------------------------------------+
+int AgStateQuarantine(const string path, const int code, const string why)
+  {
+   string bad = AgStateQuarantinePath(path);
+   if(!FileMove(path, 0, bad, FILE_REWRITE))
+      AgWarn("state file quarantine move FAILED onto " + bad + ", error " + (string)GetLastError()
+             + "; the fresh CORRUPT_STATE file below will overwrite it in place");
+   AgStateSetCorrupt(AgNextDayAnchor(AgServerNow()));
+   AgWarn("state file " + why + ", quarantined as " + bad
+          + ", locking via CORRUPT_STATE until "
+          + TimeToString(g_ag_state_locked_until, TIME_DATE | TIME_SECONDS)
+          + " and writing a fresh file");
+   AgStateSave();
+   return code;
+  }
+
+//+------------------------------------------------------------------+
+//| Load the lock state file.                                        |
+//| Returns: 0 = loaded, 1 = missing, 2 = corrupt, 3 = login         |
+//| mismatch. 2 and 3 are handled IDENTICALLY per the FINAL ruling   |
+//| of 2026-07-30 that a valid file carrying a foreign login is      |
+//| CORRUPT_STATE-equivalent; they are returned distinctly only so   |
+//| the caller can say which one happened in the journal.            |
+//|                                                                  |
+//| Corrupt and mismatch both: quarantine, loud WARN, reset the      |
+//| model to CORRUPT_STATE with locked_until = next day anchor       |
+//| computed NOW, and write that fresh file. Errs locked and loud.   |
+//|                                                                  |
+//| Missing is NOT corrupt and NOT trusted as unlocked: the model    |
+//| defaults to NONE/0 and the OR-of-three-witnesses formula still   |
+//| checks GV and derived history independently (design doc item 4). |
+//+------------------------------------------------------------------+
+int AgStateLoad()
+  {
+   AgStateResetModel();
+
+   // Set before the file-exists check, exactly where g_ag_halt_loaded sits.
+   // Every exit below leaves a deliberately initialized model: loaded from a
+   // valid file, empty because no file exists, or reset after quarantine.
+   // All three are legitimate to persist; only never-loaded is not.
+   g_ag_state_loaded = true;
+
+   string path = AgStatePath();
+   if(!FileIsExist(path))
+      return 1;
+
+   int handle = FileOpen(path, FILE_READ | FILE_TXT | FILE_ANSI);
+   if(handle == INVALID_HANDLE)
+     {
+      AgWarn("state file exists but cannot be opened, error " + (string)GetLastError());
+      return AgStateQuarantine(path, 2, "cannot be opened");
+     }
+
+   string body = "";
+   string checksum_line = "";
+   bool ok = false;
+   while(!FileIsEnding(handle))
+     {
+      string line = FileReadString(handle);
+      if(StringFind(line, "C|") == 0)
+        {
+         checksum_line = line;
+         ok = true;
+         break;
+        }
+      body += line + "\n";
+     }
+   FileClose(handle);
+
+   bool valid = ok && (checksum_line == "C|" + (string)AgChecksum(body));
+   long file_login = 0;
+   if(valid)
+     {
+      string lines[];
+      int count = StringSplit(body, '\n', lines);
+      string header[];
+      if(count < 2
+         || StringSplit(lines[0], '|', header) < 3
+         || header[0] != "AGSTATE"
+         || header[1] != (string)AG_STATE_FORMAT_VERSION)
+         valid = false;
+      else
+        {
+         file_login = StringToInteger(header[2]);
+         for(int i = 1; i < count; i++)
+           {
+            string fields[];
+            if(StringSplit(lines[i], '|', fields) < 2)
+               continue;
+            if(fields[0] == "L" && ArraySize(fields) >= 4)
+              {
+               g_ag_state_reason       = (ENUM_AG_LOCK_REASON)(int)StringToInteger(fields[1]);
+               g_ag_state_locked_until = (datetime)StringToInteger(fields[2]);
+               g_ag_state_breach_time  = (datetime)StringToInteger(fields[3]);
+              }
+            else if(fields[0] == "N" && ArraySize(fields) >= 3)
+              {
+               g_ag_state_limit_snap = StringToDouble(fields[1]);
+               g_ag_state_base_snap  = StringToDouble(fields[2]);
+              }
+           }
+        }
+     }
+
+   if(!valid)
+      return AgStateQuarantine(path, 2, "failed checksum or does not parse");
+
+   //--- A file that is internally valid but belongs to a different account.
+   //--- Distinct from the checksum check by design: this project has already
+   //--- been bitten once by foreign-project residue sitting at an expected
+   //--- path (2026-07-29 residue finding).
+   if(file_login != g_ag_login)
+      return AgStateQuarantine(path, 3,
+                               "carries login " + (string)file_login
+                               + " but this account is " + (string)g_ag_login);
+
+   return 0;
   }
 
 //+------------------------------------------------------------------+
