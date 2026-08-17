@@ -99,6 +99,17 @@ datetime g_ag_last_inputchg_warn   = 0;   // cadence, local clock
 //--- from the live inputs at restore and sets this true.
 bool     g_ag_lock_inputs_captured = false;
 
+//--- Phase 2 Stage 6 (observability). EVERY GLOBAL BELOW IS WRITE-BY-THE-
+//--- TIMER, READ-BY-THE-LOGGER, AND READ BY NOTHING ELSE. That is not a
+//--- convention, it is the stage's own static acceptance row: question SIX
+//--- ships these as logging that may never suppress, delay or gate a
+//--- decision, and a grep proving no decision path reads them is what makes
+//--- that checkable rather than asserted. They are deliberately kept
+//--- separate from g_ag_degraded, which the Q10 gate sets and the numbers
+//--- field reads, precisely so the two cannot be confused.
+bool     g_ag_obs_connected        = true;    // TERMINAL_CONNECTED, sampled every tick
+bool     g_ag_obs_resync_prev      = false;   // edge detector for the RESYNC lines
+
 //+------------------------------------------------------------------+
 //| Single arming point for the timer, return value checked and      |
 //| logged. A timer that silently fails to arm freezes the mutex     |
@@ -253,12 +264,21 @@ int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out)
    //--- untouched, fully defended by history: the live limit equals the
    //--- original when nothing was tampered with. Deletion COMBINED with input
    //--- inflation is the accepted residual and is not closed here.
+   //--- THE CASCADE, three tiers in this order: snapshot, then floor, then
+   //--- live. Tier 2 is the ratchet fold-in ratified 2026-08-18: with no
+   //--- snapshot to apply, a valid SAME-DAY floor still tightens the
+   //--- comparison, which is what stops file-plus-GV deletion from also
+   //--- discarding the day's accumulated tightening. A floor from a prior day
+   //--- is stale and AgFloorEffectiveLimit declines it.
    bool   have_snapshot = (g_ag_state_reason == AG_LOCK_DAILY_BREACH
                            && g_ag_state_locked_until > now
                            && g_ag_state_limit_snap > 0.0);
-   double limit_cmp = have_snapshot
-                      ? g_ag_state_limit_snap
-                      : AgLimitCurrency(base, DailyLossPercent, DailyLossCurrency);
+   double live_limit = AgLimitCurrency(base, DailyLossPercent, DailyLossCurrency);
+   double limit_cmp;
+   if(have_snapshot)
+      limit_cmp = g_ag_state_limit_snap;                          // tier 1
+   else
+      limit_cmp = AgFloorEffectiveLimit(live_limit, anchor);      // tier 2, else tier 3
 
    double floating = AgFloating();
    bool disjunct_live   = (realized + floating <= -limit_cmp + AG_PNL_EPSILON);
@@ -273,7 +293,8 @@ int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out)
              + "|floating=" + DoubleToString(floating, 2)
              + "|running_min=" + DoubleToString(running_min, 2)
              + "|limit_cmp=" + DoubleToString(limit_cmp, 2)
-             + "|snapshot=" + (have_snapshot ? "1" : "0")
+             + "|tier=" + (have_snapshot ? "snapshot"
+                                          : (limit_cmp < live_limit ? "floor" : "live"))
              + "|bounded=" + TimeToString(u, TIME_DATE | TIME_SECONDS));
       if(!fired || u > until_out)   // strictest wins
         {
@@ -439,6 +460,59 @@ void AgEvaluateLocked()
   }
 
 //+------------------------------------------------------------------+
+//| OBSERVABILITY (Phase 2 Stage 6, question SIX FINAL 2026-08-18).  |
+//| EVERYTHING BELOW IS LOGGING. It gates nothing, suppresses        |
+//| nothing and delays nothing, which is the ruling's own wording    |
+//| and is the property the stage's static acceptance row checks by  |
+//| grepping that no decision path reads any global declared for it. |
+//+------------------------------------------------------------------+
+
+//--- Is the guarded symbol's QUOTE session open right now? This is the
+//--- market-closed distinction the four-part proposal called part two, and
+//--- it is the difference between a marker that means something and one that
+//--- fires every weekend and every nightly break until nobody reads it.
+//--- Reads SymbolInfoSessionQuote, never clock arithmetic against a peg this
+//--- project has not yet measured. If the symbol reports no quote session at
+//--- all the answer is OPEN, never closed: claiming "market closed" without
+//--- evidence would explain away a genuinely frozen feed.
+bool AgQuoteSessionOpen()
+  {
+   MqlDateTime dt;
+   TimeToStruct(AgServerNow(), dt);
+   ENUM_DAY_OF_WEEK dow = (ENUM_DAY_OF_WEEK)dt.day_of_week;
+   int now_sec = dt.hour * 3600 + dt.min * 60 + dt.sec;
+   datetime from = 0, to = 0;
+   bool any_session = false;
+   for(int i = 0; i < 8; i++)
+     {
+      if(!SymbolInfoSessionQuote(_Symbol, dow, i, from, to))
+         break;
+      any_session = true;
+      if(now_sec >= (int)from && now_sec < (int)to)
+         return true;
+     }
+   return !any_session;
+  }
+
+//--- The note appended to the LIFE line's waiting_on field. Empty when there
+//--- is nothing to say, which is the normal case.
+string AgObservabilityNote()
+  {
+   if(!g_ag_obs_connected)
+      return "DEGRADED: disconnected";
+   if(g_ag_last_tick_local == 0)
+      return "";
+   int age = (int)(TimeLocal() - g_ag_last_tick_local);
+   if(age < AG_QUOTE_FROZEN_SECONDS)
+      return "";
+   //--- Frozen while the session is OPEN is the condition worth naming. The
+   //--- same freeze while the session is closed is expected and correct, and
+   //--- gets a distinct non-DEGRADED note so the artifact still records it
+   //--- without claiming a fault.
+   return AgQuoteSessionOpen() ? ("quote_age=" + (string)age + "s") : "market closed";
+  }
+
+//+------------------------------------------------------------------+
 //| ACTIVE-state evaluation (A6, 4.4), run in this exact order:      |
 //| Q10 connection check, Q10 reconnect-coherence RESYNC gate (2026- |
 //| 08-09 owner ruling), Q8 anchor sanity, the computation itself,   |
@@ -545,8 +619,15 @@ void AgEvaluateActive()
    g_ag_degraded         = false;   // cleared here, not on entry: see the note above
 
    //--- Q9: coherence-deferral, then the Q2 interim breach posture -------
+   //--- PHASE 2 STAGE 5: the ratchet runs here, at the top of the breach
+   //--- tail, and returns the limit this pass enforces. Placed here and not
+   //--- with the computation above for two reasons: min(limit, floor) is
+   //--- ratified as PRE-BREACH ONLY, so its only legitimate consumer is the
+   //--- comparison directly below, and the region above the breach tail is
+   //--- required to stay byte identical across Phase 2.
+   double enforced_limit = AgRatchetUpdate(window_anchor, limit, AG_LIFE_INTERVAL_SECONDS);
    long current_count = HistoryDealsTotal();
-   bool breach_now = (pnl <= -limit + AG_PNL_EPSILON);
+   bool breach_now = (pnl <= -enforced_limit + AG_PNL_EPSILON);
    if(breach_now)
      {
       if(current_count == g_ag_last_deal_count && !g_ag_breach_deferred_once)
@@ -566,7 +647,13 @@ void AgEvaluateActive()
          //--- persisted breach_time all refer to the same instant.
          g_ag_breach_deferred_once = false;
          g_ag_last_deal_count      = current_count;
-         AgDeclareLock(AgServerNow(), limit, base, pnl, realized, floating);
+         //--- The snapshot is the ENFORCED limit, not the raw live one. The
+         //--- floor is what ACTIVE enforced up to this instant, so Q6's
+         //--- snapshot is automatically the floor at the moment of breach and
+         //--- needs no extra obligation; snapshotting the live value instead
+         //--- would silently loosen the locked window by exactly the amount
+         //--- the ratchet had been holding back.
+         AgDeclareLock(AgServerNow(), enforced_limit, base, pnl, realized, floating);
          return;   // LOCKED from this pass on; nothing further is ACTIVE work
         }
      }
@@ -687,6 +774,23 @@ int OnInit()
              + "); a fresh CORRUPT_STATE file was written and the boot derivation"
              " will weigh it at the SYNCING exit");
 
+   //--- Ratchet floor (Phase 2 Stage 5). Loaded for the same reason the state
+   //--- file is: AgFloorSave refuses while g_ag_floor_loaded is false, so
+   //--- without this the floor could never be persisted. A floor from a prior
+   //--- day loads cleanly and is simply stale, which AgFloorEffectiveLimit
+   //--- declines and the first completed pass of the new day reseeds.
+   int floor_result = AgFloorLoad();
+   if(floor_result == 0)
+      AgInfo("ratchet floor loaded|anchor="
+             + TimeToString(g_ag_floor_anchor, TIME_DATE | TIME_SECONDS)
+             + "|floor=" + DoubleToString(g_ag_floor_currency, 2));
+   else if(floor_result == 1)
+      AgVerbose("no ratchet floor file, first session on this account");
+   else
+      AgWarn("ratchet floor file was quarantined at load (code " + (string)floor_result
+             + "); it reseeds from the live limit on the next completed pass"
+             " and no lock follows, the floor not being lock state");
+
    double gv_halt = 0.0;
    bool   was_halted_before = (GlobalVariableGet(AgGvHaltFlag(), gv_halt) && gv_halt > 0.5);
    if(was_halted_before && !g_ag_halt_flag)
@@ -783,7 +887,22 @@ void OnTimer()
    //--- must never look identical from outside. Renders last-known
    //--- state, waiting_on, and PnL numbers, i.e. this pass's own
    //--- dispatch below is what the NEXT proof-of-life line reflects.
-   AgProofOfLife(AgStateName(g_ag_state), AgSecondsInState(), AgWaitingOn(),
+   //--- Stage 6: sample the connection every tick, in every state. ACTIVE
+   //--- already carries Q10's DEGRADED marker from inside the evaluation; the
+   //--- gap this closes is SYNCING and LOCKED, where seven lines emitted
+   //--- entirely offline on 2026-08-14 were indistinguishable from healthy
+   //--- ones to any reader.
+   g_ag_obs_connected = (bool)TerminalInfoInteger(TERMINAL_CONNECTED);
+
+   string waiting_on = AgWaitingOn();
+   string obs_note   = AgObservabilityNote();
+   if(obs_note != "")
+     {
+      bool is_degraded_note = (StringFind(obs_note, "DEGRADED") == 0);
+      if(!is_degraded_note || g_ag_state == AG_STATE_SYNCING || g_ag_state == AG_STATE_LOCKED)
+         waiting_on = (waiting_on == "") ? obs_note : (waiting_on + "|" + obs_note);
+     }
+   AgProofOfLife(AgStateName(g_ag_state), AgSecondsInState(), waiting_on,
                  AG_LIFE_INTERVAL_SECONDS, AgPnlNumbersString());
    AgRefreshBanner();
 
@@ -827,6 +946,26 @@ void OnTimer()
       AgEvaluateActive();
    else if(g_ag_state == AG_STATE_LOCKED)
       AgEvaluateLocked();   // Phase 2 Stage 3: expiry only. Stage 4 adds witness reconciliation.
+
+   //--- Stage 6: RESYNC entry and exit lines, edge-triggered on the flag the
+   //--- Q10 reconnect-coherence gate already maintains. Placed AFTER the
+   //--- dispatch so both edges are seen on the tick they happen, and written
+   //--- as an observer of that flag rather than inside the gate itself, which
+   //--- keeps the evaluation path untouched.
+   //--- This is the answer to a measured blindness rather than a nicety: the
+   //--- RESYNC window is about three seconds at a one-second timer while LIFE
+   //--- lines are thirty seconds apart, so five live disconnects produced zero
+   //--- RESYNC observations and the row could only ever close by luck. An
+   //--- event line is not sampled and does not depend on that coincidence.
+   if(g_ag_resyncing != g_ag_obs_resync_prev)
+     {
+      if(g_ag_resyncing)
+         AgInfo("RESYNC entered|reconnect coherence gate armed, evaluation waits for"
+                " history stability before the first post-disconnect breach decision");
+      else
+         AgInfo("RESYNC exited|history stable again, evaluation resumes");
+      g_ag_obs_resync_prev = g_ag_resyncing;
+     }
 
    // Phase 3 adds: sweep acceleration on OnTradeTransaction.
   }

@@ -43,6 +43,7 @@
 #define AGVEC_LOGIN_CROSSREAD  990000006
 #define AGVEC_LOGIN_GUARD      990000007
 #define AGVEC_LOGIN_MISSING    990000009   // deliberately never written
+#define AGVEC_LOGIN_RATCHET    990000011   // Stage 5 floor file
 
 int g_pass  = 0;
 int g_total = 0;
@@ -407,6 +408,72 @@ void OnStart()
 
    g_ag_high_anchor        = saved_high;
    g_ag_high_anchor_seeded = saved_seeded;
+
+   //================================================================
+   //--- J. THE RATCHET (Phase 2 Stage 5, question SEVEN FINAL). The six
+   //--- vectors the ruling calls for, plus two that prove the persistence
+   //--- the ruling requires, since a floor that does not survive a restart
+   //--- is not a ratchet. Reachable from a script only because
+   //--- AgRatchetUpdate was placed beside the floor family rather than in
+   //--- the EA, applying the same owner ruling that moved the bound helpers.
+   //================================================================
+   g_ag_login        = AGVEC_LOGIN_RATCHET;
+   g_ag_floor_loaded = true;
+   AgFloorResetModel();
+
+   //--- SEED on the first completed computation of a day
+   double r = AgRatchetUpdate(A0, 100.0, 30);
+   AgVecCheckMoney("j1_seed_takes_the_live_limit", r, 100.0);
+   AgVecCheckMoney("j1b_seed_stores_the_floor", g_ag_floor_currency, 100.0);
+   AgVecCheckDT("j1c_seed_stores_the_day_anchor", g_ag_floor_anchor, A0);
+
+   //--- LOWER on a decrease: the floor is a running minimum
+   r = AgRatchetUpdate(A0, 80.0, 30);
+   AgVecCheckMoney("j2_lowers_on_a_decrease", g_ag_floor_currency, 80.0);
+   AgVecCheckMoney("j2b_enforces_the_lowered_value", r, 80.0);
+
+   //--- HOLD under inflation: the whole point of the ratchet
+   r = AgRatchetUpdate(A0, 150.0, 30);
+   AgVecCheckMoney("j3_holds_the_floor_against_a_raised_limit", g_ag_floor_currency, 80.0);
+   AgVecCheckMoney("j3b_enforces_the_floor_not_the_raised_limit", r, 80.0);
+
+   //--- RESEED AT ROLLOVER: the new day starts from the live limit
+   r = AgRatchetUpdate(A1, 150.0, 30);
+   AgVecCheckMoney("j4_reseeds_at_rollover", g_ag_floor_currency, 150.0);
+   AgVecCheckDT("j4b_reseed_moves_the_day_anchor", g_ag_floor_anchor, A1);
+   AgVecCheckMoney("j4c_reseed_enforces_the_new_live_limit", r, 150.0);
+
+   //--- NO RESEED ON A BACKWARD STEP. Tighten first so the case can
+   //--- discriminate, then step the window anchor back behind the floor's.
+   AgRatchetUpdate(A1, 90.0, 30);
+   r = AgRatchetUpdate(A0, 150.0, 30);
+   AgVecCheckMoney("j5_no_reseed_on_a_backward_step", g_ag_floor_currency, 90.0);
+   AgVecCheckDT("j5b_backward_step_does_not_move_the_anchor", g_ag_floor_anchor, A1);
+   AgVecCheckMoney("j5c_backward_step_still_enforces_the_held_floor", r, 90.0);
+
+   //--- PERSISTENCE: the floor survives a restart, which is what makes it a
+   //--- ratchet rather than a per-session tightening.
+   AgFloorSave();
+   AgFloorResetModel();
+   AgVecCheckInt("j6_floor_file_reloads", AgFloorLoad(), 0);
+   AgVecCheckMoney("j6b_floor_survives_a_restart", g_ag_floor_currency, 90.0);
+
+   //--- STALE FLOOR from a prior day contributes nothing, which is the case
+   //--- of a file no pass has reseeded because the EA has not run since the
+   //--- rollover. A1 is the floor's day; A3 is a later one.
+   AgVecCheckMoney("j7_stale_floor_is_declined", AgFloorEffectiveLimit(200.0, A3), 200.0);
+   AgVecCheckMoney("j7b_same_day_floor_is_applied", AgFloorEffectiveLimit(200.0, A1), 90.0);
+
+   //--- CORRUPT FLOOR FILE: quarantined, model reset, and NO lock follows,
+   //--- because the floor is not lock state.
+   string floor_path = AgFloorPath();
+   AgVecWriteRaw(floor_path, AgVecTampered("AGFLOOR|1|" + (string)AGVEC_LOGIN_RATCHET + "\n"
+                                           + "F|" + (string)((long)A1) + "|90.00000000\n"));
+   AgVecCheckInt("j8_corrupt_floor_is_quarantined", AgFloorLoad(), 2);
+   AgVecCheckMoney("j8b_corrupt_floor_resets_to_nothing", g_ag_floor_currency, 0.0);
+   AgVecCheck("j8c_corrupt_floor_file_was_not_deleted",
+              FileIsExist(floor_path + ".bad") || FileIsExist(floor_path + ".bad.2"),
+              "no quarantine file found for " + floor_path);
 
    PrintFormat("AGVEC|SUMMARY|%d/%d", g_pass, g_total);
   }

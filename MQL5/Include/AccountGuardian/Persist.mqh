@@ -551,6 +551,286 @@ int AgStateLoad()
   }
 
 //+------------------------------------------------------------------+
+//| RATCHET FLOOR FILE (Phase 2 Stage 5, question SEVEN FINAL)       |
+//|                                                                  |
+//| Its own file rather than a widening of the state file, on         |
+//| Amendment 2a's precedent that a separate concern gets a separate  |
+//| file rather than widening the charter-constrained lock state.     |
+//| The ratchet is not lock state: it governs PRE-BREACH ACTIVE while |
+//| Q6's snapshot governs post-breach LOCKED, and the two phases are  |
+//| disjoint by construction.                                         |
+//|                                                                  |
+//| Single scalar, as ratified. `floor_day_anchor` is not a second    |
+//| tracked quantity, it is what makes a leftover floor from a prior  |
+//| day recognisable as stale rather than silently enforced into a    |
+//| new day.                                                          |
+//+------------------------------------------------------------------+
+#define AG_FLOOR_FORMAT_VERSION 1
+
+datetime g_ag_floor_anchor   = 0;
+double   g_ag_floor_currency = 0.0;
+bool     g_ag_floor_loaded   = false;   // never-loaded-never-written, same rule
+
+string AgFloorPath() { return AG_FILES_DIR + "\\floor_" + (string)g_ag_login + ".dat"; }
+
+string AgFloorSerialize()
+  {
+   string body = "AGFLOOR|" + (string)AG_FLOOR_FORMAT_VERSION + "|" + (string)g_ag_login + "\n";
+   body += "F|" + (string)((long)g_ag_floor_anchor)
+           + "|" + DoubleToString(g_ag_floor_currency, AG_STATE_MONEY_DIGITS) + "\n";
+   body += "C|" + (string)AgChecksum(body) + "\n";
+   return body;
+  }
+
+bool AgFloorSave()
+  {
+   if(!g_ag_floor_loaded)
+     {
+      AgWarn("floor file NOT written: the ratchet model was never loaded this session,"
+             " so writing it would overwrite a real floor with a default-constructed empty one");
+      return false;
+     }
+   return AgAtomicWrite(AgFloorPath(), AgFloorSerialize());
+  }
+
+void AgFloorResetModel()
+  {
+   g_ag_floor_anchor   = 0;
+   g_ag_floor_currency = 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Same quarantine discipline as the state file: a free name, never |
+//| overwriting an earlier quarantine, then a reset model. NOTE the  |
+//| one difference and it is deliberate: a corrupt floor does NOT     |
+//| lock anything. The floor is a pre-breach tightening, not lock     |
+//| state, so losing it errs toward the LIVE limit rather than toward |
+//| a lock, and the residual that follows, that destroying the floor  |
+//| file resets it on the next seed, is the one the 2026-07-30 ruling |
+//| already accepted on the record when it built the ratchet.         |
+//+------------------------------------------------------------------+
+int AgFloorQuarantine(const string path, const int code, const string why)
+  {
+   string bad = AgStateQuarantinePath(path);
+   if(!FileMove(path, 0, bad, FILE_REWRITE))
+      AgWarn("floor file quarantine move FAILED onto " + bad + ", error " + (string)GetLastError());
+   AgFloorResetModel();
+   AgWarn("floor file " + why + ", quarantined as " + bad
+          + ", the ratchet reseeds from the live limit on the next completed pass"
+          + " (no lock follows: the floor is not lock state)");
+   AgFloorSave();
+   return code;
+  }
+
+//+------------------------------------------------------------------+
+//| Returns: 0 = loaded, 1 = missing, 2 = corrupt, 3 = login         |
+//| mismatch. Same shape and the same discipline as AgStateLoad.     |
+//+------------------------------------------------------------------+
+int AgFloorLoad()
+  {
+   AgFloorResetModel();
+   g_ag_floor_loaded = true;   // before the exists check, as for the halt and state models
+
+   string path = AgFloorPath();
+   if(!FileIsExist(path))
+      return 1;
+
+   int handle = FileOpen(path, FILE_READ | FILE_TXT | FILE_ANSI);
+   if(handle == INVALID_HANDLE)
+     {
+      AgWarn("floor file exists but cannot be opened, error " + (string)GetLastError());
+      return AgFloorQuarantine(path, 2, "cannot be opened");
+     }
+
+   string body = "";
+   string checksum_line = "";
+   bool ok = false;
+   while(!FileIsEnding(handle))
+     {
+      string line = FileReadString(handle);
+      if(StringFind(line, "C|") == 0)
+        {
+         checksum_line = line;
+         ok = true;
+         break;
+        }
+      body += line + "\n";
+     }
+   FileClose(handle);
+
+   bool valid = ok && (checksum_line == "C|" + (string)AgChecksum(body));
+   long file_login = 0;
+   if(valid)
+     {
+      string lines[];
+      int count = StringSplit(body, '\n', lines);
+      string header[];
+      if(count < 2
+         || StringSplit(lines[0], '|', header) < 3
+         || header[0] != "AGFLOOR"
+         || header[1] != (string)AG_FLOOR_FORMAT_VERSION)
+         valid = false;
+      else
+        {
+         file_login = StringToInteger(header[2]);
+         for(int i = 1; i < count; i++)
+           {
+            string fields[];
+            if(StringSplit(lines[i], '|', fields) < 3)
+               continue;
+            if(fields[0] == "F")
+              {
+               g_ag_floor_anchor   = (datetime)StringToInteger(fields[1]);
+               g_ag_floor_currency = StringToDouble(fields[2]);
+              }
+           }
+        }
+     }
+
+   if(!valid)
+      return AgFloorQuarantine(path, 2, "failed checksum or does not parse");
+   if(file_login != g_ag_login)
+      return AgFloorQuarantine(path, 3,
+                               "carries login " + (string)file_login
+                               + " but this account is " + (string)g_ag_login);
+   return 0;
+  }
+
+//+------------------------------------------------------------------+
+//| The enforced limit while ACTIVE: min(live limit, same-day floor).|
+//| PRE-BREACH ONLY, as ratified. A floor whose day anchor is not    |
+//| today's is STALE and contributes nothing, which is the case of a |
+//| floor file left over from a prior day that no pass has reseeded  |
+//| because the EA has not run a tick since the rollover.            |
+//|                                                                  |
+//| Nothing in LOCKED calls this. Q6's snapshot governs the locked   |
+//| window unconditionally and the floor never touches it.           |
+//+------------------------------------------------------------------+
+double AgFloorEffectiveLimit(const double live_limit, const datetime window_anchor)
+  {
+   //--- A floor belonging to an EARLIER day is stale and contributes nothing:
+   //--- that is a leftover file no pass has reseeded because the EA has not
+   //--- run a tick since the rollover, and enforcing it would carry one day's
+   //--- tightening into the next.
+   //--- A floor belonging to the SAME day applies, which is the ordinary case.
+   //--- A floor belonging to a LATER day also applies, and that is deliberate
+   //--- rather than an oversight: it is what a backward clock step produces,
+   //--- and keeping the tighter value enforced is the strict direction. The
+   //--- alternative, treating it as stale, would let one clock rewind drop the
+   //--- floor in a single act, which is precisely the one-step disarm the NO
+   //--- RESEED ON A BACKWARD STEP clause exists to prevent.
+   if(g_ag_floor_anchor < window_anchor || g_ag_floor_currency <= 0.0)
+      return live_limit;
+   return (g_ag_floor_currency < live_limit) ? g_ag_floor_currency : live_limit;
+  }
+
+//--- Cadence for the hold and backward-step WARNs, local clock, A1 class.
+datetime g_ag_last_ratchet_warn = 0;
+
+//--- MOVED HERE FROM THE EA, applying the owner ruling of 2026-08-18 that
+//--- put the locked_until bound helpers in Clock.mqh for the same reason:
+//--- a script cannot include an EA, so while this lived there the six
+//--- vectors question SEVEN calls for could not be written at all. The
+//--- WARN cadence arrives as a parameter rather than by moving the EA's
+//--- AG_LIFE_INTERVAL_SECONDS constant, which keeps Phase 1 untouched.
+//+------------------------------------------------------------------+
+//| THE RATCHET (Phase 2 Stage 5, question SEVEN FINAL 2026-08-18).  |
+//| Defends against ACTIVE-state limit inflation: raising a limit    |
+//| input after the day has started but before any breach.           |
+//|                                                                  |
+//| The ratcheted quantity is the DERIVED limit_currency and not the |
+//| raw inputs, which is the correction the 2026-07-30 addendum made |
+//| and the ruling ratified. Under Q8's min-of-enabled a leg that is |
+//| not binding can be disabled with zero effect on the enforced     |
+//| limit, and an input-level ratchet blocks that as a false         |
+//| positive; the owner's worked case is base 2000 with percent 5    |
+//| giving 100 and currency 50 binding, where disabling the percent  |
+//| leg moves nothing.                                               |
+//|                                                                  |
+//| PRE-BREACH ONLY. This is called from the breach tail and from    |
+//| nowhere else. Q6's snapshot governs the locked window            |
+//| unconditionally and the floor never touches it, so the two are   |
+//| disjoint by construction rather than by care.                    |
+//|                                                                  |
+//| Returns the limit to enforce this pass.                          |
+//+------------------------------------------------------------------+
+double AgRatchetUpdate(const datetime window_anchor, const double live_limit,
+                       const int warn_cadence_seconds)
+  {
+   if(!g_ag_floor_loaded)
+      return live_limit;   // never loaded, never written; enforce live and say nothing
+
+   //--- SEED: first completed ACTIVE computation with no floor at all.
+   if(g_ag_floor_anchor == 0)
+     {
+      g_ag_floor_anchor   = window_anchor;
+      g_ag_floor_currency = live_limit;
+      AgFloorSave();
+      AgInfo("ratchet seeded|anchor=" + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+             + "|floor=" + DoubleToString(live_limit, 2));
+      return live_limit;
+     }
+
+   //--- RESEED AT ROLLOVER: the anchor advanced, so the new day starts from
+   //--- whatever the live limit is now. This is the only reseed there is.
+   if(window_anchor > g_ag_floor_anchor)
+     {
+      AgInfo("ratchet reseeded at rollover|old_anchor="
+             + TimeToString(g_ag_floor_anchor, TIME_DATE | TIME_SECONDS)
+             + "|new_anchor=" + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+             + "|old_floor=" + DoubleToString(g_ag_floor_currency, 2)
+             + "|new_floor=" + DoubleToString(live_limit, 2));
+      g_ag_floor_anchor   = window_anchor;
+      g_ag_floor_currency = live_limit;
+      AgFloorSave();
+      return live_limit;
+     }
+
+   //--- NO RESEED ON A BACKWARD STEP. The floor belongs to a LATER day than
+   //--- the one being computed, which is what a rewound clock produces.
+   //--- Reseeding here would hand a one-act reset to anyone able to move the
+   //--- clock back once, the same class of one-step disarm the 2026-08-04
+   //--- negative-gap ruling refused in the crash-loop chain. The floor is
+   //--- held AND stays enforced, which is the strict direction.
+   if(window_anchor < g_ag_floor_anchor)
+     {
+      datetime now_local_back = TimeLocal();
+      if(g_ag_last_ratchet_warn == 0
+         || now_local_back - g_ag_last_ratchet_warn >= warn_cadence_seconds)
+        {
+         AgWarn("ratchet NOT reseeded on a backward clock step: window anchor "
+                + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+                + " is behind the floor's anchor "
+                + TimeToString(g_ag_floor_anchor, TIME_DATE | TIME_SECONDS)
+                + "; floor " + DoubleToString(g_ag_floor_currency, 2) + " is held and still enforced");
+         g_ag_last_ratchet_warn = now_local_back;
+        }
+      return AgFloorEffectiveLimit(live_limit, window_anchor);
+     }
+
+   //--- SAME DAY. Lower on a decrease, hold on an increase.
+   if(live_limit < g_ag_floor_currency)
+     {
+      g_ag_floor_currency = live_limit;   // running minimum
+      AgFloorSave();
+     }
+   else if(live_limit > g_ag_floor_currency)
+     {
+      datetime now_local_hold = TimeLocal();
+      if(g_ag_last_ratchet_warn == 0
+         || now_local_hold - g_ag_last_ratchet_warn >= warn_cadence_seconds)
+        {
+         AgWarn("ratchet HOLDING against a raised limit (question SEVEN): live="
+                + DoubleToString(live_limit, 2) + " floor="
+                + DoubleToString(g_ag_floor_currency, 2)
+                + "; the floor is enforced until the next day anchor");
+         g_ag_last_ratchet_warn = now_local_hold;
+        }
+     }
+   return AgFloorEffectiveLimit(live_limit, window_anchor);
+  }
+
+//+------------------------------------------------------------------+
 //| Single-instance mutex heartbeat (SPEC 5, F8).                    |
 //| Live other instance: refuse. Stale mutex heartbeat: takeover.    |
 //| Mutex heartbeat 0 = deliberate release by a clean OnDeinit.      |
