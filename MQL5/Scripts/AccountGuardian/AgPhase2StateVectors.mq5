@@ -475,6 +475,80 @@ void OnStart()
               FileIsExist(floor_path + ".bad") || FileIsExist(floor_path + ".bad.2"),
               "no quarantine file found for " + floor_path);
 
+   //--- K. THE FILE ROUND TRIP MUST NOT LOOK LIKE A LIMIT CHANGE (owner ruling
+   //--- 2026-08-18, added after the live Stage 7 finding). None of j1 to j8
+   //--- could have caught this: every one of them compares a floor that came
+   //--- straight out of memory, and the defect only exists on the path where
+   //--- the floor has been through DoubleToString at 8 decimals and back
+   //--- through StringToDouble. On the live account that path made the guardian
+   //--- report a raised limit 220 times against a limit nobody touched.
+   AgFloorResetModel();
+   g_ag_floor_loaded      = true;
+   g_ag_last_ratchet_warn = 0;
+
+   //--- The live arithmetic exactly as the guardian computes it, rather than a
+   //--- round number: base 2133.13 at 5 percent is what was on the account when
+   //--- the defect was found, and a round number would not exercise the bug.
+   double rt_live = AgLimitCurrency(2133.13, 5.0, 0.0);
+   AgRatchetUpdate(A0, rt_live, 30);
+   AgFloorSave();
+   AgFloorResetModel();
+   AgVecCheckInt("k1_roundtrip_floor_reloads", AgFloorLoad(), 0);
+
+   //--- THE ROW ITSELF: the same live limit, one pass, immediately after the
+   //--- reload. Neither branch may fire. A warn stamp still at zero proves the
+   //--- HOLD branch was not taken, since AgRatchetUpdate always warns on a hold
+   //--- when the stamp is zero; a bit identical floor proves the LOWER branch
+   //--- was not taken, since that branch is the only writer of this global.
+   double rt_floor_before = g_ag_floor_currency;
+   g_ag_last_ratchet_warn = 0;
+   double rt_r = AgRatchetUpdate(A0, rt_live, 30);
+   AgVecCheckInt("k2_no_hold_warn_on_the_reloaded_floor",
+                 (long)g_ag_last_ratchet_warn, 0);
+   AgVecCheck("k2b_reloaded_floor_is_not_rewritten",
+              g_ag_floor_currency == rt_floor_before,
+              "floor moved from " + DoubleToString(rt_floor_before, 8)
+              + " to " + DoubleToString(g_ag_floor_currency, 8));
+   AgVecCheck("k2c_enforced_value_tracks_the_live_limit",
+              MathAbs(rt_r - rt_live) < AG_PNL_EPSILON,
+              "enforced=" + DoubleToString(rt_r, 8) + " live=" + DoubleToString(rt_live, 8));
+
+   //--- DETERMINISTIC HALF CENT IN BOTH DIRECTIONS. k2 reproduces the live
+   //--- conditions but its outcome depends on how one particular value rounds,
+   //--- so it could pass on a platform where that value round trips exactly and
+   //--- prove nothing. These two do not depend on rounding at all, and the
+   //--- second is the mirror hazard: under the old exact comparison a floor a
+   //--- hair ABOVE the live limit drove the LOWER branch, and that branch calls
+   //--- AgFloorSave, so the guardian rewrote the file on every single pass.
+   g_ag_floor_currency    = rt_live + 0.005;
+   g_ag_last_ratchet_warn = 0;
+   rt_floor_before        = g_ag_floor_currency;
+   AgRatchetUpdate(A0, rt_live, 30);
+   AgVecCheck("k3_half_cent_above_does_not_lower_the_floor",
+              g_ag_floor_currency == rt_floor_before,
+              "floor moved to " + DoubleToString(g_ag_floor_currency, 8));
+
+   g_ag_floor_currency    = rt_live - 0.005;
+   g_ag_last_ratchet_warn = 0;
+   AgRatchetUpdate(A0, rt_live, 30);
+   AgVecCheckInt("k4_half_cent_below_does_not_warn",
+                 (long)g_ag_last_ratchet_warn, 0);
+
+   //--- AND THE BAND MUST NOT SWALLOW A REAL CHANGE. Two cents is the smallest
+   //--- move that clears a one cent band, so these are the boundary cases that
+   //--- stop the fix from being a blanket mute.
+   g_ag_floor_currency    = rt_live - 0.02;
+   g_ag_last_ratchet_warn = 0;
+   AgRatchetUpdate(A0, rt_live, 30);
+   AgVecCheck("k5_two_cent_raise_still_warns", g_ag_last_ratchet_warn != 0,
+              "no hold warn for a two cent raise above the floor");
+
+   g_ag_floor_currency    = rt_live + 0.02;
+   g_ag_last_ratchet_warn = 0;
+   AgRatchetUpdate(A0, rt_live, 30);
+   AgVecCheckMoney("k6_two_cent_decrease_still_lowers_the_floor",
+                   g_ag_floor_currency, rt_live);
+
    PrintFormat("AGVEC|SUMMARY|%d/%d", g_pass, g_total);
   }
 //+------------------------------------------------------------------+
