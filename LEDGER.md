@@ -3,8 +3,8 @@
 ## ISSUES
 
 Issue:  NEXT BEST ACTION. DEFECT 1 OF 4 IN THE FIX ORDER RULED 2026-08-19. A DISCONNECT OR A FROZEN QUOTE THAT STRADDLES THE LOCK EXPIRY LEAVES THE FIRST POST EXPIRY PASS UNGATED. The chain is three facts, each checkable on its own. `g_ag_resyncing` is set in exactly one place, the `TERMINAL_CONNECTED` guard at the head of `AgEvaluateActive`, which does not run while LOCKED. Lock expiry runs `AgTransition(AG_STATE_ACTIVE, "lock expired", "")`, entering ACTIVE DIRECTLY rather than through SYNCING, so the SYNCING stability polls do not run either. The Q10 coherence gate is written `if(g_ag_resyncing)`, so with that flag false the first post expiry pass takes no history stability check at all before it is eligible to decide a breach. LIVE EVIDENCE, `docs/evidence/journal-20260819-stage7-lock-expiry.txt`, 2026-08-19, build `74D666E9`: the server clock sat frozen for 61 minutes 32 seconds straight across the anchor, `AG|2026.08.18 23:57:59|LIFE|state=LOCKED|seconds_in_state=32283|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3691s|server=2026.08.18 23:57:59|local=2026.08.19 00:59:30`, then advanced an hour in one tick and expiry fired one second later, `AG|2026.08.19 01:00:01|TRANSITION|LOCKED->ACTIVE|lock expired|`. THE WHOLE FILE CARRIES EXACTLY THREE NON LIFE LINES, the expiry INFO, that TRANSITION and the ratchet reseed, and not one of them is a SYNCING or a RESYNC line, which is the artifact form of the gate never arming.
-Action: FIX FIRST, per the ruled order, and the fix itself is not written in this session. Two candidate shapes are named and NEITHER IS RULED, since the owner reserves the design: route expiry through SYNCING rather than straight to ACTIVE, or arm `g_ag_resyncing` from the Stage 6 connection observer that samples `g_ag_obs_connected` every tick regardless of state. THE PRECONDITION IS OBSERVED AND THE CONSEQUENCE IS NOT, and the entry is written that way so it is not oversold: 2026-08-19 was harmless only because the account was flat, zero positions and zero deals in the new window, `realized=0.00|floating=0.00` on the first ACTIVE line at 01:00:31. One difference from the chain as written is recorded rather than smoothed over: this arrived through a FROZEN QUOTE WHILE CONNECTED, not through a disconnect, so the gate had nothing to arm it rather than being bypassed. The hazard is the same and the route to it is wider than a disconnect alone.
-Status: OPEN
+Action: IMPLEMENTED IN SOURCE 2026-08-20 AS SHAPE A, commit `0a4c86b`, under the owner ruling of that date which is FINAL in DECISIONS. THE Issue LINE ABOVE DESCRIBES THE BUILD AS FOUND AND THE SOURCE NO LONGER MATCHES IT: expiry now runs `AgTransition(AG_STATE_SYNCING, "lock expired", ...)` at `AccountGuardian.mq5:489`, so the SYNCING stability polls run before the first pass eligible to declare a breach, unconditionally and therefore on both straddle routes, the disconnect and the frozen quote while connected. The expiry block also resets `g_ag_stable_polls` and `g_ag_last_history_total` at `:487-488`, which is not decoration: those globals advance only inside `AgHistoryStable`, which never runs while LOCKED, so without the reset the first SYNCING poll takes the count-unchanged branch and increments straight past `HistoryStablePolls`, leaving SYNCING on the tick it was entered. Shapes B and C of the plan are not taken and the ruling closes that choice. NOT DEPLOYED AND NOT COMPILED: the running binary is still `74D666E9`, which carries the defect, and per the ruling of 2026-08-20 this fix does not ship alone, it reaches the terminal in one build with defect 3.
+Status: IN PROGRESS, fixed in source at `0a4c86b`, unbuilt and undeployed; it CLOSES ONLY ON THE LIVE ACCEPTANCE ROW P3-1, whose artifact is one `TRANSITION|LOCKED->SYNCING|lock expired` line followed by one `TRANSITION|SYNCING->ACTIVE|history stable|polls=3/3` line across a real expiry, per predictions P26 and P27 of `docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md`. No code reading closes it and none may be offered as closing it.
 
 Issue:  DEFECT 2 OF 4 IN THE FIX ORDER RULED 2026-08-19. THE GV LOCK MIRROR ERASES ITSELF ON EVERY COLD BOOT, BEFORE ITS OWN WITNESS CAN READ IT. The mechanism is three lines of source in one callback. `OnTimer` writes the mirror at `AccountGuardian.mq5:881`, `GlobalVariableSet(AgGvLock(), (double)(long)g_ag_locked_until)` followed by `GlobalVariablesFlush()`, guarded only by `if(g_owns_mutex)`, and the boot derivation that READS that mirror runs at `AccountGuardian.mq5:926`, in the SAME `OnTimer`, AFTER the write. On a cold boot `g_ag_locked_until` is 0, because the only thing that sets it is `AgEnterLockFromBoot`, which does not run until the SYNCING exit several ticks later, so the first ticks flush a zero over the persisted mirror and the witness then fails the `(datetime)(long)gv_raw > now` test. LIVE EVIDENCE, `docs/evidence/journal-20260818-stage7-forced-kill.txt`, 2026-08-18, build `74D666E9`, three boots in one file and the split is exact. Cold boot one, `AG|2026.08.18 13:46:41|TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s`, fired FILE and DERIVED at 13:46:44 and NO GV line. Cold boot two, `AG|2026.08.18 16:01:24|TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s`, fired FILE and DERIVED at 16:01:27 and NO GV line. The ONLY GV firing in the whole day is `AG|2026.08.18 15:36:27|INFO|boot witness GV fired|raw=2026.08.19 01:00:00|bounded=2026.08.19 01:00:00`, on the one boot whose transition reads `LOCKED->SYNCING` and which therefore preserved its memory.
 Action: FIX SECOND, per the ruled order, and the fix itself is not written in this session. Fix shape named and NOT RULED, since the owner reserves the design: the write is unconditional on state and could be gated, or ordered after the dispatch, or the boot read could be taken once in `OnInit` before any timer tick. SEVERITY, stated so the fix is scoped against what is actually lost: the GV witness fires only when the EA RETAINED ITS MEMORY, which is exactly the case where a mirror is redundant, and it is guaranteed zeroed in the case it was built for, a genuine restart. So the independent third recovery path does not exist in practice, and with the state file deleted a restart recovery rests on the derived history witness ALONE, making the strictest wins OR over three witnesses an OR over two. This does NOT weaken any lock the file and derived witnesses carry, and it does weaken the deletion resistance argument that justified building three.
@@ -316,6 +316,144 @@ Status: OPEN
 ---
 
 ## ACTIONS
+
+2026-08-20, DEFECT 1 IS FIXED IN SOURCE AS SHAPE A AND THE DEFECT 3 FIX PLAN IS WRITTEN. NO COMPILE
+WAS RUN, NOTHING WAS BUILT OR DEPLOYED, NO MERGE, NO PUSH, AND NOTHING UNDER THE MetaTrader TERMINAL
+DATA FOLDER WAS READ, WRITTEN OR APPROACHED, per RULE A. No command this session named a path inside
+that folder, so RULE B's alias audit was not reached. State re derived before anything rather than
+carried: `git rev-parse HEAD` returned `2894ad3a7288a4fc83e5c5a466d700a051fa9ed9` on branch
+`worktree-phase3-defect-fixes` and `git status --porcelain` was empty.
+
+LEDGER.md COVERAGE, STATED PRECISELY BECAUSE THE FILE WAS NOT RE READ FROM BYTE ZERO THIS SESSION AND
+THE ENTRY MUST NOT IMPLY OTHERWISE. All 1344 lines of LEDGER.md at `f9b8b47` were read in full in the
+immediately preceding session of this same conversation, and the only change since is the 96 line
+ACTIONS entry that session authored, whose text is held verbatim. That coverage is complete and it is
+PROVEN rather than asserted: `git diff -U0 f9b8b47 HEAD -- LEDGER.md` returns exactly one hunk header,
+`@@ -319,0 +320,96 @@`, an insertion and nothing else, and the tree was clean, so the file on disk is
+the file already read plus that one block. Execution rule 2 is satisfied on every current line. A
+session that cannot make that showing re reads the file.
+
+THE OWNER RULING OF THIS DATE IS FINAL IN DECISIONS, quoted there in full and not restated here. Two
+things about it are worth a line in the dated log. The shape is chosen, so shapes B and C of the
+defect 1 plan are closed rather than left standing. And DEFECT 1 AND DEFECT 3 ARE COUPLED TO ONE
+DEPLOYMENT, which is the ruling's operative half: neither ships alone, and the ground is that shape A
+would otherwise widen defect 3 from a boot only case to every expiry.
+
+TASK 1, SHAPE A IMPLEMENTED, commit `0a4c86b`, ONE FILE, 42 insertions and 5 deletions. The
+behavioural change is one call: `AgTransition(AG_STATE_ACTIVE, "lock expired", "")` becomes
+`AgTransition(AG_STATE_SYNCING, "lock expired", ...)` at `AccountGuardian.mq5:489`. Everything else is
+the reset the new destination needs and comment.
+
+A DEFECT IN THE APPROVED PLAN'S OWN PHRASING WAS FOUND WHILE IMPLEMENTING IT, AND IT IS THE MOST
+IMPORTANT THING IN THIS ENTRY. The plan's shape A table said the expiry block "gains whatever reset
+the new destination needs", which reads as boilerplate and is not: WITHOUT THE RESET THE FIX DOES
+NOTHING AT ALL. `g_ag_stable_polls` and `g_ag_last_history_total` are declared at `Pnl.mqh:250-251`
+and are advanced or cleared ONLY inside `AgHistoryStable`, which is called from exactly two sites, the
+SYNCING branch and the Q10 RESYNC gate, and neither runs while LOCKED. So at an expiry they still hold
+whatever the last SYNCING occupancy left, which on a session that booted normally is
+`g_ag_stable_polls = 3` with the deal total latched. Entering SYNCING in that state, on an account
+whose deal count has not moved, takes `AgHistoryStable`'s count unchanged branch at `Pnl.mqh:273-274`,
+increments to 4, returns `4 >= 3` true on the FIRST poll, and the EA leaves SYNCING on the very tick it
+entered. The three second discipline the whole fix exists to buy would have been bought and not spent,
+and the artifact would have read `polls=4/3`, which is neither the `polls=3/3` prediction P27 names nor
+the `polls=<n>/3` for n below 3 it excludes. The expiry block therefore sets `g_ag_stable_polls = 0`
+and `g_ag_last_history_total = -1` at `:487-488`, which are byte for byte the two assignments
+`Pnl.mqh:257-258` already performs on a disconnect, so the semantics are borrowed from the file that
+owns those globals rather than invented here.
+
+TWO SMALLER CHOICES INSIDE THE SAME BLOCK, both recorded rather than left in the code to be found. The
+transition now carries a detail field, `history stability required before the first post-expiry breach
+decision|polls=0/<HistoryStablePolls>`, which is what P26's `<detail>` placeholder anticipated. And
+`g_ag_dynamic_waiting_on` is set to `polls=0/<HistoryStablePolls>` instead of the empty string it was
+set to before, because `AgWaitingOn`'s SYNCING default at `State.mqh:96-98` reads "history stability
+poll not yet run this session", which is FALSE after an expiry since the boot occupancy already ran
+one. A LIFE line that happens to land inside the three second window now says something true.
+
+THE SCOPED DIFF ROW PASSES AND IS THE STRONGER FORM, sha256 over the function bodies rather than
+inspection. `AgEvaluateActive` is byte identical across the change at
+`1a795e285268a4e731808ecc6423e804ecebdeca5b8e5f0fb25f82cad4f2c01c`, 139 lines, and `AgBootDerivation`
+at `424c0553eeb1d5e82677c3ea1734d456342c5432c371088acc753a667160d9ae`, 119 lines. `OnTimer` is byte
+identical at `455df9d2b762648ea4c8f4e1908b2f3efb32334ac5dee7b8c6e2a24ee562a7e8`, and so is the whole
+globals block at `31a19216bc7a2e001ed30c749673487e3668fe6a15731f566393a404da81b082`, which is what
+carries the Stage 6 observability globals. ALL SIX INCLUDES ARE UNCHANGED BY MD5 against their values
+before the edit: `Clock.mqh` `dc5a04004f0cb7bdb9d6c602e944cec1`, `Log.mqh`
+`c4e803fb81ebe7f521cc020e8fa1ce82`, `Persist.mqh` `776f3ba0a3197138645305a1e743822c`, `Pnl.mqh`
+`4da4810100691ffc135d6073917b7855`, `State.mqh` `34792807c6b6b548943215866193eb3f`, `Sweep.mqh`
+`cf7d355a7c52265a7aff5c465da33c46`. `git diff` reports three hunks and all three sit inside the two
+ranges the instruction permitted. S1 and S2 rerun clean, the single hit tree wide being the header
+comment in `Sweep.mqh`, so the build still contains zero trade API calls. Zero `TimeLocal`, `TimeGMT`
+or `TimeTradeServer` occurrences were added, counted over the added lines rather than over the file.
+
+ONE THING A LATER GREP WILL FIND AND SHOULD NOT MISREAD: the new comment block mentions
+`g_ag_resyncing` by name at `:423`. That is prose explaining what the fix closes, not a reference, and
+`g_ag_resyncing` is the Q10 gating flag rather than one of the two Stage 6 observability globals, so
+the Stage 6 static acceptance row is untouched in both letter and substance.
+
+TASK 2, THE DEFECT 3 FIX PLAN, commit `1c655ca`, `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`, and IT
+RECOMMENDS NOTHING. Two candidate shapes are laid out side by side and they agree on everything except
+one field's meaning, so the choice is isolated to that one disagreement: shape 1 writes the derivation
+instant into `breach_time`, shape 2 recovers the true breach instant from the replay when the replay
+disjunct fired and falls back to the derivation instant when only the live disjunct did. Shape 2 is the
+only one that reaches outside the EA, into `Pnl.mqh`'s shared fold, and the plan names two sub variants
+of that reach without choosing between them either. TWO FURTHER VARIANTS ARE NAMED AND EXPLICITLY NOT
+PROPOSED: writing the snapshot from inside `AgBootDerivation`, which would put a persistence side
+effect in a function that also returns NOT EVALUABLE at `:250` and `:257` on passes where nothing
+should be written; and redefining `have_snapshot` so it no longer tests `limit_snap > 0.0`, which fixes
+nothing because with zeros on disk there is no value for tier 1 to use and the change would turn a
+missing protection into a wrong one.
+
+THE PLAN SEPARATES WHAT THE DEFECT ACTUALLY COSTS, by enumerating every consumer rather than
+characterising them. `g_ag_state_limit_snap` is a BEHAVIOUR GATE, since `have_snapshot` at `:273-275`
+tests it and tier 1 at `:279` is its only consumer, so zeros make tier 1 unreachable for the whole class
+of boot derived locks. `g_ag_state_breach_time` IS READ BY NOTHING in the running logic, its only
+consumers being the serializer, the loader and the vectors, so losing it is a pure loss of record.
+`g_ag_state_base_snap` is read outside persistence in exactly one place, the Q6 input change WARN at
+`:451-452`, where a boot derived lock today prints `limit=0.00 base=0.00` and tells the operator the
+opposite of the truth about what governs their locked window.
+
+THE SHAPE A INTERLOCK IS STATED EXPLICITLY, as the instruction required, and it is now a fact about
+this branch rather than a prediction. After `0a4c86b` the expiry block clears `g_ag_locked_until` at
+`:463` and calls `AgStateResetModel()` at `:464` before transitioning, and `OnTimer` rewrites the GV
+mirror from memory every tick at `:918`, so at the SYNCING exit the FILE witness at `:211` cannot fire,
+the GV witness at `:224` cannot fire, and the DERIVED witness is the only one left, with `have_snapshot`
+false for the same reason. EVERY EXPIRY TIME RE LOCK IS THEREFORE A DERIVED WITNESS LOCK WITH NO
+SNAPSHOT, which is exactly the case defect 3 gets wrong, so on this branch as it stands every expiry
+time re lock would persist zeros. That is the window the owner's coupling closes. Once defect 3 is
+fixed the same path persists reason 1, the derivation's own `limit_cmp` as the limit, its own `base`,
+and a non zero breach time, and the NEXT boot then reads `tier=snapshot` where today it is structurally
+incapable of reading anything but `tier=floor` or `tier=live`.
+
+PREDICTIONS RUN P47 TO P60 and continue the defect 1 plan's numbering unbroken. P49 is the row the fix
+closes and it is written field by field against the state file, `L|1|<until>|<breach_time non zero>`
+and `N|<limit>|<base>` both non zero at eight decimals, against the `L|1|1787101200|0` and
+`N|0.00000000|0.00000000` the 2026-08-18 artifact carries. P53 is the cheapest proof that tier 1 is
+reachable again, one word in one journal field. P51 and P52 are the two negatives that stop the fix
+overreaching, preservation of a loaded snapshot on the file witness path and zeros still written on the
+CORRUPT_STATE path.
+
+A CONSTRAINT THE PLAN FOUND RATHER THAN ASSUMED, AND IT CUTS BOTH WAYS. The eight existing vectors that
+assert on these fields, `c5` through `c8` at `AgPhase2StateVectors.mq5:200-207`, `e4` through `e6` at
+`:237-239` and `g4` at `:287-289`, all exercise the `Persist.mqh` model layer and not the EA caller, so
+since neither shape touches `Persist.mqh` all eight should pass unchanged and any movement in them means
+the fix reached further than intended. The other edge is that for the same reason NO EXISTING VECTOR
+EXERCISES THE FIX AT ALL, because `AgEnterLockFromBoot` and `AgBootDerivation` are EA functions and a
+script cannot include an EA. Whether defect 3 gets the treatment owner ruling C of 2026-08-18 gave the
+two bound helpers, a move into an include so a vector can reach it, is raised in the plan and
+deliberately not answered, since it would widen the diff well beyond the ranges the fix needs.
+
+TASK 3, THE LEDGER SYNC. The defect 1 ISSUES entry moves to IN PROGRESS and NOT to DONE, its `Issue`
+line left verbatim because it is the record of the defect as found together with its live evidence, its
+`Action` line rewritten to record the implementation, and its `Status` naming what closes it: THE LIVE
+ACCEPTANCE ROW P3-1 AND NOTHING ELSE, whose artifact is one `LOCKED->SYNCING` transition followed by one
+`SYNCING->ACTIVE|history stable|polls=3/3` across a real expiry. No code reading closes it. Defects 2
+and 4 were not touched this session and neither was any FINAL entry.
+
+NOT DONE, AND NOT DONE DELIBERATELY: no compile, no build, no deploy, no merge, no push, defect 3 not
+implemented, defects 2 and 4 untouched. The running binary is still `74D666E9` and it carries defect 1,
+so nothing about the live instance changed today. Per the FINAL remote state ruling of 2026-08-04 this
+entry makes no claim about where the remote stands. THE NEXT BEST ACTION IS THE OWNER'S: choose a shape
+for defect 3, which is the only thing standing between this branch and a build that satisfies the
+coupling ruled today.
 
 2026-08-19, DEFECT 1 FIX PLAN WRITTEN, AND THE OWNER'S ONE WORD RULING OF THIS DATE IS RECORDED
 HERE RATHER THAN IN DECISIONS. NO CODE WAS WRITTEN, NO COMPILE WAS RUN, NOTHING WAS DEPLOYED, AND
@@ -1083,6 +1221,10 @@ Status: DONE
 ---
 
 ## DECISIONS
+
+Decision: (owner ruling 2026-08-20, Phase 3 defect 1 implementation session) SHAPE A IS THE DEFECT 1 FIX, AND DEFECT 3 IS COUPLED TO THE SAME DEPLOYMENT. Quoted as given in full: "Shape A, and the defect 3 fix is coupled to the same deployment. Fix order unchanged: 1 implemented first, 3 second, one build." SHAPE A is the shape laid out under that name in `docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md`: lock expiry enters SYNCING rather than ACTIVE directly, unconditionally, so the first pass eligible to declare a breach is preceded by the same history stability discipline every cold boot already runs. Shapes B and C of that document are NOT TAKEN, and under protocol rule 5 this entry closes that choice rather than leaving it open for a later session to reopen. The fix order of 2026-08-19 is unchanged and is not amended by this: defect 1 is implemented first and defect 3 second. NEITHER SHIPS ALONE. The two reach the terminal in ONE BUILD and ONE DEPLOYMENT, so a build carrying only one of them is outside this ruling.
+Reason: Owner's ruling, recorded as given. No rationale was supplied with the choice of shape and none is invented here. THE COUPLING IS NOT A SCHEDULING PREFERENCE AND ITS GROUND IS ALREADY ON THE RECORD, in the shape A section of the defect 1 plan and in that document's prediction P31: shape A makes `AgBootDerivation` run at EVERY expiry, so an expiry time re lock arrives through `AgEnterLockFromBoot` and persists an empty Q6 snapshot, which is defect 3 landing on a path shape A newly makes routine. Shipping shape A alone would therefore WIDEN defect 3 from a boot only case to every expiry, and the coupling is what stops that widened window from ever reaching the terminal. That consequence is stated in full in `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md` under the heading THE SHAPE A INTERLOCK, including what the boot path persists once defect 3 is fixed. PROVENANCE, recorded in the discipline the provenance correction FINAL of 2026-08-18 requires: the owner gave this ruling in one message in the terms quoted and marked nothing FINAL in words, and since the protocol offers a DECISIONS entry only FINAL or REVISIT, FINAL is applied here by transcription rather than by explicit owner words, exactly as the two entries of 2026-08-19 record for themselves and as the owner confirmed on that date.
+Status: FINAL
 
 Decision: (owner ruling 2026-08-19, Phase 3 opening session) THE DEFECT FIX ORDER FOR THIS BUILD IS RULED AND IS NOT THE EXECUTOR'S TO REORDER. Quoted as given: "Defect fix order for this build: (1) disconnect straddling lock expiry leaves the first post expiry pass ungated, (2) GV lock mirror self erases on cold boot, (3) boot derived lock persists an empty Q6 snapshot and loses the breach timestamp, (4) LOCKED LIFE lines carry no numbers." These are the same four defects the ACTIONS entry of 2026-08-19 recorded as waiting on the next build, and the ruling settles the order they are fixed in and nothing else. IT IS NOT AN AUTHORIZATION TO WRITE CODE and none has been given, so a later session finding this order recorded must still wait for a separate build instruction.
 Reason: Owner's ruling, recorded as given. No rationale was supplied with it and none is invented here. PROVENANCE, recorded in the discipline the provenance correction FINAL of 2026-08-18 requires: the owner marked ruling TWO of this session FINAL in terms and said nothing about a marker for this one. The protocol offers a DECISIONS entry only FINAL or REVISIT, so FINAL is applied here by transcription rather than by explicit owner words, and that distinction is written down rather than left for a later session to assume.
