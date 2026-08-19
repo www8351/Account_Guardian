@@ -317,6 +317,102 @@ Status: OPEN
 
 ## ACTIONS
 
+2026-08-19, DEFECT 1 FIX PLAN WRITTEN, AND THE OWNER'S ONE WORD RULING OF THIS DATE IS RECORDED
+HERE RATHER THAN IN DECISIONS. NO CODE WAS WRITTEN, NO COMPILE WAS RUN, NOTHING WAS DEPLOYED, AND
+NOTHING UNDER THE MetaTrader TERMINAL DATA FOLDER WAS READ, WRITTEN OR APPROACHED, per RULE A. No
+command this session named a path inside that folder, so RULE B's alias audit was not reached.
+State re derived before anything rather than carried: `git rev-parse HEAD` returned
+`f9b8b479f743415ec605018c0f067af56b64dcd3` on branch `worktree-phase3-defect-fixes` and
+`git status --porcelain` was empty. LEDGER.md was read in full, all 1344 lines, before any of the
+work below, per execution rule 2.
+
+THE OWNER RULING OF THIS DATE, QUOTED AS GIVEN IN FULL: "FINAL". IT CONFIRMS THE FINAL MARKER ON
+RULINGS ONE AND THREE OF 2026-08-19, the defect fix order and P2-H not being closable by code. IT
+IS RECORDED AS THIS DATED NOTE AND NOT AS A NEW DECISIONS ENTRY, per the instruction, because it
+adds no new content to either entry and creating a third entry to say that two existing entries
+mean what they say would put a decision in DECISIONS that decides nothing. THE PROVENANCE
+SENTENCE INSIDE EACH OF THOSE TWO ENTRIES IS UNTOUCHED AND WAS DELIBERATELY NOT EDITED. Both
+entries state that the owner said nothing about a marker for them and that FINAL was applied by
+transcription rather than by explicit owner words. That sentence is now historically accurate
+about how the marker was FIRST applied, and this note is the record that the owner has since
+confirmed it. Verified rather than asserted: `git diff` over LEDGER.md for this session shows no
+change inside the DECISIONS section at all, only an insertion at the head of ACTIONS.
+
+THE FIX PLAN IS WRITTEN AND IT RECOMMENDS NOTHING. `docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md`
+lays out the two shapes the ISSUES entry already names, side by side, plus one third shape that
+is mechanically distinct from both. For each: the exact functions and line ranges touched, what
+it changes on the running path, what it does not change, and its interaction with every FINAL it
+touches, each cited by its DECISIONS location. THE EXECUTOR MAKES NO CHOICE BETWEEN THEM and the
+document says so in its own opening, because the owner reserves the design.
+
+EVERY LINE RANGE IN THE DOCUMENT WAS RE DERIVED FROM SOURCE THIS SESSION RATHER THAN COPIED FROM
+THIS LEDGER'S OWN NARRATIVE, per the FINAL of 2026-08-05, AND SEVEN CITATIONS WERE WRONG IN THE
+DRAFT AND WERE CORRECTED BEFORE COMMIT. Recorded rather than silently fixed, because a fix plan
+whose line numbers are approximate is exactly the artifact a later session would act on without
+rechecking: `AgEnterLockFromBoot`'s `AgStateSetBreach` call is at `:393` and not `:396`, which is
+the line the defect 3 ISSUES entry already named correctly; the boot derivation's live disjunct is
+at `:284` and not `:281`; the LOCKED dispatch comment block is `:406-417` and not `:411-417`; the
+expiry block's state file reset and write is `:446-451` and not `:449-453`; the SYNCING branch is
+`:914-944` and not `:913-943`; the RESYNC edge detector is `:960-968` and not `:959-968`; and the
+Stage 6 comment above it is `:950-959` and not `:952-958`. Everything else checked out exactly,
+including the three that carry the most weight: `g_ag_resyncing` at `:50` written true only at
+`:531` and cleared only at `:555`, the coherence gate at `:547-556`, and the expiry transition at
+`:457`.
+
+TWO VARIANTS ARE NAMED AND EXPLICITLY NOT PROPOSED, both because they contradict a FINAL. Arming
+the coherence gate from the quote age measure would close the frozen quote route and would delay
+a decision on quote freshness grounds, which the stale quote ruling of 2026-08-18 forbids in
+terms. And arming it by reading `g_ag_obs_connected`, the Stage 6 observability global, breaks
+that stage's own static acceptance row as written and, under the broad reading of question SIX of
+2026-08-18, contradicts that ruling too. Shape B is therefore laid out in the form that reads
+`TerminalInfoInteger(TERMINAL_CONNECTED)` fresh and touches no Stage 6 global, which is otherwise
+identical and which needs neither reading resolved.
+
+THE MOST CONSEQUENTIAL THING IN THE DOCUMENT IS NOT A PREFERENCE, IT IS A COVERAGE FACT, and it
+is recorded here so a later session does not have to re derive it. THE TWO SHAPES DO NOT COVER
+THE SAME GROUND. Shape A routes every expiry through SYNCING unconditionally and therefore
+covers both straddle routes, the disconnect and the frozen quote while connected. Shape B arms on
+connection state and covers the disconnect route only, so on the one instance this project has
+actually observed live, the 61 minute 32 second frozen quote of 2026-08-19 with the terminal
+CONNECTED throughout, shape B is predicted to change nothing at all. That prediction is written
+down as P39 rather than left as an argument. Two costs are recorded on the other side: shape A
+makes `AgBootDerivation` run at every expiry, so an expiry time re lock arrives through
+`AgEnterLockFromBoot` and persists an empty Q6 snapshot, which is defect 3 landing on a path
+shape A newly makes routine and which the ruled order fixes THIRD; and shape B's flag is cleared
+only inside `AgEvaluateActive`, so any disconnect anywhere in a locked window latches the gate
+until expiry rather than only a straddling one.
+
+POST FIX PREDICTIONS RUN P25 TO P46 and continue the numbering of
+`docs/PREDICTIONS_PHASE3_DEFECTS_2026-08-19.md` unbroken, in the same format and with the same
+notation. P25 to P33 are shape A, P34 to P41 are shape B, P42 to P46 are shape C. Every one names
+the exact journal lines and the counts over the expiry window. TWO OF THEM ARE PREDICTIONS ABOUT
+THE SAMPLER RATHER THAN ABOUT THE BUILD and are marked as such: a three second SYNCING window and
+a three second RESYNC window are both about one tenth of the thirty second LIFE cadence, so ZERO
+LIFE lines carrying either is the EXPECTED observation and closes nothing either way. The rows
+therefore close on the event lines, which are not sampled, exactly as the P1-O ruling of
+2026-08-17 established.
+
+THE REPRODUCTION IS WRITTEN FOR THE OWNER AND WAS NOT PERFORMED. Only the precondition has ever
+been observed, so the document specifies the run that exercises the consequence: a live lock, an
+open losing position carried across the anchor and sized so its floating loss clears the new day's
+enforced limit, and either a staged adapter disconnect held from about 00:58 to about 01:02 or the
+nightly frozen quote, with the chart, the timeframe, the properties dialog, the template and the
+terminal untouched throughout. THE SIZING IS DELIBERATELY NOT DICTATED: the Q7 symbol
+specification tables are still unread and still carry the A8 corroboration debt, so the executor
+has no tick value or contract size to compute from and will not invent one. FOUR NEGATIVES MAKE A
+RUN VALID and a run failing any of them is discarded rather than interpreted: zero `deinit` lines,
+zero `init` lines, zero unexpected `TRANSITION` lines, and a continuous `seconds_in_state` within
+each occupancy. ONE HALF OF THE CONSEQUENCE MAY NOT BE PRODUCIBLE ON DEMAND and the document says
+so rather than promising it: that the gate does not arm is provable on any straddle, while that a
+wrong decision follows from unsettled history needs the history to be genuinely unsettled at the
+expiry instant, which only a reconnect can produce and which no procedure can guarantee.
+
+NOT DONE, AND NOT DONE DELIBERATELY: no source file touched, no build, no deploy, no merge and no
+push. A ruled fix order is not an instruction to build and no separate build instruction has been
+given. Per the FINAL remote state ruling of 2026-08-04 this entry makes no claim about where the
+remote stands. THE NEXT BEST ACTION IS THE OWNER'S: choose a shape, or perform the reproduction,
+in either order.
+
 2026-08-19, PHASE 3 OPENED. BOOKKEEPING, BRANCH, WRITTEN PREDICTIONS AND ONE OBSERVATION PROCEDURE, ON BRANCH `worktree-phase3-defect-fixes`. NO CODE WAS WRITTEN, NO COMPILE WAS RUN, NOTHING WAS DEPLOYED, AND NOTHING UNDER THE MetaTrader TERMINAL DATA FOLDER WAS READ, WRITTEN OR APPROACHED, per RULE A. Every artifact this session read is a repository copy under `docs/evidence`, which is the sanctioned side of that boundary, so RULE B's alias audit was not reached because no command named a path inside the Terminal folder at any point. State re derived before anything rather than carried from the previous entry: `git rev-parse` returns `8e99778efeab1a5612369d65671df5856deb5518` for HEAD, for main and for the local ref origin/main alike, and `git status --porcelain` was empty. LEDGER.md was read in full, all 1317 lines of it, before any of the work below, per execution rule 2.
 
 THE BRANCH AND ITS BASE, both quoted because the instruction asked for them and because the Stage 7 branch needed correcting on exactly this point one day earlier. Branch `worktree-phase3-defect-fixes`, created by `git worktree add` so nothing runs in the owner's own checkout, cut from `8e99778efeab1a5612369d65671df5856deb5518`, whose subject is "ledger: record the Stage 7 push and the UNRULED main-checkout proposal". Verified after creation rather than assumed: `git merge-base HEAD main` returns that same hash, so the merge base EQUALS main's head and there is no second side for a union to reconcile today; `git diff --stat main HEAD` returned EMPTY at creation; and `git status --porcelain` was empty in the new worktree. THE HARNESS CUTS FROM `origin/main` BY DEFAULT AND THAT WAS HARMLESS THIS TIME, which is worth writing down rather than leaving to luck: on 2026-08-18 the Stage 7 branch had to be moved forward because the harness cut it from an `origin/main` that predated every Phase 2 stage, and here origin/main and local main both stood at `8e99778`, so the two agreed and no correction was needed. Re derive it next time rather than trusting this paragraph.
