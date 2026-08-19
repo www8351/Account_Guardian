@@ -19,6 +19,10 @@
 #include <AccountGuardian/Log.mqh>
 #include <AccountGuardian/Clock.mqh>
 #include <AccountGuardian/State.mqh>
+//--- For AG_PNL_EPSILON. Pnl.mqh includes only Clock.mqh and defines its own
+//--- globals, so this pulls in no cycle and no EA-only symbol; the vectors
+//--- script, which includes Persist.mqh alone, still compiles standalone.
+#include <AccountGuardian/Pnl.mqh>
 
 #define AG_FILES_DIR            "AccountGuardian"
 #define AG_HALT_FORMAT_VERSION  1
@@ -809,12 +813,24 @@ double AgRatchetUpdate(const datetime window_anchor, const double live_limit,
      }
 
    //--- SAME DAY. Lower on a decrease, hold on an increase.
-   if(live_limit < g_ag_floor_currency)
+   //--- BOTH TESTS GO THROUGH AG_PNL_EPSILON (owner ruling 2026-08-18, taken
+   //--- after the live Stage 7 finding). g_ag_floor_currency arrives at this
+   //--- line by two different routes: straight out of AgLimitCurrency in the
+   //--- session that seeded it, or through AgFloorSerialize's 8-decimal
+   //--- DoubleToString and back through StringToDouble in every session after
+   //--- a restart. Those two routes are not required to yield the same double,
+   //--- and an exact < or > promotes a difference below the last written digit
+   //--- into a branch decision. That is what fired 220 times on the live
+   //--- account between 02:01 and 10:39 on 2026-08-18, reporting a raised limit
+   //--- nobody had raised. The band is one cent wide and its cost is stated
+   //--- rather than hidden: a real limit change smaller than a cent now moves
+   //--- neither the floor nor the journal.
+   if(live_limit < g_ag_floor_currency - AG_PNL_EPSILON)
      {
       g_ag_floor_currency = live_limit;   // running minimum
       AgFloorSave();
      }
-   else if(live_limit > g_ag_floor_currency)
+   else if(live_limit > g_ag_floor_currency + AG_PNL_EPSILON)
      {
       datetime now_local_hold = TimeLocal();
       if(g_ag_last_ratchet_warn == 0
