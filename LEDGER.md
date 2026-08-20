@@ -11,8 +11,8 @@ Action: FIX SECOND, per the ruled order, and the fix itself is not written in th
 Status: OPEN
 
 Issue:  DEFECT 3 OF 4 IN THE FIX ORDER RULED 2026-08-19. A BOOT DERIVED LOCK PERSISTS AN EMPTY Q6 SNAPSHOT AND LOSES THE BREACH TIMESTAMP. Cause at `AccountGuardian.mq5:393`: `AgEnterLockFromBoot` passes the EXISTING model values `g_ag_state_breach_time`, `g_ag_state_limit_snap` and `g_ag_state_base_snap` into `AgStateSetBreach`, which is RIGHT when the FILE witness fires and an earlier snapshot must be preserved, and WRONG when the DERIVED witness fires with no file at all, because the model is then default constructed and the derivation's own freshly computed limit and base are discarded instead of recorded. LIVE EVIDENCE, `docs/evidence/state_1200252169.dat.live-breach-2026-08-18`, the file the live lock wrote at 2026-08-18 13:02:42 under build `74D666E9`, 79 bytes, quoted whole: `AGSTATE|1|1200252169`, `L|1|1787101200|0`, `N|0.00000000|0.00000000`, `C|2087926071`. Both snapshot fields are zero and `breach_at` is zero. Set against the witness line that produced it, in `docs/evidence/journal-20260818-stage7-live-breach.txt`, `AG|2026.08.18 13:02:42|INFO|boot witness DERIVED fired|live=1|replay=0|realized=574.00|floating=-920.50|running_min=-7.00|limit_cmp=106.66|tier=floor|bounded=2026.08.19 01:00:00`, which had the limit and the arithmetic in hand at the moment of writing and recorded neither.
-Action: FIX THIRD, per the ruled order, and the fix itself is not written in this session. SEVERITY IS SPLIT AND BOTH HALVES ARE STATED. Not an enforcement hole today: the file witness re fires on reason plus an unexpired `locked_until` and never consults the snapshot, proven live at 13:46:44 where the lock survived a relaunch on exactly that path, and tier 2 supplied the same 106.66 on this account. It IS a permanent loss of record and a silently disabled protection: the breach timestamp is gone for good, and `have_snapshot`, which tests `g_ag_state_limit_snap > 0.0`, is false on EVERY future boot for EVERY boot derived lock, so the tier 1 protection question SIX exists to provide is absent for that entire class of lock rather than for this one instance.
-Status: OPEN
+Action: FIX THIRD, per the ruled order, and SHAPE 1 IS RULED 2026-08-20 and FINAL in DECISIONS: on the boot derived path `AgEnterLockFromBoot` persists the derivation's own `limit_cmp` and `base` as the Q6 snapshot and takes the derivation instant as `breach_time`, recorded as such. Shape 2 is not taken, so `Pnl.mqh` is not widened and the fix stays inside the EA. The plan is `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`, which carries the exact functions and line ranges at `0a4c86b`, what does not change, the interaction with every FINAL touched, and predictions P47 to P60 at journal line and state file field level. NOT IMPLEMENTED AND NOT AUTHORISED: three things are now ruled on this defect, the order, the coupling to one deployment with defect 1, and the shape, and none of the three is an instruction to build, so this waits on a separate owner instruction. THE SHAPE A INTERLOCK MAKES THIS MORE URGENT THAN IT WAS WHEN FOUND, and the entry says so rather than leaving it to the plan: since `0a4c86b` every expiry enters SYNCING, so `AgBootDerivation` runs at every expiry and the expiry block's own `AgStateResetModel()` plus the zeroed GV mirror leave the DERIVED witness as the only one that can fire, with `have_snapshot` false. Every expiry time re lock on this branch would therefore persist zeros, where before shape A this defect reached only boots. SEVERITY IS SPLIT AND BOTH HALVES ARE STATED. Not an enforcement hole today: the file witness re fires on reason plus an unexpired `locked_until` and never consults the snapshot, proven live at 13:46:44 where the lock survived a relaunch on exactly that path, and tier 2 supplied the same 106.66 on this account. It IS a permanent loss of record and a silently disabled protection: the breach timestamp is gone for good, and `have_snapshot`, which tests `g_ag_state_limit_snap > 0.0`, is false on EVERY future boot for EVERY boot derived lock, so the tier 1 protection question SIX exists to provide is absent for that entire class of lock rather than for this one instance.
+Status: OPEN, shape ruled 2026-08-20, not implemented, awaiting a build instruction; it ships in one build with defect 1 per the coupling ruled the same date and neither ships alone
 
 Issue:  DEFECT 4 OF 4 IN THE FIX ORDER RULED 2026-08-19. LOCKED LIFE LINES CARRY NO NUMBERS. A LOCKED LIFE line prints state, `seconds_in_state` and `waiting_on` and nothing else, while an ACTIVE LIFE line prints anchor, realized, floating, base, limit and `pnl_vs_limit`. LIVE EVIDENCE, `docs/evidence/journal-20260818-stage7-forced-kill.txt`, 2026-08-18, build `74D666E9`, and the cost was paid the same day rather than being hypothetical: at 13:38:07 the broker force closed thirteen positions on this account, and the line the guardian emitted across that event is `AG|2026.08.18 13:38:02|LIFE|state=LOCKED|seconds_in_state=2121|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.18 13:38:02|local=2026.08.18 13:38:03`, carrying not one figure. Seventy six consecutive LOCKED LIFE lines from 13:03:03 to 13:40:33 are identical apart from the counter and the two clocks.
 Action: FIX FOURTH, per the ruled order, and the fix itself is not written in this session. WHAT THIS ACTUALLY COST, recorded so the fix is scoped against evidence rather than against a feeling: when the owner asked for balance and equity at the moment of the liquidation the executor could supply NEITHER from any readable artifact, because no artifact carries them, and the same gap blocked a direct answer three further times in one session, on the input value the EA booted with, on the 2133 deposit landing while locked, and on the account state through the P2-C disconnect. Naming the obvious scope WITHOUT RULING IT, since the owner reserves the design: the numbers block already exists and is already computed for the ACTIVE path, so the question is which fields still mean anything under a lock rather than what to compute.
@@ -316,6 +316,61 @@ Status: OPEN
 ---
 
 ## ACTIONS
+
+2026-08-20, SECOND ENTRY FOR THE DATE. THE DEFECT 3 SHAPE IS RULED AND RECORDED, AND NOTHING WAS
+IMPLEMENTED. Ledger only: no source file was written, no compile was run, nothing was built or
+deployed, no merge, no push, and nothing under the MetaTrader Terminal data folder was read, written
+or approached, per RULE A. No command this session named a path inside that folder, so RULE B's alias
+audit was not reached. State re derived rather than carried: `git rev-parse HEAD` returned
+`f8972cddc96408cee5b748606ae75c93dbb05233` on branch `worktree-phase3-defect-fixes` with
+`git status --porcelain` empty, and LEDGER.md stood at 1582 lines.
+
+THE OWNER RULING IS FINAL IN DECISIONS, quoted there in full and not restated here. Shape 1 of the
+defect 3 plan is taken, so the boot derived path persists the derivation's own `limit_cmp` and `base`
+as the Q6 snapshot and takes the derivation instant as `breach_time`. Shape 2 is not taken, and the
+consequence worth carrying is that `Pnl.mqh` IS NOT WIDENED: `AgRealizedFold` keeps its signature and
+its two outputs, no second history walk is added, and the whole fix stays inside the EA. That also
+means the file Phase 1 froze, and which carries its own static acceptance row, is untouched by defect
+3, which is a smaller and safer diff than the alternative would have been.
+
+NOTHING WAS BUILT, AND THAT IS A READING OF THE INSTRUCTION RATHER THAN AN OMISSION, so it is written
+down as one. The owner's message is a ruling and carries no task list, and this project's standing
+discipline is explicit and repeated that a ruling is not a build instruction: the kickoff entry of
+2026-08-18 records that defining what Stage 5 and Stage 6 ARE "is not the same as an instruction to
+build them", the fix order FINAL of 2026-08-19 says in terms that it "IS NOT AN AUTHORIZATION TO WRITE
+CODE", and the defect 3 plan's own closing paragraph says the same of itself. All three questions on
+defect 3 are now ruled, the order, the coupling and the shape, and the executor reads three rulings as
+three rulings. IF THE OWNER INTENDED THIS AS THE BUILD INSTRUCTION, one line saying so is all that is
+needed and the work is ready to start from the plan as written.
+
+ONE DERIVED QUESTION IS RAISED BY THE RULING'S OWN WORDS AND IS DELIBERATELY NOT ANSWERED. "Recorded
+as such" is satisfied today by this ledger and by the plan, both of which now state that `breach_time`
+means the derivation instant on the boot derived path and a true breach instant on the `AgDeclareLock`
+path. It MAY instead or additionally be read as requiring the distinction to be marked in the ARTIFACT,
+so a reader holding only `state_<login>.dat` can tell the two apart. The state file cannot carry that
+today: its record layout is fixed at `Persist.mqh:352-359` and a new field means a format version
+change, which touches `Persist.mqh`, the loader, `AG_STATE_FORMAT_VERSION` and the round trip vectors,
+none of which is inside the ranges the defect 3 plan names. The executor names the fork and stops
+rather than choosing the cheaper reading by default, per the standing rule against settling by
+inference what a ruling did not say. The journal already distinguishes the two paths without any format
+change, since a boot derived lock is preceded by a `boot witness DERIVED fired` line and an ACTIVE
+declaration is preceded by `breach arithmetic`, so a third option is to rely on that and add nothing.
+
+BOOKKEEPING DONE THIS SESSION AND NOTHING ELSE. The defect 3 ISSUES entry keeps its `Issue` line
+verbatim, since that is the record of the defect as found together with its live evidence, and its
+`Action` line now names the ruled shape, points at the plan, states that no build is authorised, and
+carries the shape A interlock in the entry itself rather than only in the plan, because a session
+reading ISSUES alone must know that since `0a4c86b` this defect would bite at every expiry rather than
+only at a boot. Its `Status` stays OPEN, since nothing is implemented, and now names what it waits on.
+No FINAL entry was edited, no defect was marked DONE, defects 2 and 4 were not touched, and the defect
+1 entry is unchanged and still IN PROGRESS pending the live acceptance row P3-1.
+
+NOT DONE, AND NOT DONE DELIBERATELY: no code, no compile, no build, no deploy, no merge, no push. The
+running binary is still `74D666E9` and carries all four defects. Per the FINAL remote state ruling of
+2026-08-04 this entry makes no claim about where the remote stands. THE NEXT BEST ACTION IS THE
+OWNER'S AND IT IS NOW A SINGLE INSTRUCTION: authorise the defect 3 build, which under the coupling
+ruled this date is one build carrying both fixes, and say which reading of "recorded as such" it
+carries.
 
 2026-08-20, DEFECT 1 IS FIXED IN SOURCE AS SHAPE A AND THE DEFECT 3 FIX PLAN IS WRITTEN. NO COMPILE
 WAS RUN, NOTHING WAS BUILT OR DEPLOYED, NO MERGE, NO PUSH, AND NOTHING UNDER THE MetaTrader TERMINAL
@@ -1221,6 +1276,10 @@ Status: DONE
 ---
 
 ## DECISIONS
+
+Decision: (owner ruling 2026-08-20, second ruling of that date) DEFECT 3 TAKES SHAPE 1: `breach_time` ON THE BOOT DERIVED PATH IS THE DERIVATION INSTANT, RECORDED AS SUCH. Quoted as given in full: "Shape 1. breach_time on the boot derived path is the derivation instant, recorded as such." SHAPE 1 is the shape of that name in `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`: when the DERIVED witness supplies a lock and no valid file snapshot exists, `AgEnterLockFromBoot` persists the derivation's own `limit_cmp` and `base` as the Q6 snapshot and takes `AgServerNow()`, the instant the derivation ran, as `breach_time`. SHAPE 2 IS NOT TAKEN, and the consequence is that `Pnl.mqh` is NOT widened: `AgRealizedFold` keeps its current signature and its two outputs, no second history walk is added, and the fix stays inside the EA. "RECORDED AS SUCH" IS PART OF THE RULING AND NOT A GLOSS: the field carries a derivation instant on this path and a true breach instant on the `AgDeclareLock` path, and any artifact, document or later entry that reports it must say which of the two it is rather than letting the field's name imply the stronger meaning.
+Reason: Owner's ruling, recorded as given. No rationale was supplied for the choice and none is invented here. What the ruling costs is already written in the plan's own two cost paragraphs and is not restated: shape 1 is uniformly approximate on the boot derived path, where shape 2 would have been exact whenever the replay disjunct fired and approximate whenever only the live disjunct did, with nothing in the state file distinguishing the two. The owner's added words "recorded as such" are what answer that cost, by making the approximation explicit rather than by removing it. ONE DERIVED QUESTION IS RAISED BY THOSE WORDS AND IS NOT RULED HERE, per the standing rule that an executor may not settle by inference what a ruling did not say: "recorded as such" is satisfied by this ledger and by the plan, and it MAY also be read as requiring a marker in the artifact itself, which the state file cannot carry today without a new field and therefore a format version change touching `Persist.mqh`. That is well outside the plan's stated ranges and it is the owner's to decide at the build instruction, not the executor's to assume either way. PROVENANCE, per the correction FINAL of 2026-08-18: the owner gave this in one message in the terms quoted and marked nothing FINAL in words, so FINAL is applied by transcription rather than by explicit owner words, the same discipline the two entries of 2026-08-19 and the shape A entry of this date each record for themselves. THIS IS A RULING AND NOT A BUILD INSTRUCTION. All three questions on defect 3 are now ruled, the order, the coupling to one deployment and the shape, and none of the three authorises writing code, so nothing is implemented until a later and separate owner instruction says so.
+Status: FINAL
 
 Decision: (owner ruling 2026-08-20, Phase 3 defect 1 implementation session) SHAPE A IS THE DEFECT 1 FIX, AND DEFECT 3 IS COUPLED TO THE SAME DEPLOYMENT. Quoted as given in full: "Shape A, and the defect 3 fix is coupled to the same deployment. Fix order unchanged: 1 implemented first, 3 second, one build." SHAPE A is the shape laid out under that name in `docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md`: lock expiry enters SYNCING rather than ACTIVE directly, unconditionally, so the first pass eligible to declare a breach is preceded by the same history stability discipline every cold boot already runs. Shapes B and C of that document are NOT TAKEN, and under protocol rule 5 this entry closes that choice rather than leaving it open for a later session to reopen. The fix order of 2026-08-19 is unchanged and is not amended by this: defect 1 is implemented first and defect 3 second. NEITHER SHIPS ALONE. The two reach the terminal in ONE BUILD and ONE DEPLOYMENT, so a build carrying only one of them is outside this ruling.
 Reason: Owner's ruling, recorded as given. No rationale was supplied with the choice of shape and none is invented here. THE COUPLING IS NOT A SCHEDULING PREFERENCE AND ITS GROUND IS ALREADY ON THE RECORD, in the shape A section of the defect 1 plan and in that document's prediction P31: shape A makes `AgBootDerivation` run at EVERY expiry, so an expiry time re lock arrives through `AgEnterLockFromBoot` and persists an empty Q6 snapshot, which is defect 3 landing on a path shape A newly makes routine. Shipping shape A alone would therefore WIDEN defect 3 from a boot only case to every expiry, and the coupling is what stops that widened window from ever reaching the terminal. That consequence is stated in full in `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md` under the heading THE SHAPE A INTERLOCK, including what the boot path persists once defect 3 is fixed. PROVENANCE, recorded in the discipline the provenance correction FINAL of 2026-08-18 requires: the owner gave this ruling in one message in the terms quoted and marked nothing FINAL in words, and since the protocol offers a DECISIONS entry only FINAL or REVISIT, FINAL is applied here by transcription rather than by explicit owner words, exactly as the two entries of 2026-08-19 record for themselves and as the owner confirmed on that date.
