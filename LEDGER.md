@@ -11,8 +11,8 @@ Action: FIX SECOND, per the ruled order, and the fix itself is not written in th
 Status: OPEN
 
 Issue:  DEFECT 3 OF 4 IN THE FIX ORDER RULED 2026-08-19. A BOOT DERIVED LOCK PERSISTS AN EMPTY Q6 SNAPSHOT AND LOSES THE BREACH TIMESTAMP. Cause at `AccountGuardian.mq5:393`: `AgEnterLockFromBoot` passes the EXISTING model values `g_ag_state_breach_time`, `g_ag_state_limit_snap` and `g_ag_state_base_snap` into `AgStateSetBreach`, which is RIGHT when the FILE witness fires and an earlier snapshot must be preserved, and WRONG when the DERIVED witness fires with no file at all, because the model is then default constructed and the derivation's own freshly computed limit and base are discarded instead of recorded. LIVE EVIDENCE, `docs/evidence/state_1200252169.dat.live-breach-2026-08-18`, the file the live lock wrote at 2026-08-18 13:02:42 under build `74D666E9`, 79 bytes, quoted whole: `AGSTATE|1|1200252169`, `L|1|1787101200|0`, `N|0.00000000|0.00000000`, `C|2087926071`. Both snapshot fields are zero and `breach_at` is zero. Set against the witness line that produced it, in `docs/evidence/journal-20260818-stage7-live-breach.txt`, `AG|2026.08.18 13:02:42|INFO|boot witness DERIVED fired|live=1|replay=0|realized=574.00|floating=-920.50|running_min=-7.00|limit_cmp=106.66|tier=floor|bounded=2026.08.19 01:00:00`, which had the limit and the arithmetic in hand at the moment of writing and recorded neither.
-Action: FIX THIRD, per the ruled order, and SHAPE 1 IS RULED 2026-08-20 and FINAL in DECISIONS: on the boot derived path `AgEnterLockFromBoot` persists the derivation's own `limit_cmp` and `base` as the Q6 snapshot and takes the derivation instant as `breach_time`, recorded as such. Shape 2 is not taken, so `Pnl.mqh` is not widened and the fix stays inside the EA. The plan is `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`, which carries the exact functions and line ranges at `0a4c86b`, what does not change, the interaction with every FINAL touched, and predictions P47 to P60 at journal line and state file field level. NOT IMPLEMENTED AND NOT AUTHORISED: three things are now ruled on this defect, the order, the coupling to one deployment with defect 1, and the shape, and none of the three is an instruction to build, so this waits on a separate owner instruction. THE SHAPE A INTERLOCK MAKES THIS MORE URGENT THAN IT WAS WHEN FOUND, and the entry says so rather than leaving it to the plan: since `0a4c86b` every expiry enters SYNCING, so `AgBootDerivation` runs at every expiry and the expiry block's own `AgStateResetModel()` plus the zeroed GV mirror leave the DERIVED witness as the only one that can fire, with `have_snapshot` false. Every expiry time re lock on this branch would therefore persist zeros, where before shape A this defect reached only boots. SEVERITY IS SPLIT AND BOTH HALVES ARE STATED. Not an enforcement hole today: the file witness re fires on reason plus an unexpired `locked_until` and never consults the snapshot, proven live at 13:46:44 where the lock survived a relaunch on exactly that path, and tier 2 supplied the same 106.66 on this account. It IS a permanent loss of record and a silently disabled protection: the breach timestamp is gone for good, and `have_snapshot`, which tests `g_ag_state_limit_snap > 0.0`, is false on EVERY future boot for EVERY boot derived lock, so the tier 1 protection question SIX exists to provide is absent for that entire class of lock rather than for this one instance.
-Status: OPEN, shape ruled 2026-08-20, not implemented, awaiting a build instruction; it ships in one build with defect 1 per the coupling ruled the same date and neither ships alone
+Action: IMPLEMENTED IN SOURCE 2026-08-20 AS SHAPE 1, commit `4d6b5e2`, under the build instruction of that date and the three rulings of that date which are FINAL in DECISIONS. `AgBootDerivation` gains four out parameters carrying what the pass computed, `have_snapshot`, the derivation instant, the enforced `limit_cmp` and the day base, and publishes them unconditionally right after the cascade so the decision lives at one site. `AgEnterLockFromBoot` takes them and the DAILY_BREACH site now BRANCHES rather than overwriting blanket: a loaded snapshot is preserved byte for byte per Q6, and the derivation's own values are written ONLY when `have_snapshot` is false, which is exactly the case Q6 has nothing to govern. The CORRUPT_STATE branch is untouched and still zeroes all three fields. `breach_time` on this path is the DERIVATION INSTANT and is recorded as such here, in `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md` and by the journal, which already separates the two paths; the state file gains no field and `AG_STATE_FORMAT_VERSION` stays 1, per the third ruling of this date. COMPILED CLEAN AND NOT DEPLOYED: EA `Result: 0 errors, 0 warnings, 948 ms elapsed, cpu='X64 Regular'` and vectors `Result: 0 errors, 0 warnings, 675 ms elapsed`, both compiled inside the worktree with `/inc:` so every include resolved to the worktree and no path under the Terminal folder was written or named. THE 84 VECTORS HAVE NOT RUN: the run needs the script `.ex5` inside the terminal's Scripts folder, which is an owner performed copy at the executor's dictation per ruling ONE of 2026-08-18, and it is the next step rather than this one, exactly as the Stage 2 entry of 2026-08-18 recorded for the same reason.
+Status: IN PROGRESS, fixed in source at `4d6b5e2`, compiled at 0 errors 0 warnings, undeployed and with its vectors unrun; it CLOSES ONLY ON LIVE ACCEPTANCE, P49 and P53 of `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`, meaning a `state_<login>.dat` written by a boot derived lock whose `L` record carries a non zero third field and whose `N` record carries both figures non zero, and a following boot whose `boot witness DERIVED fired` line reads `tier=snapshot`. No code reading closes it and none may be offered as closing it. It ships in one build with defect 1 per the coupling ruled this date and neither ships alone.
 
 Issue:  DEFECT 4 OF 4 IN THE FIX ORDER RULED 2026-08-19. LOCKED LIFE LINES CARRY NO NUMBERS. A LOCKED LIFE line prints state, `seconds_in_state` and `waiting_on` and nothing else, while an ACTIVE LIFE line prints anchor, realized, floating, base, limit and `pnl_vs_limit`. LIVE EVIDENCE, `docs/evidence/journal-20260818-stage7-forced-kill.txt`, 2026-08-18, build `74D666E9`, and the cost was paid the same day rather than being hypothetical: at 13:38:07 the broker force closed thirteen positions on this account, and the line the guardian emitted across that event is `AG|2026.08.18 13:38:02|LIFE|state=LOCKED|seconds_in_state=2121|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.18 13:38:02|local=2026.08.18 13:38:03`, carrying not one figure. Seventy six consecutive LOCKED LIFE lines from 13:03:03 to 13:40:33 are identical apart from the counter and the two clocks.
 Action: FIX FOURTH, per the ruled order, and the fix itself is not written in this session. WHAT THIS ACTUALLY COST, recorded so the fix is scoped against evidence rather than against a feeling: when the owner asked for balance and equity at the moment of the liquidation the executor could supply NEITHER from any readable artifact, because no artifact carries them, and the same gap blocked a direct answer three further times in one session, on the input value the EA booted with, on the 2133 deposit landing while locked, and on the account state through the P2-C disconnect. Naming the obvious scope WITHOUT RULING IT, since the owner reserves the design: the numbers block already exists and is already computed for the ACTIVE path, so the question is which fields still mean anything under a lock rather than what to compute.
@@ -316,6 +316,119 @@ Status: OPEN
 ---
 
 ## ACTIONS
+
+2026-08-20, THIRD ENTRY FOR THE DATE. DEFECT 3 IS IMPLEMENTED AS SHAPE 1 AND BOTH BINARIES COMPILE
+CLEAN. NOTHING WAS DEPLOYED, NO MERGE, NO PUSH, AND NOTHING UNDER THE MetaTrader TERMINAL DATA FOLDER
+WAS WRITTEN, per RULE A. The folder was READ ONLY, to list the Scripts directory and to re hash the
+live tree, and RULE B was satisfied because every command that named a path inside it was a plain
+inline `Get-ChildItem`, `Get-FileHash` or `ls` with no user defined helper in the call chain. State re
+derived rather than carried: `git rev-parse HEAD` returned
+`dd0b5071a6f686f0b45cf852a6d31e972bf84691` with `git status --porcelain` empty and LEDGER.md at 1645
+lines after the third ruling landed.
+
+THE THIRD RULING OF THE DATE IS FINAL IN DECISIONS, commit `3a4972c`, and it settles the derived
+question the shape 1 ruling left open: "recorded as such" is satisfied by the ledger, the plan and the
+journal's existing distinction, the state file format stays frozen, and reading 2 stays available as a
+design item for a future build rather than being closed against.
+
+THE IMPLEMENTATION, commit `4d6b5e2`, ONE FILE, 86 insertions and 9 deletions. `AgBootDerivation`
+gains four out parameters, `have_snapshot_out`, `breach_time_out`, `limit_out` and `base_out`, all
+initialised at the head of the function so the two NOT EVALUABLE returns leave them defined rather
+than indeterminate, and all four assigned immediately after the three tier cascade. They are published
+UNCONDITIONALLY rather than only when a witness fires, and that is deliberate: the caller decides on
+`have_snapshot` and not on which witness won, so keeping the publication at one site keeps the
+decision at one site. `AgEnterLockFromBoot` takes the same four and its DAILY_BREACH site is now a
+three way branch, CORRUPT_STATE to `AgStateSetCorrupt` untouched, `have_snapshot` true preserving the
+loaded triple byte for byte, and `have_snapshot` false writing the derivation's own. THE NON BLANKET
+RULE IS THE WHOLE OF THE FIX and the build instruction named it explicitly: writing the derivation's
+values unconditionally would have been a no op for the limit, since the cascade sets
+`limit_cmp = g_ag_state_limit_snap` at tier 1, and would still have overwritten the base and the breach
+time with freshly computed values, which is the substitution Q6 forbids.
+
+WHY `limit_out` IS THE ENFORCED LIMIT AND NOT THE RAW LIVE ONE, recorded because getting it wrong
+would be silent. `limit_cmp` is what the disjuncts compare against and is therefore what Q6 means by
+the snapshot, and it is already the ratchet floor when the floor is the stricter value. Snapshotting
+the raw live limit instead would have loosened every boot derived locked window by exactly the amount
+the floor was holding back, which is the same trap the Stage 5 entry of 2026-08-18 recorded for the
+ACTIVE path and which is now closed on this path by construction.
+
+THE SCOPED DIFF ROW PASSES IN THE STRONGER FORM. `AgDeclareLock` is byte identical across the change
+at sha256 `a23e38c2031f05107a55af657b59158f911bd389ce845aaf2d2e83b75aa0bc31`, `AgEvaluateLocked` at
+`25888a59eb8a185c24dc483d3b09703730bce6f347de77ea3e6450d01c5a5cc8`, and `AgEvaluateActive` at
+`1a795e285268a4e731808ecc6423e804ecebdeca5b8e5f0fb25f82cad4f2c01c`, WHICH IS THE SAME HASH IT CARRIED
+BEFORE SHAPE A, so the Phase 1 evaluation path is byte identical across BOTH defect fixes and not
+merely across this one. ALL FIVE INCLUDES THE INSTRUCTION NAMED ARE UNCHANGED BY MD5: `Persist.mqh`
+`776f3ba0a3197138645305a1e743822c`, `Pnl.mqh` `4da4810100691ffc135d6073917b7855`, `State.mqh`
+`34792807c6b6b548943215866193eb3f`, `Clock.mqh` `dc5a04004f0cb7bdb9d6c602e944cec1`, `Sweep.mqh`
+`cf7d355a7c52265a7aff5c465da33c46`, and `Log.mqh` is unchanged too at
+`c4e803fb81ebe7f521cc020e8fa1ce82`. Twelve hunks, every one inside `AgBootDerivation`,
+`AgEnterLockFromBoot` or the single call site in the SYNCING branch, which is the shared table's ranges
+plus the shape 1 delta and nothing else. S1 and S2 rerun clean, the one tree wide hit being the header
+comment in `Sweep.mqh`, so the build still carries zero trade API calls. Zero `TimeLocal`, `TimeGMT` or
+`TimeTradeServer` occurrences were added, counted over the added lines.
+
+THE COMPILES, BOTH QUOTED VERBATIM AND BOTH RUN INSIDE THE WORKTREE. EA:
+`Result: 0 errors, 0 warnings, 948 ms elapsed, cpu='X64 Regular'`. Vectors:
+`Result: 0 errors, 0 warnings, 675 ms elapsed, cpu='X64 Regular'`. Per standing rule 6 the process exit
+code was read and DISCARDED, 1 on both, inverted exactly as that rule records, and the Result line and
+the ex5 timestamp are what the claim rests on. THE INCLUDE RESOLUTION WAS MEASURED AND NOT ASSUMED,
+which is the check the Stage 2 entry of 2026-08-18 established when it found MetaEditor rooting against
+the deployed terminal tree: every `including` line in both logs names a path under
+`...\.claude\worktrees\phase3-defect-fixes\MQL5\Include\AccountGuardian\`, and no path under the
+Terminal data folder appears in either log at all.
+
+BUILD IDENTITY. `AccountGuardian.ex5` md5 `1C88C4A155CF09AC38D71C3E5BFEF1D9`, 78676 bytes, mtime
+2026-08-20 20:33:18. `AgPhase2StateVectors.ex5` md5 `BE3E233CBC8A770CEFEEB382CAFA688F`, 49004 bytes,
+mtime 2026-08-20 20:33:53. Both figures are recorded because the build instruction asked for them, and
+STANDING RULE 7 IS RESTATED WITH THEM RATHER THAN LEFT FOR A LATER SESSION TO REMEMBER: the ex5 size
+and hash are NOT build identity, since five compiles of byte identical source once produced five
+different binaries spanning about 1500 bytes. These two values identify THIS artifact for the copy that
+follows, so the owner can verify what landed is what was named; they cannot be used later to argue that
+some other binary was or was not built from this source. Both files are untracked by design,
+`.gitignore:8` carrying `*.ex5`, so no binary enters history.
+
+RULE A VERIFIED ON A SECOND FIELD RATHER THAN ASSERTED. Every file in the live terminal tree still
+carries its pre existing mtime with nothing from today: `Clock.mqh`, `Pnl.mqh` and `AccountGuardian.mq5`
+at 2026-08-18 00:20:02, `Persist.mqh` at 2026-08-18 11:02:31, `Log.mqh` and `State.mqh` at 2026-08-09,
+`Sweep.mqh` at 2026-07-30 22:39:18, and the live `AccountGuardian.ex5` still at 2026-08-18 11:27:16,
+which is build `74D666E9`. THE RUNNING GUARDIAN IS THEREFORE STILL THE UNFIXED BUILD and carries all
+four defects, which is the correct and intended state until the owner performs the copy.
+
+THE 84 VECTORS DID NOT RUN, AND THE INSTRUCTION THAT ASKED FOR THEM CANNOT BE SATISFIED IN THE SAME
+SESSION THAT FORBIDS THE COPY. Stated plainly rather than worked around, because a substitute would
+prove something else while carrying this row's name. A vector run needs `AgPhase2StateVectors.ex5`
+inside `MQL5\Scripts\AccountGuardian\` under the Terminal data folder and needs the running terminal to
+execute it; that copy is a WRITE under that folder, which RULE A forbids the executor and which ruling
+ONE of 2026-08-18 assigns to the owner at the executor's dictation, and this instruction both lists it
+as not authorized and assigns it to the next step. This is the same wall the Stage 2 entry of
+2026-08-18 hit and recorded in the same terms, where 42 vectors were COMPILED and NEVER EXECUTED. No
+summary line and no FAIL count is quoted here because none exists, and none may be invented: the last
+`AGVEC|SUMMARY|84/84` on the record is the 2026-08-18 run of the PREVIOUS build and it says nothing
+about this one.
+
+THE DICTATION FOR THE NEXT STEP IS PREPARED AND IS NOT PERFORMED. Two copies, both owner performed, one
+file at a time with the md5 verified after each landing: `AgPhase2StateVectors.ex5` from the worktree
+Scripts directory to the terminal's `MQL5\Scripts\AccountGuardian\`, expected md5
+`BE3E233CBC8A770CEFEEB382CAFA688F`; and `AccountGuardian.ex5` to the terminal's
+`MQL5\Experts\AccountGuardian\`, expected md5 `1C88C4A155CF09AC38D71C3E5BFEF1D9`. A TERMINAL RESTART IS
+MANDATORY BETWEEN THE SCRIPT COPY AND THE RUN, not a precaution: the Navigator enumeration rule
+established 2026-08-04 and extended to the Scripts class on 2026-08-09 means a running terminal never
+enumerates a file added to its data folder after it started. Whether the EA binary is copied in the
+same step or held is the owner's call and is not assumed here, since deploying the EA changes what
+guards the live account while deploying the script alone does not.
+
+BOOKKEEPING. The defect 3 ISSUES entry moves to IN PROGRESS with its `Issue` line left verbatim, and
+its Status names what closes it, LIVE ACCEPTANCE ON P49 AND P53 AND NOTHING ELSE: a `state_<login>.dat`
+written by a boot derived lock whose `L` record third field is non zero and whose `N` record carries
+both figures non zero, and a following boot whose witness line reads `tier=snapshot`. The defect 1
+entry is unchanged and still IN PROGRESS on P3-1. No FINAL entry was edited, nothing was marked DONE,
+and defects 2 and 4 were not touched.
+
+NOT DONE, AND NOT DONE DELIBERATELY: no deploy, no terminal write, no push, no merge, no vector run.
+Per the FINAL remote state ruling of 2026-08-04 this entry makes no claim about where the remote
+stands. THE NEXT BEST ACTION IS THE OWNER'S: perform the two copies at the dictation above, restart the
+terminal, run the vectors, and report the summary line, after which the executor reads the journal read
+only and banks it.
 
 2026-08-20, SECOND ENTRY FOR THE DATE. THE DEFECT 3 SHAPE IS RULED AND RECORDED, AND NOTHING WAS
 IMPLEMENTED. Ledger only: no source file was written, no compile was run, nothing was built or
