@@ -1,0 +1,53 @@
+﻿=== DEPLOYMENT OF BUILD 1C88C4A1, 2026-08-23, read only from the terminal side ===
+
+--- 1. LIVE EA AT THE REAL DATA FOLDER EXPERTS PATH, hashed 2026-08-23 22:28 ---
+C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.ex5
+  md5=1C88C4A155CF09AC38D71C3E5BFEF1D9  bytes=78676
+  LastWriteTime  2026-08-20 20:33:18.681   (build time, carried over by the copy, identical to the worktree source)
+  LastAccessTime 2026-08-23 22:21:53.217   (write induced, places the copy before the shutdown)
+  CreationTime   2026-07-29 13:37:57.240   (original entry, preserved by the in place overwrite)
+  retired from this path: 74D666E90C1749FD24374D0AEF8C8F7D, 77396 bytes
+
+--- 2. TERMINAL PROCESS RESTART, terminal journal ---
+IM	0	22:25:39.609	Experts	expert AccountGuardian (XAUUSD.ecn,M15) removed
+DI	0	22:25:40.783	Terminal	exit with code 0
+PQ	0	22:25:41.591	Network	'1200252169': disconnected from JustMarkets-Demo3
+MD	0	22:25:41.655	Terminal	stopped with 0
+OG	0	22:25:41.658	Terminal	shutdown with 0
+KR	0	22:25:54.776	Terminal	MetaTrader 5 x64 build 6140 started for MetaQuotes Ltd.
+DE	0	22:25:54.776	Terminal	Windows 11 build 26200, 10 x 12th Gen Intel Core i5-1235U, AVX2, 5 / 15 Gb memory, 156 / 346 Gb disk, UAC, GMT+2
+MM	0	22:25:54.776	Terminal	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075
+QG	0	22:25:54.777	MCP	started on 127.0.0.1:22346
+CM	0	22:25:55.867	Experts	expert AccountGuardian (XAUUSD.ecn,M15) loaded successfully
+LS	0	22:25:56.904	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 73.84 ms, build 5800)
+KH	0	22:25:56.904	Network	'1200252169': previous successful authorization performed from 5.29.16.153 on 2026.08.23 22:09:23
+GG	0	22:25:57.146	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 272 symbols, 0 spreads
+PE	0	22:25:57.146	Network	'1200252169': trading has been enabled, demo account - hedging mode
+PI	0	22:25:57.146	Network	'1200252169': balance management has been disabled - demo account
+
+--- 3. EA BOOT SEQUENCE, Experts journal ---
+RJ	0	22:25:39.589	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|deinit|reason=9|session marked clean|timer_armed=1|timer_ticks=977
+OG	0	22:25:57.318	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|init|build=Phase2|account=1200252169|server=JustMarkets-Demo3
+QK	0	22:25:57.318	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|mutex acquire|id_name=AG_ID_1200252169|id_set=1|id_exists=1|hb_name=AG_HB_1200252169|hb_set=1|hb_exists=1|hb_value=1787523957
+KN	0	22:25:57.319	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|lock state file loaded|reason=-|locked_until=1970.01.01 00:00:00|weighed by the boot derivation at the SYNCING exit
+IH	0	22:25:57.319	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|ratchet floor loaded|anchor=2026.08.21 01:00:00|floor=106.65
+QS	0	22:25:57.321	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|DEBUG|crash-loop check|chain=1/3 consecutive unclean, gap bound 300s
+EP	0	22:25:57.321	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s
+CS	0	22:25:57.321	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|timer armed|period=1s
+IG	0	22:26:00.315	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|TRANSITION|SYNCING->ACTIVE|history stable|polls=3/3
+
+--- 4. FIRST FULL ACTIVE LIFE LINE AFTER THE BOOT, and the SYNCING line before it ---
+LI	0	22:25:58.324	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|LIFE|state=SYNCING|seconds_in_state=1|waiting_on=history stability poll not yet run this session|server=2026.08.21 23:57:59|local=2026.08.23 22:25:58
+IF	0	22:26:28.315	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|LIFE|state=ACTIVE|seconds_in_state=28|waiting_on=-|anchor=2026.08.21 01:00:00|realized=0.00|floating=0.00|base=2133.00|limit=106.65|pnl_vs_limit=0.00 vs -106.65|server=2026.08.21 23:57:59|local=2026.08.23 22:26:28
+
+--- 5. TIMER TICK RESET, all three sessions of the date ---
+The counter is per session. Each deinit reports its own session lifetime, not a running total:
+OD	0	20:45:30.432	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|deinit|reason=9|session marked clean|timer_armed=1|timer_ticks=73932
+JM	0	20:46:14.542	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|init|build=Phase2|account=1200252169|server=JustMarkets-Demo3
+LS	0	22:09:02.450	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|deinit|reason=9|session marked clean|timer_armed=1|timer_ticks=4967
+RQ	0	22:09:22.201	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|init|build=Phase2|account=1200252169|server=JustMarkets-Demo3
+RJ	0	22:25:39.589	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|deinit|reason=9|session marked clean|timer_armed=1|timer_ticks=977
+OG	0	22:25:57.318	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.21 23:57:59|INFO|init|build=Phase2|account=1200252169|server=JustMarkets-Demo3
+  session init 20:46:14.542 -> deinit 22:09:02.450 = 4967.9 s, reported timer_ticks=4967
+  session init 22:09:22.201 -> deinit 22:25:39.589 =  977.4 s, reported timer_ticks=977
+Both match to the second, so the counter began at zero at each init.
