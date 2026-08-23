@@ -2,13 +2,18 @@
 
 ## ISSUES
 
+Issue:  NEXT BEST ACTION, AND IT IS A DECISION RATHER THAN A CHORE. THE ONLY ROUTE LEFT TO DEFECTS 1 AND 3 IS A LIVE DEPLOY OF BUILD `1C88C4A1`, AND IT REPLACES THE BINARY CURRENTLY GUARDING THE ACCOUNT. Established on artifacts 2026-08-23: the vector row for `1C88C4A1` now PASSES, so every instrument short of the live terminal is spent, and the suite is measured incapable of saying anything about either fix, since the vectors source differs between the two trees by one corrupted byte inside a header comment, all six includes are md5 identical across them, and the script carries exactly one include, `#include <AccountGuardian/Persist.mqh>` at line 34, while both fixes live inside `AccountGuardian.mq5`, which no script can include. THE LIVE EA IS STILL THE UNFIXED BUILD, `AccountGuardian.ex5` md5 `74D666E90C1749FD24374D0AEF8C8F7D`, 77396 bytes, mtime 2026-08-18 11:27:16, which is `74D666E9` and carries all four defects, and `1C88C4A1` is nowhere in the terminal tree. THE ASYMMETRY THAT MAKES THIS A DECISION: copying the vectors script changed nothing about what protects the account, and copying the EA changes exactly that.
+Action: OWNER DECIDES, AND NOTHING IS RECOMMENDED EITHER WAY. The dictation is prepared and NOT performed, per ruling ONE of 2026-08-18 which RULE A does not amend. SOURCE `C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase3-defect-fixes\MQL5\Experts\AccountGuardian\AccountGuardian.ex5`. DESTINATION `C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.ex5`. EXPECTED MD5 AFTER LANDING `1C88C4A155CF09AC38D71C3E5BFEF1D9`, EXPECTED SIZE 78676 bytes. THE DESTINATION CHECK APPLIES UNCHANGED: hash the file at the destination path AS TYPED and confirm the path contains `D0E8209F77C8CF37AD8BF550E51FF075`, which is the check that caught the 2026-08-23 20:39 failure. A TERMINAL RESTART IS MANDATORY AFTER THE COPY, and here it is not merely the Navigator enumeration rule: MT5 does not hot reload an externally recompiled `.ex5`, recorded on 2026-07-30, so without a restart the running image stays `74D666E9` while the disk says otherwise, which is the exact shape of a false deploy. WHAT THE DEPLOY BUYS AND WHAT IT COSTS, both stated so the decision is made on facts rather than on momentum. It buys the only path to P3-1, one `TRANSITION|LOCKED->SYNCING|lock expired` followed by one `TRANSITION|SYNCING->ACTIVE|history stable|polls=3/3` across a real expiry, and to P49 and P53, a `state_<login>.dat` from a boot derived lock carrying a non zero breach time and both snapshot figures non zero. It costs the incumbent: `1C88C4A1` has never run anywhere, its two fixes have never executed outside a compile, and the coupling ruled 2026-08-20 means both land together or neither does. DEFECTS 2 AND 4 ARE NOT IN THIS BUILD and are untouched by the decision. NO SUBSTITUTE FOR THE LIVE ROWS IS OFFERED and none may be, since reading the source would prove the code contains the path rather than that the path ran, which is the whole of what those rows exist to witness.
+Status: OPEN, owner decision, deploy dictation prepared and not performed; defects 1 and 3 stay IN PROGRESS until their live rows are witnessed
+
 Issue:  NEXT BEST ACTION, AND IT SUPERSEDES THE ONE BELOW WITHOUT EDITING IT. THE 2026-08-23 VECTORS COPY LANDED IN A DIRECTORY NAMED AFTER THE FILE'S OWN MD5, SO THE TERMINAL NEVER SAW IT AND THE 84/84 RUN OF THAT DATE IS THE PREVIOUS BUILD PASSING ITS OWN SUITE. Measured this session and not reported: `AgPhase2StateVectors.ex5`, 49004 bytes, md5 `BE3E233CBC8A770CEFEEB382CAFA688F`, mtime 2026-08-20 20:33:53, sits at `...\MetaQuotes\Terminal\BE3E233CBC8A770CEFEEB382CAFA688F\MQL5\Scripts\AccountGuardian\`, where the first path component after `Terminal\` is the FILE'S MD5 standing in the place of the TERMINAL ID. The real data folder is `D0E8209F77C8CF37AD8BF550E51FF075`, which the terminal names in its own journal at `20:46:12.491`, and its Scripts folder still holds the PREVIOUS binary, 46996 bytes, md5 `A4FFA0D31651B3F425DABC084BE1C610`, mtime 2026-08-18 11:27:01, untouched today. The empty tree the copy created carries the timestamps of the mistake, `MQL5` and `MQL5\Scripts` at 2026-08-23 20:39:36 and `MQL5\Scripts\AccountGuardian` at 20:39:52. THE MD5 CHECK DID NOT CATCH IT because an md5 verifies bytes and not place, and the dictation named a destination path and an md5 for the same file, which are exactly the two values that were transposed. THE RESTART WAS NOT AT FAULT and is correctly ordered on artifacts, terminal `exit with code 0` at 20:45:31.569 and `MetaTrader 5 x64 build 6140 started` at 20:46:12.491, with the run at 20:46:30.311 to 20:46:30.422 inside the new process. Evidence: `docs/evidence/journal-20260823-weekend-sunday-vector-run.txt` and `docs/evidence/terminal-20260823-restart-and-vector-run.txt`.
 Action: OWNER PERFORMS THE CORRECTED COPY, one file, at this dictation, per ruling ONE of 2026-08-18 which RULE A does not amend. SOURCE `C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase3-defect-fixes\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.ex5`. DESTINATION `C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.ex5`. EXPECTED MD5 AFTER LANDING `BE3E233CBC8A770CEFEEB382CAFA688F`. THE CHECK THAT WOULD HAVE CAUGHT THIS ONE is added to the protocol here rather than left to memory: hash the file AT THE DESTINATION PATH AS TYPED and confirm the path contains `D0E8209F77C8CF37AD8BF550E51FF075`, since hashing the source, or hashing whatever landed wherever it landed, cannot distinguish a correct copy from this one. A TERMINAL RESTART IS STILL MANDATORY AFTER THE COPY under the Navigator enumeration rule. THE STRAY TREE AT `Terminal\BE3E233CBC8A770CEFEEB382CAFA688F\` IS LEFT IN PLACE AND UNTOUCHED, since removing it is a delete under the Terminal folder root which RULE A forbids the executor; whether it is removed is the owner's call and nothing depends on it. RECORDED SO THE RE RUN IS NOT MISTAKEN FOR PROOF OF THE FIXES, and it is the more useful finding: the eighty four vectors CANNOT DISCRIMINATE THE TWO BUILDS. The vectors source differs between worktree and terminal by one corrupted byte inside a header comment and nothing else in 30364 bytes, all six includes are md5 identical across the two trees, and the script carries exactly one include, `#include <AccountGuardian/Persist.mqh>` at line 34, while both defect fixes live inside `AccountGuardian.mq5`, which no script can include. A correct copy and a correct run will therefore produce the same 84/84 and will prove the same nothing about defect 1 or defect 3. Those close on live acceptance only, P3-1 and P49 and P53, exactly as their own entries state.
-Status: OPEN, owner action, one corrected copy plus a restart; the vector suite is confirmed sound on the previous build and is the wrong instrument for the two fixes
+CLOSED 2026-08-23 BY THE SECOND ATTEMPT, ON THE ARTIFACT CHAIN AND NOT ON A REPORT. All four elements the corrected dictation named are met. The stray tree `Terminal\BE3E233CBC8A770CEFEEB382CAFA688F` is GONE, the `Terminal` root now holding four directories and no md5 shaped name among them. The script sits at the REAL path, `...\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.ex5`, md5 `BE3E233CBC8A770CEFEEB382CAFA688F`, 49004 bytes, and the previous binary `A4FFA0D31651B3F425DABC084BE1C610` is no longer at that path. The order is COPY, RESTART, RUN: LastAccessTime 2026-08-23 21:35:24.871 places the write, which is usable here because last access is demonstrably not updated on reads on this volume, the executor's own hash at 22:11 having left it unmoved; then `22:09:03.618 Terminal exit with code 0` and `22:09:19.734 Terminal MetaTrader 5 x64 build 6140 started`; then `22:09:31.704 Scripts script AgPhase2StateVectors (XAGUSD.ecn,M5) loaded successfully`. The run emitted `AGVEC|SUMMARY|84/84` at 22:09:33.180 with eighty four PASS lines and ZERO FAIL. RECORDED WITH THE CLOSURE SO IT IS NOT OVER READ: the mtime at the real path, 2026-08-20 20:33:53, is the BUILD time carried over by the copy and is identical to the worktree source to the millisecond, so it is a true but weak lower bound and the ordering rests on the access stamp and on the restart, not on it. THE CHECK THIS ENTRY ADDED IS WHAT CAUGHT THE FIRST FAILURE AND PASSED THE SECOND, hashing the file AT THE DESTINATION PATH AS TYPED and confirming the path contains the terminal id, and it is worth keeping for every future copy. Evidence: `docs/evidence/journal-20260823-vector-run-corrected.txt`, `docs/evidence/terminal-20260823-vector-run-corrected.txt` and `docs/evidence/agvec-20260823-corrected-run.txt`.
+Status: CLOSED 2026-08-23, the corrected copy landed and the vector row for build `1C88C4A1` passes on artifact; the finding that the suite cannot discriminate the two builds is unchanged and stands
 
 Issue:  NEXT BEST ACTION. DEFECT 1 OF 4 IN THE FIX ORDER RULED 2026-08-19. A DISCONNECT OR A FROZEN QUOTE THAT STRADDLES THE LOCK EXPIRY LEAVES THE FIRST POST EXPIRY PASS UNGATED. The chain is three facts, each checkable on its own. `g_ag_resyncing` is set in exactly one place, the `TERMINAL_CONNECTED` guard at the head of `AgEvaluateActive`, which does not run while LOCKED. Lock expiry runs `AgTransition(AG_STATE_ACTIVE, "lock expired", "")`, entering ACTIVE DIRECTLY rather than through SYNCING, so the SYNCING stability polls do not run either. The Q10 coherence gate is written `if(g_ag_resyncing)`, so with that flag false the first post expiry pass takes no history stability check at all before it is eligible to decide a breach. LIVE EVIDENCE, `docs/evidence/journal-20260819-stage7-lock-expiry.txt`, 2026-08-19, build `74D666E9`: the server clock sat frozen for 61 minutes 32 seconds straight across the anchor, `AG|2026.08.18 23:57:59|LIFE|state=LOCKED|seconds_in_state=32283|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3691s|server=2026.08.18 23:57:59|local=2026.08.19 00:59:30`, then advanced an hour in one tick and expiry fired one second later, `AG|2026.08.19 01:00:01|TRANSITION|LOCKED->ACTIVE|lock expired|`. THE WHOLE FILE CARRIES EXACTLY THREE NON LIFE LINES, the expiry INFO, that TRANSITION and the ratchet reseed, and not one of them is a SYNCING or a RESYNC line, which is the artifact form of the gate never arming.
 Action: IMPLEMENTED IN SOURCE 2026-08-20 AS SHAPE A, commit `0a4c86b`, under the owner ruling of that date which is FINAL in DECISIONS. THE Issue LINE ABOVE DESCRIBES THE BUILD AS FOUND AND THE SOURCE NO LONGER MATCHES IT: expiry now runs `AgTransition(AG_STATE_SYNCING, "lock expired", ...)` at `AccountGuardian.mq5:489`, so the SYNCING stability polls run before the first pass eligible to declare a breach, unconditionally and therefore on both straddle routes, the disconnect and the frozen quote while connected. The expiry block also resets `g_ag_stable_polls` and `g_ag_last_history_total` at `:487-488`, which is not decoration: those globals advance only inside `AgHistoryStable`, which never runs while LOCKED, so without the reset the first SYNCING poll takes the count-unchanged branch and increments straight past `HistoryStablePolls`, leaving SYNCING on the tick it was entered. Shapes B and C of the plan are not taken and the ruling closes that choice. NOT DEPLOYED AND NOT COMPILED: the running binary is still `74D666E9`, which carries the defect, and per the ruling of 2026-08-20 this fix does not ship alone, it reaches the terminal in one build with defect 3.
-Status: IN PROGRESS, fixed in source at `0a4c86b`, unbuilt and undeployed; it CLOSES ONLY ON THE LIVE ACCEPTANCE ROW P3-1, whose artifact is one `TRANSITION|LOCKED->SYNCING|lock expired` line followed by one `TRANSITION|SYNCING->ACTIVE|history stable|polls=3/3` line across a real expiry, per predictions P26 and P27 of `docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md`. No code reading closes it and none may be offered as closing it.
+Status: IN PROGRESS, fixed in source at `0a4c86b`, BUILT as `1C88C4A1` on 2026-08-20 and still UNDEPLOYED, the live terminal carrying `74D666E9` which has this defect; it CLOSES ONLY ON THE LIVE ACCEPTANCE ROW P3-1, whose artifact is one `TRANSITION|LOCKED->SYNCING|lock expired` line followed by one `TRANSITION|SYNCING->ACTIVE|history stable|polls=3/3` line across a real expiry, per predictions P26 and P27 of `docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md`. No code reading closes it and none may be offered as closing it.
 
 Issue:  DEFECT 2 OF 4 IN THE FIX ORDER RULED 2026-08-19. THE GV LOCK MIRROR ERASES ITSELF ON EVERY COLD BOOT, BEFORE ITS OWN WITNESS CAN READ IT. The mechanism is three lines of source in one callback. `OnTimer` writes the mirror at `AccountGuardian.mq5:881`, `GlobalVariableSet(AgGvLock(), (double)(long)g_ag_locked_until)` followed by `GlobalVariablesFlush()`, guarded only by `if(g_owns_mutex)`, and the boot derivation that READS that mirror runs at `AccountGuardian.mq5:926`, in the SAME `OnTimer`, AFTER the write. On a cold boot `g_ag_locked_until` is 0, because the only thing that sets it is `AgEnterLockFromBoot`, which does not run until the SYNCING exit several ticks later, so the first ticks flush a zero over the persisted mirror and the witness then fails the `(datetime)(long)gv_raw > now` test. LIVE EVIDENCE, `docs/evidence/journal-20260818-stage7-forced-kill.txt`, 2026-08-18, build `74D666E9`, three boots in one file and the split is exact. Cold boot one, `AG|2026.08.18 13:46:41|TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s`, fired FILE and DERIVED at 13:46:44 and NO GV line. Cold boot two, `AG|2026.08.18 16:01:24|TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s`, fired FILE and DERIVED at 16:01:27 and NO GV line. The ONLY GV firing in the whole day is `AG|2026.08.18 15:36:27|INFO|boot witness GV fired|raw=2026.08.19 01:00:00|bounded=2026.08.19 01:00:00`, on the one boot whose transition reads `LOCKED->SYNCING` and which therefore preserved its memory.
 Action: FIX SECOND, per the ruled order, and the fix itself is not written in this session. Fix shape named and NOT RULED, since the owner reserves the design: the write is unconditional on state and could be gated, or ordered after the dispatch, or the boot read could be taken once in `OnInit` before any timer tick. SEVERITY, stated so the fix is scoped against what is actually lost: the GV witness fires only when the EA RETAINED ITS MEMORY, which is exactly the case where a mirror is redundant, and it is guaranteed zeroed in the case it was built for, a genuine restart. So the independent third recovery path does not exist in practice, and with the state file deleted a restart recovery rests on the derived history witness ALONE, making the strictest wins OR over three witnesses an OR over two. This does NOT weaken any lock the file and derived witnesses carry, and it does weaken the deletion resistance argument that justified building three.
@@ -16,7 +21,7 @@ Status: OPEN
 
 Issue:  DEFECT 3 OF 4 IN THE FIX ORDER RULED 2026-08-19. A BOOT DERIVED LOCK PERSISTS AN EMPTY Q6 SNAPSHOT AND LOSES THE BREACH TIMESTAMP. Cause at `AccountGuardian.mq5:393`: `AgEnterLockFromBoot` passes the EXISTING model values `g_ag_state_breach_time`, `g_ag_state_limit_snap` and `g_ag_state_base_snap` into `AgStateSetBreach`, which is RIGHT when the FILE witness fires and an earlier snapshot must be preserved, and WRONG when the DERIVED witness fires with no file at all, because the model is then default constructed and the derivation's own freshly computed limit and base are discarded instead of recorded. LIVE EVIDENCE, `docs/evidence/state_1200252169.dat.live-breach-2026-08-18`, the file the live lock wrote at 2026-08-18 13:02:42 under build `74D666E9`, 79 bytes, quoted whole: `AGSTATE|1|1200252169`, `L|1|1787101200|0`, `N|0.00000000|0.00000000`, `C|2087926071`. Both snapshot fields are zero and `breach_at` is zero. Set against the witness line that produced it, in `docs/evidence/journal-20260818-stage7-live-breach.txt`, `AG|2026.08.18 13:02:42|INFO|boot witness DERIVED fired|live=1|replay=0|realized=574.00|floating=-920.50|running_min=-7.00|limit_cmp=106.66|tier=floor|bounded=2026.08.19 01:00:00`, which had the limit and the arithmetic in hand at the moment of writing and recorded neither.
 Action: IMPLEMENTED IN SOURCE 2026-08-20 AS SHAPE 1, commit `4d6b5e2`, under the build instruction of that date and the three rulings of that date which are FINAL in DECISIONS. `AgBootDerivation` gains four out parameters carrying what the pass computed, `have_snapshot`, the derivation instant, the enforced `limit_cmp` and the day base, and publishes them unconditionally right after the cascade so the decision lives at one site. `AgEnterLockFromBoot` takes them and the DAILY_BREACH site now BRANCHES rather than overwriting blanket: a loaded snapshot is preserved byte for byte per Q6, and the derivation's own values are written ONLY when `have_snapshot` is false, which is exactly the case Q6 has nothing to govern. The CORRUPT_STATE branch is untouched and still zeroes all three fields. `breach_time` on this path is the DERIVATION INSTANT and is recorded as such here, in `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md` and by the journal, which already separates the two paths; the state file gains no field and `AG_STATE_FORMAT_VERSION` stays 1, per the third ruling of this date. COMPILED CLEAN AND NOT DEPLOYED: EA `Result: 0 errors, 0 warnings, 948 ms elapsed, cpu='X64 Regular'` and vectors `Result: 0 errors, 0 warnings, 675 ms elapsed`, both compiled inside the worktree with `/inc:` so every include resolved to the worktree and no path under the Terminal folder was written or named. THE 84 VECTORS HAVE NOT RUN: the run needs the script `.ex5` inside the terminal's Scripts folder, which is an owner performed copy at the executor's dictation per ruling ONE of 2026-08-18, and it is the next step rather than this one, exactly as the Stage 2 entry of 2026-08-18 recorded for the same reason.
-Status: IN PROGRESS, fixed in source at `4d6b5e2`, compiled at 0 errors 0 warnings, undeployed and with its vectors STILL unrun on this build as of 2026-08-23, the run of that date having executed the previous binary from the terminal's own Scripts folder because the copy landed elsewhere, see the entry at the head of this section; it CLOSES ONLY ON LIVE ACCEPTANCE, P49 and P53 of `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`, meaning a `state_<login>.dat` written by a boot derived lock whose `L` record carries a non zero third field and whose `N` record carries both figures non zero, and a following boot whose `boot witness DERIVED fired` line reads `tier=snapshot`. No code reading closes it and none may be offered as closing it. It ships in one build with defect 1 per the coupling ruled this date and neither ships alone.
+Status: IN PROGRESS, fixed in source at `4d6b5e2`, compiled at 0 errors 0 warnings, undeployed, and its vectors HAVE NOW RUN ON THIS BUILD and passed, `AGVEC|SUMMARY|84/84` at 22:09:33.180 on 2026-08-23 with zero FAIL, against the script hashing `BE3E233CBC8A770CEFEEB382CAFA688F` at the real data folder path after a restart; that row is CLOSED and it does NOT touch this one, since the vector suite cannot reach a fix that lives in `AccountGuardian.mq5`; it CLOSES ONLY ON LIVE ACCEPTANCE, P49 and P53 of `docs/FIXPLAN_PHASE3_DEFECT3_2026-08-20.md`, meaning a `state_<login>.dat` written by a boot derived lock whose `L` record carries a non zero third field and whose `N` record carries both figures non zero, and a following boot whose `boot witness DERIVED fired` line reads `tier=snapshot`. No code reading closes it and none may be offered as closing it. It ships in one build with defect 1 per the coupling ruled this date and neither ships alone.
 
 Issue:  DEFECT 4 OF 4 IN THE FIX ORDER RULED 2026-08-19. LOCKED LIFE LINES CARRY NO NUMBERS. A LOCKED LIFE line prints state, `seconds_in_state` and `waiting_on` and nothing else, while an ACTIVE LIFE line prints anchor, realized, floating, base, limit and `pnl_vs_limit`. LIVE EVIDENCE, `docs/evidence/journal-20260818-stage7-forced-kill.txt`, 2026-08-18, build `74D666E9`, and the cost was paid the same day rather than being hypothetical: at 13:38:07 the broker force closed thirteen positions on this account, and the line the guardian emitted across that event is `AG|2026.08.18 13:38:02|LIFE|state=LOCKED|seconds_in_state=2121|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.18 13:38:02|local=2026.08.18 13:38:03`, carrying not one figure. Seventy six consecutive LOCKED LIFE lines from 13:03:03 to 13:40:33 are identical apart from the counter and the two clocks.
 Action: FIX FOURTH, per the ruled order, and the fix itself is not written in this session. WHAT THIS ACTUALLY COST, recorded so the fix is scoped against evidence rather than against a feeling: when the owner asked for balance and equity at the moment of the liquidation the executor could supply NEITHER from any readable artifact, because no artifact carries them, and the same gap blocked a direct answer three further times in one session, on the input value the EA booted with, on the 2133 deposit landing while locked, and on the account state through the P2-C disconnect. Naming the obvious scope WITHOUT RULING IT, since the owner reserves the design: the numbers block already exists and is already computed for the ACTIVE path, so the question is which fields still mean anything under a lock rather than what to compute.
@@ -323,6 +328,140 @@ Status: OPEN
 ---
 
 ## ACTIONS
+
+2026-08-23, SECOND ENTRY FOR THE DATE. THE CORRECTED COPY LANDED, THE VECTOR ROW FOR BUILD `1C88C4A1`
+PASSES ON ARTIFACT, AND THE ROW AT THE HEAD OF ISSUES CLOSES. READ ONLY THROUGHOUT: nothing under the
+MetaTrader Terminal data folder was written, deleted or moved, per RULE A, and the folder was read only,
+to hash two binaries, to read the two journals and to list directories. RULE B was satisfied because
+every command that named a path inside it was a plain inline `Get-Item`, `Get-ChildItem`,
+`Get-FileHash`, `Get-Content` or a `System.IO` call with no user defined helper anywhere in the call
+chain. No deploy, no push, no merge, no code change, no owner ruling, and neither defect 1 nor defect 3
+was marked DONE. State re derived rather than carried: `git rev-parse HEAD` returned
+`2217b55ea873d614689f7786ae94b2e21745378f` on branch `worktree-phase3-defect-fixes` with
+`git status --porcelain` empty.
+
+LEDGER.md WAS COVERED BY THE DIFF SHORTCUT AND THE SHORTCUT WAS PROVED RATHER THAN ASSERTED, which is
+the only form in which it is acceptable. The full read of 2026-08-23 was taken against the working tree
+at `751bcf0` with a clean tree, and `git rev-parse 751bcf0:LEDGER.md` resolves that version to blob
+`d7fe17e1f79e03c1b3dab3c559c44defa463add6` at 1758 lines. `git log 751bcf0..HEAD -- LEDGER.md` lists
+EXACTLY ONE commit, `2217b55`, which this executor wrote, and `git diff --quiet HEAD -- LEDGER.md`
+exits clean so the working copy is the committed one, blob
+`5342da5be39670853f33b75dd296301b98d25e8f` at 2003 lines. The 249 inserted and 4 deleted lines between
+the two are therefore the whole of what a full read would have added, and they were read. THE SHORTCUT
+IS VALID ONLY UNDER THOSE THREE CHECKS and a session that cannot produce all three reads the file in
+full.
+
+THE OWNER REPORT IS CONVERTED WHOLE THIS TIME, four claims and all four hold on artifacts.
+
+CLAIM ONE, THE STRAY TREE IS DELETED. `C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\BE3E233CBC8A770CEFEEB382CAFA688F`
+does not exist. The `Terminal` root now holds four directories, `9F913C9103D1CA7EBB9EA87B6406EA94`,
+`Common`, `Community` and `D0E8209F77C8CF37AD8BF550E51FF075`, and no md5 shaped name among them.
+
+CLAIM TWO, THE SCRIPT IS AT THE REAL PATH AND IS THE RIGHT BYTES.
+`C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.ex5`,
+md5 `BE3E233CBC8A770CEFEEB382CAFA688F`, 49004 bytes, LastWriteTime 2026-08-20 20:33:53. That is the
+required hash and the required size, and the path contains the terminal id
+`D0E8209F77C8CF37AD8BF550E51FF075` rather than the file's own md5, which is the check the corrected
+dictation added and the exact thing that failed on 2026-08-23 at 20:39. The previous binary,
+`A4FFA0D31651B3F425DABC084BE1C610` at 46996 bytes, IS GONE FROM THAT PATH: only one
+`AgPhase2StateVectors.ex5` exists there and it hashes to the new value on two independent readings.
+
+THE mtime IS THE BUILD TIME AND NOT THE LANDING TIME, and that is written down rather than glossed
+because the row's ordering rests on it. 2026-08-20 20:33:53.537 at the real path is IDENTICAL to the
+LastWriteTime of the worktree source to the millisecond, so the copy preserved the source stamp and the
+mtime is a true but WEAK lower bound on the run: any run on 2026-08-23 postdates it trivially. The
+directory mtime is no better, `MQL5\Scripts\AccountGuardian` still reading 2026-08-18 11:22:50, which
+is the expected signature of an overwrite in place rather than a new directory entry. The USABLE stamp
+is LastAccessTime, 2026-08-23 21:35:24.871. Last access is demonstrably NOT updated on reads on this
+volume, since the executor's own `Get-FileHash` at 22:11 left it unmoved, so that value is write
+induced and places the copy at 21:35:24, THIRTY THREE MINUTES BEFORE THE RESTART. CreationTime is
+2026-08-17 22:13:28.197, the original entry preserved through the overwrite, which corroborates that
+the file was replaced in place rather than the directory rebuilt.
+
+CLAIM THREE, THE RESTART, AND CLAIM FOUR, THE RUN, IN ORDER AND FROM THE TERMINAL JOURNAL. Quoted in
+sequence: `22:09:02.457 Experts expert AccountGuardian (XAUUSD.ecn,M15) removed`,
+`22:09:03.618 Terminal exit with code 0`,
+`22:09:03.974 Network '1200252169': disconnected from JustMarkets-Demo3`,
+`22:09:04.058 Terminal stopped with 0`, `22:09:04.062 Terminal shutdown with 0`,
+`22:09:19.734 Terminal MetaTrader 5 x64 build 6140 started for MetaQuotes Ltd.`,
+`22:09:19.735 Terminal C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075`,
+`22:09:20.942 Experts expert AccountGuardian (XAUUSD.ecn,M15) loaded successfully`, then
+`22:09:31.704 Scripts script AgPhase2StateVectors (XAGUSD.ecn,M5) loaded successfully` and
+`22:09:33.180 Scripts script AgPhase2StateVectors (XAGUSD.ecn,M5) removed`. THE ORDER IS COPY, THEN
+RESTART, THEN RUN, with the run starting 11.97 seconds after the process started and 33 minutes 7
+seconds after the copy landed. The Navigator enumeration rule of 2026-08-04, extended to the Scripts
+class on 2026-08-09, is satisfied on its own terms rather than by assumption.
+
+THE SUMMARY LINE AND THE FAIL ACCOUNTING, FOR THE 22:09 RUN AND NOT THE 20:46 ONE. The summary reads
+`AGVEC|SUMMARY|84/84`, emitted at 22:09:33.180 by `AgPhase2StateVectors (XAGUSD.ecn,M5)`. EIGHTY FIVE
+AGVEC LINES in the run, eighty four vector lines and the summary, and the count of AGVEC lines not
+matching PASS is EXACTLY ONE and it is the summary itself. FAIL LINES OVER THE RUN: ZERO. The
+accounting is given in three parts rather than as a single number, the same separation the 20:46 entry
+used: raw text hits for FAIL are FIVE; AGVEC lines carrying FAIL are ZERO; all five raw hits are the
+substring inside `failed checksum` in expected WARN lines from the deliberate corruption vectors, four
+`state file failed checksum or does not parse` and one `floor file failed checksum or does not parse`,
+each naming a synthetic login in the 9900000xx range; and the residual set of raw hits that are neither
+is EMPTY. CORROBORATION THAT THIS IS A FRESH RUN AND NOT A RE READ OF THE EARLIER OUTPUT, collected
+free: the quarantine counters advanced, `state_990000002.dat.bad.11` and `.bad.12` against the 20:46
+run's `.bad.9` and `.bad.10`, `state_990000005.dat.bad.6` against `.bad.5`,
+`state_990000006.dat.bad.6` against `.bad.5`, and `floor_990000011.dat.bad.4` against `.bad.3`. A
+replayed log could not increment a filename counter.
+
+THE VECTOR ROW FOR BUILD `1C88C4A1` IS RECORDED AS PASSED ON ARTIFACT. The chain, in the four links the
+row requires: the script at the real data folder path hashes `BE3E233CBC8A770CEFEEB382CAFA688F` at
+49004 bytes, with the stray tree gone and the previous binary no longer at that path; the terminal shut
+down at 22:09:03.618 and started at 22:09:19.734 against the data folder it names itself; the script
+loaded at 22:09:31.704 and was removed at 22:09:33.180, inside that process and after that restart; and
+the run emitted eighty four PASS lines and `AGVEC|SUMMARY|84/84` with zero FAIL. Evidence:
+`docs/evidence/journal-20260823-vector-run-corrected.txt`,
+`docs/evidence/terminal-20260823-vector-run-corrected.txt` and
+`docs/evidence/agvec-20260823-corrected-run.txt`.
+
+WHAT THE ROW DOES AND DOES NOT PROVE, restated here rather than left to the earlier entry, because a
+green row is exactly the thing a later session will over read. IT PROVES the suite is green on the
+binary built from the tree carrying both fixes, which is the row's whole claim and is now met. IT DOES
+NOT PROVE DEFECT 1 OR DEFECT 3 IS FIXED, and it cannot: the finding of the earlier entry of this date
+is unchanged and was re confirmed by hash there, that the vectors source differs between the two trees
+by one corrupted byte inside a header comment, that all six includes are md5 identical across them, and
+that the script carries exactly one include, `#include <AccountGuardian/Persist.mqh>` at line 34, while
+both fixes live inside `AccountGuardian.mq5`, which no script can include. So the eighty four vectors
+exercise code that is byte identical on both builds, and the 84/84 of 22:09 and the 84/84 of 20:46 are
+the same result from the same code reached by two different binaries. THE TWO DEFECTS STILL CLOSE ONLY
+ON LIVE ACCEPTANCE, P3-1 for defect 1 and P49 and P53 for defect 3, exactly as their own entries state,
+and no reading of this row may be offered as closing either.
+
+THE GUARDING BINARY IS UNCHANGED AND THAT IS CORRECT. The live EA is still
+`AccountGuardian.ex5`, md5 `74D666E90C1749FD24374D0AEF8C8F7D`, 77396 bytes, mtime 2026-08-18 11:27:16,
+which is build `74D666E9` and carries all four defects. `1C88C4A1` is nowhere in the terminal tree.
+Deploying it is not authorized to this session and was not done; whether it is deployed is the owner's
+call, since the script copy changes nothing about what guards the live account and the EA copy changes
+exactly that.
+
+THE ARTIFACTS ARE BANKED AT COMMIT `89e49f9`, THREE FILES, the two journals copied byte for byte so the
+banked md5 equals the source md5. `docs/evidence/journal-20260823-vector-run-corrected.txt`, 1636028
+bytes, 2798 lines, md5 `53A447779D8F698D3956B570E9CFDDB1`, which is the whole day Experts journal and
+carries BOTH runs of the date. `terminal-20260823-vector-run-corrected.txt`, 12572 bytes, 68 lines, md5
+`B95518DFCE67C9C62182E21169F39F24`. `agvec-20260823-corrected-run.txt`, 12654 bytes, 124 lines, md5
+`CD1F3A6E79D10E7F20701B0D8DA963B0`, a derived extract naming the four links of the tie in order and
+labelled as an extract.
+
+CONTINUITY OF THE RECORD WAS CHECKED AND NOT ASSUMED. The copy banked earlier this date as
+`journal-20260823-weekend-sunday-vector-run.txt` is a STRICT BYTE PREFIX of the new full day snapshot,
+all 1505052 of its bytes comparing equal to the first 1505052 of 1636028, so the two artifacts are one
+continuous record and the earlier one was not superseded by a rewrite. That is the same test the
+recovered Sunday journal of 2026-08-17 was put to. All three new files were confirmed present by
+`git ls-files docs/evidence` rather than by the commit's exit code, per the standing lesson of
+2026-08-19, and they are named `.txt` because the bare `*.log` rule that swallowed thirteen journals is
+still unchanged.
+
+NOT DONE, AND NOT DONE DELIBERATELY: no deploy, no terminal write, no push, no merge, no code change,
+P2-A untouched and still OPEN, defects 1 and 3 still IN PROGRESS and neither marked DONE, defects 2 and
+4 untouched, and no owner ruling recorded or implied. Per the FINAL remote state ruling of 2026-08-04
+this entry makes no claim about where the remote stands. THE NEXT BEST ACTION IS THE OWNER'S AND IT IS
+A DECISION RATHER THAN A CHORE: whether to deploy `1C88C4A1` to the live terminal, which is the only
+route to the live acceptance rows that close defects 1 and 3, and which replaces the binary currently
+guarding the account. The dictation is prepared in the ISSUES entry at the head of that section and is
+not performed here.
 
 2026-08-23, VERIFICATION SESSION. THE VECTOR RUN IS REAL AND IT RAN THE WRONG BINARY, AND THE WEEKEND
 HARVEST IS BANKED. READ ONLY THROUGHOUT: nothing under the MetaTrader Terminal data folder was written,
