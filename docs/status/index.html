@@ -3,36 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AccountGuardian — Road to Live</title>
+<title>Account Guardian Road-Map</title>
 <style>
   :root{
-    --bg:#0c0e12; --panel:#141821; --panel-2:#1a1f2b; --line:#232a38;
+    --bg:#0c0e12; --panel:#141821; --line:#232a38;
     --txt:#e6eaf2; --muted:#8b95a7; --dim:#5c6577;
     --done:#3fd07f; --done-bg:#12331f;
     --accent:#5b8cff; --track:#1e2431;
+    --code:#ffd08a; --code-bg:#1c212d;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     background:var(--bg); color:var(--txt);
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased; padding:32px 20px 64px;
   }
-  .wrap{max-width:920px;margin:0 auto}
-  header{margin-bottom:26px}
-  h1{font-size:26px;font-weight:650;letter-spacing:-.01em;margin:0 0 6px}
-  .sub{color:var(--muted);font-size:14px;max-width:640px;margin:0 0 14px}
+  .wrap{max-width:940px;margin:0 auto}
+  header{margin-bottom:22px}
+  h1{font-size:26px;font-weight:650;letter-spacing:-.01em;margin:0 0 8px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 12px}
+  .banner{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:11px 14px;font-size:13.5px;color:var(--txt);margin:0 0 14px;line-height:1.6}
   .meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;color:var(--dim)}
   .meta b{color:var(--muted);font-weight:600}
   .source-note{margin-top:10px;font-size:12.5px;color:var(--dim);
     border-left:2px solid var(--line);padding-left:10px}
+  code{background:var(--code-bg);color:var(--code);border-radius:4px;padding:1px 5px;
+    font:12.5px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 
   .overall{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:16px 18px;margin:22px 0 8px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+    padding:16px 18px;margin:20px 0 6px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
   .overall .big{font-size:30px;font-weight:700;letter-spacing:-.02em}
   .overall .big span{font-size:16px;color:var(--muted);font-weight:500}
   .overall .lbl{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-  .overall .bar{flex:1;min-width:180px}
+  .overall .bar{flex:1;min-width:180px;max-width:520px}
+  .pill{background:var(--done-bg);color:var(--done);border:1px solid #2b5a3c;
+    border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;white-space:nowrap}
 
   .bar{height:8px;background:var(--track);border-radius:999px;overflow:hidden}
   .bar>i{display:block;height:100%;background:var(--accent);border-radius:999px}
@@ -40,14 +47,16 @@
 
   section.phase{background:var(--panel);border:1px solid var(--line);border-radius:12px;
     padding:16px 18px;margin:14px 0}
-  .phase-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .phase-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
   .phase-head h2{font-size:16px;font-weight:620;margin:0;flex:1}
   .count{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
   .count b{color:var(--txt)}
   .phase-head .bar{width:120px;flex:none}
+  .note{font-size:12.5px;color:var(--muted);font-style:italic;margin:2px 0 8px;
+    border-left:2px solid var(--line);padding-left:10px}
 
-  ul{list-style:none;margin:0;padding:0}
-  li{display:flex;gap:11px;padding:7px 0;border-top:1px solid var(--line);align-items:flex-start}
+  ul{list-style:none;margin:8px 0 0;padding:0}
+  li{display:flex;gap:11px;padding:8px 0;border-top:1px solid var(--line);align-items:flex-start}
   li:first-child{border-top:none}
   .box{flex:none;width:18px;height:18px;border-radius:5px;margin-top:1px;
     border:1.5px solid var(--dim);position:relative}
@@ -58,7 +67,18 @@
   li.done .item{color:var(--muted)}
   li.pending .item{color:var(--txt)}
 
-  footer{margin-top:28px;color:var(--dim);font-size:12px;text-align:center}
+  .closed-group{margin:16px 0}
+  .closed-lbl{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px 2px}
+  section.closed{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--done);
+    border-radius:10px;padding:13px 16px;margin:10px 0}
+  section.closed h3{font-size:14.5px;font-weight:620;margin:0 0 5px;display:flex;align-items:center;gap:9px}
+  section.closed h3 .tick{flex:none;width:16px;height:16px;border-radius:4px;background:var(--done-bg);
+    border:1.5px solid var(--done);position:relative}
+  section.closed h3 .tick::after{content:"";position:absolute;left:4.5px;top:1px;width:4px;height:9px;
+    border:solid var(--done);border-width:0 2px 2px 0;transform:rotate(45deg)}
+  section.closed p{margin:0;font-size:13px;color:var(--muted);line-height:1.55}
+
+  footer{margin-top:26px;color:var(--dim);font-size:12px;text-align:center}
   @media(max-width:560px){
     .phase-head{flex-wrap:wrap}
     .phase-head .bar{width:100%;order:3}
@@ -68,142 +88,96 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🔒 AccountGuardian — Road to Live</h1>
-    <p class="sub">Checklist to a real trading session with limits enforced. Updated per phase as items close. Source of truth for detail stays in LEDGER.md; this page tracks completion only.</p>
+    <h1>🔒 Account Guardian Road-Map</h1>
+    <p class="sub">Completion tracker only. Detail lives in <code>LEDGER.md</code>. One line per item, no narrative.</p>
+    <p class="banner"><strong>Last updated 2026-08-23.</strong> Phases 0-2 CLOSED. Defect build on <code>worktree-phase3-defect-fixes</code>, HEAD <code>751bcf0</code>. Live guardian still runs unfixed <code>74D666E9</code>.</p>
     <div class="meta">
-      <span><b>Last updated:</b> 2026-08-02</span>
-      <span><b>Last synced:</b> 2026-08-02 13:53 IDT (UTC+3)</span>
+      <span><b>Last synced:</b> 2026-08-23 21:07 IDT (UTC+3)</span>
     </div>
-    <p class="source-note">Mirrored from the Notion page "AccountGuardian — Road to Live". Notion is the source of truth; this is a read-only reflection of it at the sync time above.</p>
+    <p class="source-note">Mirrored from the Notion page "Account Guardian Road-Map". Notion is the source of truth; this is a read-only reflection of it at the sync time above.</p>
   </header>
 
   <div class="overall">
     <div>
-      <div class="lbl">Overall</div>
-      <div class="big">19%<span> &nbsp;8 / 42</span></div>
+      <div class="lbl">Open tracker items</div>
+      <div class="big">33%<span> &nbsp;6 / 18</span></div>
     </div>
-    <div class="bar g" style="max-width:520px"><i style="width:19%"></i></div>
+    <div class="bar" style="max-width:420px"><i style="width:33%"></i></div>
+    <span class="pill">Phases 0-2 CLOSED</span>
   </div>
 
   <section class="phase">
     <div class="phase-head">
-      <h2>Phase 0 — Survival infrastructure</h2>
-      <div class="bar g" style="width:120px"><i style="width:53.3%"></i></div>
-      <div class="count"><b>8</b> / 15</div>
+      <h2>Now</h2>
+      <div class="bar" style="width:120px"><i style="width:40%"></i></div>
+      <div class="count"><b>2</b> / 5</div>
     </div>
     <ul>
-      <li class="done"><span class="box"></span><span class="item">Single-instance mutex via GlobalVariable, refuse-while-live proven (4 refusals on 72ed960)</span></li>
-      <li class="done"><span class="box"></span><span class="item">Halt file atomic writes, session records, clean-flag lifecycle</span></li>
-      <li class="done"><span class="box"></span><span class="item">OnDeinit bypass fixed and proven: refused init no longer overwrites halt file (72ed960, fix proof 2026-07-30)</span></li>
-      <li class="done"><span class="box"></span><span class="item">Proof-of-life LIFE line every 30s in all states, ruled FINAL</span></li>
-      <li class="done"><span class="box"></span><span class="item">Phantom timer issue resolved</span></li>
-      <li class="done"><span class="box"></span><span class="item">commit-msg hook verified clean, no attribution, LF endings</span></li>
-      <li class="done"><span class="box"></span><span class="item">Market Watch ruling FINAL: XAUUSD.ecn, US100.ecn, XAGUSD.ecn only, BTCUSD removed permanently</span></li>
-      <li class="done"><span class="box"></span><span class="item">Crypto clause struck, frozen-upper-bound obligation kept OPEN for Phase 1</span></li>
-      <li class="pending"><span class="box"></span><span class="item">A8 harvest: window closes Sunday evening reopen, read-only harvest, verify server never advanced from 23:57:59, full LIFE scan, close row</span></li>
-      <li class="pending"><span class="box"></span><span class="item">A1 banner ruling (owner): both paths, dated banner text, clear gated on dedicated g_init_refused flag. Prerequisite measurement: does a chart Comment survive terminal restart</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Banner fix implement + compile + fresh-attach proof (after ruling)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Config-refusal banner gap: same helper, rides A1 ruling</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Default.tpl cleanup (owner GUI, after A8 window closes)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">A2 stale-heartbeat takeover: deliberate hard kill, also delivers timer_ticks measurement for A8</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Build 6090 re-verification, folded into existing rows: inherited-image re-init, last-used seeding, preset enumeration</span></li>
+      <li class="done"><span class="box"></span><span class="item">Weekend harvest 22-24.8: owner collected journals into a <code>tmp</code> folder at the terminal root (owner-performed, RULE A intact)</span></li>
+      <li class="done"><span class="box"></span><span class="item">Vectors script copied by owner, md5 verified <code>BE3E233C…</code>, terminal restarted, vectors run. Owner reports <code>AGVEC|SUMMARY|84/84</code> — NOT evidence yet, closes only on executor journal read</span></li>
+      <li class="pending"><span class="box"></span><span class="item"><strong>Next: executor verification session</strong> — read weekend journal and vector run read-only, copy artifacts to <code>docs/evidence</code> with md5, judge P2-H and market-closed rows, note restart timing vs window end, update LEDGER</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Deploy: owner copies <code>AccountGuardian.ex5</code> (md5 <code>1C88C4A1…</code>) to terminal Experts. Only after vector verification passes</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Live acceptance: P3-1 (D1), P49 / P53 (D3)</span></li>
     </ul>
   </section>
 
   <section class="phase">
     <div class="phase-head">
-      <h2>Phase 1 — Daily PnL core</h2>
+      <h2>Defect build</h2>
+      <div class="bar" style="width:120px"><i style="width:60%"></i></div>
+      <div class="count"><b>3</b> / 5</div>
+    </div>
+    <p class="note">Ruled FINAL: fix order 1-2-3-4, D1+D3 in one build, shape A for D1, shape 1 for D3, no state-file format change.</p>
+    <ul>
+      <li class="done"><span class="box"></span><span class="item">D1 expiry straddle: fixed in source <code>0a4c86b</code>. Stays IN PROGRESS until P3-1 runs live</span></li>
+      <li class="done"><span class="box"></span><span class="item">D3 empty Q6 snapshot: fixed in source <code>4d6b5e2</code>. Stays IN PROGRESS until P49/P53 run live</span></li>
+      <li class="done"><span class="box"></span><span class="item">Both binaries compile 0 errors 0 warnings, includes resolved in worktree only</span></li>
+      <li class="pending"><span class="box"></span><span class="item">D2 GV mirror self-erases on cold boot: plan session needed</span></li>
+      <li class="pending"><span class="box"></span><span class="item">D4 LOCKED LIFE lines carry no numbers: plan session needed</span></li>
+    </ul>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head">
+      <h2>Open, not closable by code</h2>
+      <div class="bar" style="width:120px"><i style="width:33.3%"></i></div>
+      <div class="count"><b>1</b> / 3</div>
+    </div>
+    <ul>
+      <li class="pending"><span class="box"></span><span class="item">P2-A ACTIVE-&gt;LOCKED never witnessed: owner runs <code>docs/PROCEDURE_P2A_OBSERVATION_2026-08-19.md</code>, costs one locked demo day</span></li>
+      <li class="pending"><span class="box"></span><span class="item">P2-H and market-closed distinction: weekend logs collected, validity pending executor verification</span></li>
+      <li class="done"><span class="box"></span><span class="item">Reseed on reload: FINAL 2026-08-19, stays as is</span></li>
+    </ul>
+  </section>
+
+  <div class="closed-group">
+    <p class="closed-lbl">Closed phases</p>
+    <section class="closed">
+      <h3><span class="tick"></span>Phase 0 — CLOSED 2026-08-08, merged <code>937c604</code></h3>
+      <p>Mutex single-instance, halt file + bypass fix, LIFE lines, crash-loop SAFE_HALT, stale-heartbeat takeover, A9 vectors, Market Watch FINAL (XAUUSD.ecn, US100.ecn, XAGUSD.ecn), governance FINAL: a report is not evidence.</p>
+    </section>
+    <section class="closed">
+      <h3><span class="tick"></span>Phase 1 — CLOSED 2026-08-17, main <code>c7170a8</code></h3>
+      <p>Day anchor 01:00 server + Q8 guard, deals-sum PnL, frozen-clock-proof history bound, limit comparison + Q10 gates, three live Q8 firings, deposits neutral, disconnect row. Open: carry, UNRULED, later phase.</p>
+    </section>
+    <section class="closed">
+      <h3><span class="tick"></span>Phase 2 — CLOSED, main <code>8e99778</code></h3>
+      <p>LOCKED state, expiry-only unlock, frozen/backward clock tolerance, three boot witnesses fired live, ratchet + epsilon hotfix, observability, Stage 7 live acceptance closed. Enforcement OUT by ruling TWO, later phase.</p>
+    </section>
+  </div>
+
+  <section class="phase">
+    <div class="phase-head">
+      <h2>Later</h2>
       <div class="bar" style="width:120px"><i style="width:0%"></i></div>
       <div class="count"><b>0</b> / 5</div>
     </div>
     <ul>
-      <li class="pending"><span class="box"></span><span class="item">Day anchor semantics against a clock frozen 48h weekly and non-monotonic (25h backward step measured)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Deals-sum PnL reconstruction per frozen LEDGER decision</span></li>
-      <li class="pending"><span class="box"></span><span class="item">History select upper bound must not be a frozen clock (open obligation)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Daily loss limit comparison and breach detection</span></li>
-      <li class="pending"><span class="box"></span><span class="item">CrashLoopWindowSeconds default viability at 60s: resolve open question</span></li>
-    </ul>
-  </section>
-
-  <section class="phase">
-    <div class="phase-head">
-      <h2>Phase 2 — Lockout</h2>
-      <div class="bar" style="width:120px"><i style="width:0%"></i></div>
-      <div class="count"><b>0</b> / 5</div>
-    </div>
-    <ul>
-      <li class="pending"><span class="box"></span><span class="item">LOCKED state transition, locked_until, time-expiry-only unlock per frozen decision</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Expiry semantics tolerant of frozen and backward-stepping clock</span></li>
-      <li class="pending"><span class="box"></span><span class="item">SAFE_HALT excluded from expiry logic per frozen decision</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Enforcement: block trading / close positions on lock</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Lock survives terminal restart</span></li>
-    </ul>
-  </section>
-
-  <section class="phase">
-    <div class="phase-head">
-      <h2>Phase 3 — Alerts</h2>
-      <div class="bar" style="width:120px"><i style="width:0%"></i></div>
-      <div class="count"><b>0</b> / 3</div>
-    </div>
-    <ul>
-      <li class="pending"><span class="box"></span><span class="item">Rotate Telegram bot token via BotFather (exposed, still pending)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Telegram alerting on lock, halt, refusal</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Healthchecks.io dead-man integration verified end to end on the dedicated machine</span></li>
-    </ul>
-  </section>
-
-  <section class="phase">
-    <div class="phase-head">
-      <h2>Phase 4 — Integration</h2>
-      <div class="bar" style="width:120px"><i style="width:0%"></i></div>
-      <div class="count"><b>0</b> / 2</div>
-    </div>
-    <ul>
-      <li class="pending"><span class="box"></span><span class="item">PreTradeGate() decision: confirm or reject MQL5 integration with the six-gate checklist</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Live network validation re-run on final build</span></li>
-    </ul>
-  </section>
-
-  <section class="phase">
-    <div class="phase-head">
-      <h2>Phase 5 — Hardening and cleanup</h2>
-      <div class="bar" style="width:120px"><i style="width:0%"></i></div>
-      <div class="count"><b>0</b> / 2</div>
-    </div>
-    <ul>
-      <li class="pending"><span class="box"></span><span class="item">Remove webhook.site and blackhole.invalid from MT5 WebRequest whitelist (standing reminder)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Final code review pass on EA before acceptance week</span></li>
-    </ul>
-  </section>
-
-  <section class="phase">
-    <div class="phase-head">
-      <h2>Dedicated machine</h2>
-      <div class="bar" style="width:120px"><i style="width:0%"></i></div>
-      <div class="count"><b>0</b> / 6</div>
-    </div>
-    <ul>
-      <li class="pending"><span class="box"></span><span class="item">Windows Update: disable auto-restart / set active hours</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Sleep and hibernate fully disabled, verified not accidental</span></li>
-      <li class="pending"><span class="box"></span><span class="item">MT5 auto-update policy decided (each update resets platform verifications)</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Clean Default.tpl before first account login</span></li>
-      <li class="pending"><span class="box"></span><span class="item">AccountGuardian terminal only, CLAUDE BOT stays on separate terminal</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Healthchecks.io heartbeat confirmed from the new machine</span></li>
-    </ul>
-  </section>
-
-  <section class="phase">
-    <div class="phase-head">
-      <h2>Acceptance — before real money</h2>
-      <div class="bar" style="width:120px"><i style="width:0%"></i></div>
-      <div class="count"><b>0</b> / 4</div>
-    </div>
-    <ul>
-      <li class="pending"><span class="box"></span><span class="item">Full demo week including a weekend</span></li>
-      <li class="pending"><span class="box"></span><span class="item">One real lock observed end to end: breach, LOCKED, restart survival wץhile locked, correct expiry</span></li>
-      <li class="pending"><span class="box"></span><span class="item">All FINAL decisions re-read and confirmed intact</span></li>
-      <li class="pending"><span class="box"></span><span class="item">Go/no-go: gated live return per recovery protocol conditions</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Alerts: rotate Telegram token (exposed), lock/halt/refusal alerts, Healthchecks.io end to end. Renumbering awaits owner ruling</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Integration: <code>PreTradeGate()</code> decision, live network validation on final build</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Hardening: WebRequest whitelist cleanup, final code review</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Machine: MT5 auto-update policy, sleep off verified, clean <code>Default.tpl</code>, guardian-only terminal, heartbeat</span></li>
+      <li class="pending"><span class="box"></span><span class="item">Acceptance: full demo week + weekend, one real lock end to end, FINAL decisions re-read, go / no-go</span></li>
     </ul>
   </section>
 
