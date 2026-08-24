@@ -1,0 +1,118 @@
+﻿=== RUN A LOCK EXPIRY WINDOW, TERMINAL JOURNAL, 2026-08-24 / 2026-08-25, read only harvest ===
+
+PROVENANCE. Copied out of the MetaTrader Terminal data folder with a shared read FileStream,
+read only throughout, nothing under that folder written, deleted or renamed, per RULE A.
+The RULE B alias audit was run before any path inside that folder was named and the hazard was
+confirmed still live on all seven audited names. Every command used in this harvest was a plain
+inline directory listing, file hash or shared read FileStream call, with no user defined helper.
+
+SOURCE FILES AND INTEGRITY, verified before any line below was quoted:
+  ...\D0E8209F77C8CF37AD8BF550E51FF075\logs\20260824.log
+      CLOSED DAY LOG. md5 original 979523CB2FEF7DF3C49DB7553A824E33, md5 tmp copy identical.
+  ...\D0E8209F77C8CF37AD8BF550E51FF075\logs\20260825.log
+      TODAY, STILL BEING WRITTEN. Prefix check over the tmp copy length of 2652 bytes:
+      md5 of original[0..2651] D0D629763A0967FA03C32A272419F614, md5 of tmp copy identical.
+
+BOTH DAY FILES ARE BANKED WHOLE rather than windowed. They are small, and banking them whole
+removes any question of selection, since the point this file has to settle is what the terminal
+did NOT do across the anchor as much as what it did.
+
+WHAT THIS FILE SETTLES. Between 22:41:04 on 2026-08-24 and 02:41:08 on 2026-08-25 the terminal
+journal carries NO entry at all: no disconnect, no reconnect, no scan, no restart. The anchor at
+01:00:00 falls inside that silence. So the server clock freeze visible in the Experts journal
+across the anchor happened while the terminal stayed connected, which makes the route the frozen
+quote one and not the disconnect one.
+
+THE TRADES THAT BUILT THE BREACH are at 14:01 to 14:13 and the two hand closes are at 14:32:30
+and 14:32:33, both AFTER the lock at 14:32:15 and both far ahead of the 01:00 anchor.
+
+THE 02:41 RESTART IS AFTER THE WINDOW. Expert removed at 02:41:08, terminal exit code 0 at
+02:41:09, restart at 02:41:15, expert loaded again at 02:41:16. None of it touches the expiry.
+
+=== BEGIN: logs\20260824.log, whole file ===
+DM	0	04:40:54.251	Network	'1200252169': scanning network for access points
+JK	0	04:41:02.822	Network	'1200252169': scanning network finished
+FP	1	09:02:18.220	Network	'1200252169': connection to JustMarkets-Demo3 lost
+NH	0	09:02:18.724	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 74.52 ms, build 5800)
+OD	0	09:02:18.724	Network	'1200252169': previous successful authorization performed from 5.29.16.153 on 2026.08.23 22:25:58
+EH	0	09:02:18.970	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 272 symbols, 0 spreads
+NI	0	09:02:18.970	Network	'1200252169': trading has been enabled, demo account - hedging mode
+NM	0	09:02:18.970	Network	'1200252169': balance management has been disabled - demo account
+KO	0	10:40:55.560	Network	'1200252169': scanning network for access points
+DF	0	10:41:03.992	Network	'1200252169': scanning network finished
+HR	0	14:01:52.029	Trades	'1200252169': market sell 0.1 XAUUSD.ecn
+EF	0	14:01:52.087	Trades	use MetaTrader VPS Hosting Service to speed up the execution: 2.28 ms via 'VPS London LD4 60' instead of 73.15 ms
+FJ	0	14:01:52.112	Trades	'1200252169': accepted market sell 0.1 XAUUSD.ecn
+PS	0	14:01:52.112	Trades	'1200252169': deal #309682830 sell 0.1 XAUUSD.ecn at 4641.67 done (based on order #513207651)
+FN	0	14:01:52.119	Trades	'1200252169': order #513207651 sell 0.1 / 0.1 XAUUSD.ecn at 4641.67 done in 91.494 ms
+PP	0	14:02:30.967	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn sl: 0.00, tp: 0.00 -> sl: 4648.00, tp: 0.00
+KR	0	14:02:31.054	Trades	'1200252169': accepted modify #513207651 sell 0.1 XAUUSD.ecn sl: 0.00, tp: 0.00 -> sl: 4648.00, tp: 0.00
+JS	0	14:02:31.055	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn -> sl: 4648.00, tp: 0.00 done in 87.758 ms
+KL	0	14:02:43.723	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn sl: 4648.00, tp: 0.00 -> sl: 4649.37, tp: 0.00
+PN	0	14:02:43.804	Trades	'1200252169': accepted modify #513207651 sell 0.1 XAUUSD.ecn sl: 4648.00, tp: 0.00 -> sl: 4649.37, tp: 0.00
+KS	0	14:02:43.804	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn -> sl: 4649.37, tp: 0.00 done in 81.403 ms
+PL	0	14:02:50.032	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn sl: 4649.37, tp: 0.00 -> sl: 4656.61, tp: 0.00
+CO	0	14:02:50.113	Trades	'1200252169': accepted modify #513207651 sell 0.1 XAUUSD.ecn sl: 4649.37, tp: 0.00 -> sl: 4656.61, tp: 0.00
+HL	0	14:02:50.114	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn -> sl: 4656.61, tp: 0.00 done in 81.775 ms
+KM	0	14:02:54.714	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn sl: 4656.61, tp: 0.00 -> sl: 4677.30, tp: 0.00
+FO	0	14:02:54.798	Trades	'1200252169': accepted modify #513207651 sell 0.1 XAUUSD.ecn sl: 4656.61, tp: 0.00 -> sl: 4677.30, tp: 0.00
+LL	0	14:02:54.798	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn -> sl: 4677.30, tp: 0.00 done in 84.036 ms
+CM	0	14:03:23.973	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn sl: 4677.30, tp: 0.00 -> sl: 4659.71, tp: 0.00
+FL	0	14:03:24.053	Trades	'1200252169': accepted modify #513207651 sell 0.1 XAUUSD.ecn sl: 4677.30, tp: 0.00 -> sl: 4659.71, tp: 0.00
+MM	0	14:03:24.054	Trades	'1200252169': modify #513207651 sell 0.1 XAUUSD.ecn -> sl: 4659.71, tp: 0.00 done in 81.074 ms
+JQ	0	14:03:57.884	Trades	'1200252169': market buy 0.1 XAUUSD.ecn, close #513207651 sell 0.1 XAUUSD.ecn 4641.67
+OE	0	14:03:57.970	Trades	'1200252169': accepted market buy 0.1 XAUUSD.ecn, close #513207651 sell 0.1 XAUUSD.ecn 4641.67
+ME	0	14:03:57.970	Trades	'1200252169': deal #309696246 buy 0.1 XAUUSD.ecn at 4646.39 done (based on order #513231715)
+CJ	0	14:03:57.971	Trades	'1200252169': order #513231715 buy 0.1 / 0.1 XAUUSD.ecn at 4646.39 done in 87.811 ms
+PE	0	14:04:06.263	Trades	'1200252169': market sell 0.1 XAUUSD.ecn
+OO	0	14:04:06.405	Trades	'1200252169': accepted market sell 0.1 XAUUSD.ecn
+HI	0	14:04:06.405	Trades	'1200252169': deal #309697261 sell 0.1 XAUUSD.ecn at 4646.58 done (based on order #513233560)
+EG	0	14:04:06.408	Trades	'1200252169': order #513233560 sell 0.1 / 0.1 XAUUSD.ecn at 4646.58 done in 145.343 ms
+CF	0	14:04:21.393	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn sl: 0.00, tp: 0.00 -> sl: 4660.00, tp: 0.00
+LG	0	14:04:21.476	Trades	'1200252169': accepted modify #513233560 sell 0.1 XAUUSD.ecn sl: 0.00, tp: 0.00 -> sl: 4660.00, tp: 0.00
+JE	0	14:04:21.476	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn -> sl: 4660.00, tp: 0.00 done in 83.183 ms
+MF	0	14:06:27.771	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn sl: 4660.00, tp: 0.00 -> sl: 4652.96, tp: 0.00
+RE	0	14:06:27.852	Trades	'1200252169': accepted modify #513233560 sell 0.1 XAUUSD.ecn sl: 4660.00, tp: 0.00 -> sl: 4652.96, tp: 0.00
+KF	0	14:06:27.852	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn -> sl: 4652.96, tp: 0.00 done in 81.528 ms
+HG	0	14:12:45.589	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn sl: 4652.96, tp: 0.00 -> sl: 4654.37, tp: 0.00
+LE	0	14:12:45.672	Trades	'1200252169': accepted modify #513233560 sell 0.1 XAUUSD.ecn sl: 4652.96, tp: 0.00 -> sl: 4654.37, tp: 0.00
+LF	0	14:12:45.672	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn -> sl: 4654.37, tp: 0.00 done in 83.747 ms
+FG	0	14:13:06.279	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn sl: 4654.37, tp: 0.00 -> sl: 4652.96, tp: 0.00
+IR	0	14:13:06.367	Trades	'1200252169': accepted modify #513233560 sell 0.1 XAUUSD.ecn sl: 4654.37, tp: 0.00 -> sl: 4652.96, tp: 0.00
+FG	0	14:13:06.367	Trades	'1200252169': modify #513233560 sell 0.1 XAUUSD.ecn -> sl: 4652.96, tp: 0.00 done in 88.676 ms
+GQ	0	14:13:17.639	Trades	'1200252169': market sell 0.1 XAUUSD.ecn
+EL	0	14:13:17.720	Trades	'1200252169': accepted market sell 0.1 XAUUSD.ecn
+GE	0	14:13:17.721	Trades	'1200252169': deal #309748557 sell 0.1 XAUUSD.ecn at 4644.48 done (based on order #513326183)
+KH	0	14:13:17.722	Trades	'1200252169': order #513326183 sell 0.1 / 0.1 XAUUSD.ecn at 4644.48 done in 83.913 ms
+MR	0	14:13:25.230	Trades	'1200252169': modify #513326183 sell 0.1 XAUUSD.ecn sl: 0.00, tp: 0.00 -> sl: 4652.78, tp: 0.00
+GS	0	14:13:25.309	Trades	'1200252169': accepted modify #513326183 sell 0.1 XAUUSD.ecn sl: 0.00, tp: 0.00 -> sl: 4652.78, tp: 0.00
+JQ	0	14:13:25.309	Trades	'1200252169': modify #513326183 sell 0.1 XAUUSD.ecn -> sl: 4652.78, tp: 0.00 done in 79.042 ms
+DM	0	14:32:30.660	Trades	'1200252169': market buy 0.1 XAUUSD.ecn, close #513233560 sell 0.1 XAUUSD.ecn 4646.58
+FQ	0	14:32:30.737	Trades	'1200252169': accepted market buy 0.1 XAUUSD.ecn, close #513233560 sell 0.1 XAUUSD.ecn 4646.58
+PQ	0	14:32:30.737	Trades	'1200252169': deal #309847876 buy 0.1 XAUUSD.ecn at 4649.40 done (based on order #513504140)
+KN	0	14:32:30.737	Trades	'1200252169': order #513504140 buy 0.1 / 0.1 XAUUSD.ecn at 4649.40 done in 77.587 ms
+EG	0	14:32:33.591	Trades	'1200252169': market buy 0.1 XAUUSD.ecn, close #513326183 sell 0.1 XAUUSD.ecn 4644.48
+LG	0	14:32:33.667	Trades	'1200252169': accepted market buy 0.1 XAUUSD.ecn, close #513326183 sell 0.1 XAUUSD.ecn 4644.48
+PG	0	14:32:33.667	Trades	'1200252169': deal #309848360 buy 0.1 XAUUSD.ecn at 4648.58 done (based on order #513505071)
+DD	0	14:32:33.668	Trades	'1200252169': order #513505071 buy 0.1 / 0.1 XAUUSD.ecn at 4648.58 done in 77.298 ms
+HD	0	16:40:55.761	Network	'1200252169': scanning network for access points
+MP	0	16:41:03.997	Network	'1200252169': scanning network finished
+MF	0	22:40:56.018	Network	'1200252169': scanning network for access points
+LN	0	22:41:04.314	Network	'1200252169': scanning network finished
+=== CONTINUES: logs\20260825.log, whole file ===
+LL	0	02:41:08.419	Experts	expert AccountGuardian (XAUUSD.ecn,M15) removed
+GK	0	02:41:09.691	Terminal	exit with code 0
+KF	0	02:41:10.174	Network	'1200252169': disconnected from JustMarkets-Demo3
+KF	0	02:41:10.280	Terminal	stopped with 0
+GF	0	02:41:10.292	Terminal	shutdown with 0
+IL	0	02:41:15.892	Terminal	MetaTrader 5 x64 build 6140 started for MetaQuotes Ltd.
+QD	0	02:41:15.892	Terminal	Windows 11 build 26200, 10 x 12th Gen Intel Core i5-1235U, AVX2, 5 / 15 Gb memory, 157 / 346 Gb disk, UAC, GMT+2
+CK	0	02:41:15.892	Terminal	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075
+FE	0	02:41:15.894	MCP	started on 127.0.0.1:22346
+JL	0	02:41:16.892	Experts	expert AccountGuardian (XAUUSD.ecn,M15) loaded successfully
+OE	0	02:41:17.312	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 73.07 ms, build 5800)
+EK	0	02:41:17.312	Network	'1200252169': previous successful authorization performed from 5.29.16.153 on 2026.08.24 09:02:19
+HE	0	02:41:17.581	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 272 symbols, 0 spreads
+OD	0	02:41:17.581	Network	'1200252169': trading has been enabled, demo account - hedging mode
+KH	0	02:41:17.581	Network	'1200252169': balance management has been disabled - demo account
+=== END ===
