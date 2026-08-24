@@ -6,8 +6,8 @@
 
 ![platform](https://img.shields.io/badge/platform-MQL5-blue)
 ![terminal](https://img.shields.io/badge/terminal-MetaTrader%205-blue)
-![phase](https://img.shields.io/badge/phase-0%20skeleton-orange)
-![trading calls](https://img.shields.io/badge/trading%20calls-none%20in%20this%20build-red)
+![phase](https://img.shields.io/badge/phase-2%20lock%20live-blue)
+![enforcement](https://img.shields.io/badge/enforcement-detect%20and%20lock%20only-orange)
 
 </div>
 
@@ -16,9 +16,9 @@
 ## At a glance
 
 * Watches cumulative daily loss across the **whole account**, whatever opened the position: another advisor, the desktop terminal, or the mobile app.
-* On breach it deletes every pending order, flattens every position, and locks until expiry. Unlock is **time expiry only**, with no manual override.
+* On breach it locks the account and persists the lock to disk so a restart cannot clear it early. Unlock is **time expiry only**, with no manual override.
 * Refuses to start on a malformed core input, and halts itself rather than acting when it believes its own code is broken.
-* **This build does not trade.** Phase 0 is the survival skeleton. It contains no trading calls at all.
+* **This build detects and locks. It does not yet close anything.** The engine that would delete pending orders and flatten positions on a lock is Phase 3 and has not shipped, so an open position stays open through a lock today.
 
 ---
 
@@ -65,10 +65,12 @@ stopped by anyone. AccountGuardian is the backstop that applies to all of it.
 
 One number governs everything: the daily loss limit.
 
-When daily loss reaches the limit, the guardian deletes every pending order
-and flattens every open position on the account, then locks until expiry.
-While locked, anything newly opened is flattened again within seconds of the
-platform accepting a close for that symbol.
+When daily loss reaches the limit, the guardian locks the account until
+expiry. By design, that lock deletes every pending order and flattens every
+open position, and anything newly opened while locked is flattened again
+within seconds. The engine that performs the flatten and the pending-order
+deletion has not shipped yet, so today the lock is enforced by state and
+alert only, and an open position stays open through it. See Status below.
 
 Two limits can be configured and the stricter one wins. `DailyLossPercent` is
 a percentage of the day-anchor base, and `DailyLossCurrency` is a fixed
@@ -79,8 +81,9 @@ Unlock happens by time expiry only. There is no manual override, no unlock
 button, and no way to shorten a lock. For a daily breach the lock runs to the
 next day anchor.
 
-Weekly profit and loss is measured and reported only. No weekly code path can
-lock, close, or sweep anything.
+Weekly profit and loss is designed to be measured and reported only, never to
+lock, close, or sweep anything. That measurement has not shipped yet, only
+the input flag that will govern it exists today.
 
 ---
 
@@ -88,18 +91,18 @@ lock, close, or sweep anything.
 
 ## 🚧 Status, and what actually runs today
 
-The build in this repository is **Phase 0, the survival skeleton**. It is
+The build in this repository has closed **Phase 0 through Phase 2**. It is
 important to be exact about what that means:
 
-> **The current build contains no trading calls at all.** It does not measure
-> profit and loss, it does not detect a breach, and it does not close
-> anything. `Sweep.mqh` is deliberately empty of trade calls, and the whole
-> build is checked for that by a static grep. Do not install this expecting
-> your account to be protected today.
-
-What Phase 0 does provide is everything the guardian needs in order to be
-trustworthy later: it stays running, it refuses to run in a broken state, and
-it never hides a failure.
+> **The current build measures cumulative daily loss, detects a breach, and
+> locks the account by state and by a lock file that survives a restart.**
+> All of that has run on a live account, including a real breach, a real
+> broker liquidation, and a lock that persisted across a terminal restart and
+> an unplanned reboot. **It does not close anything yet.** `Sweep.mqh`, the
+> file that would flatten positions and delete pending orders, is still
+> deliberately empty of trade calls, and the whole build is checked for that
+> by a static grep. A breach today locks the state and alerts loudly; it does
+> not touch a position.
 
 | Area | Status |
 |---|---|
@@ -108,15 +111,13 @@ it never hides a failure.
 | Configuration validation, refuse on malformed core input | ✅ implemented |
 | Crash-loop detection, halt file, `SAFE_HALT` | ✅ implemented |
 | Proof-of-life logging, chart banner | ✅ implemented |
-| Profit and loss engine, day and week windows | 🔜 planned, Phase 1 |
-| Lock state file, expiry, boot derivation | 🔜 planned, Phase 2 |
-| Sweep engine, flatten and pending deletion | 🔜 planned, Phase 3 |
-| Weekly reporting | 🔜 planned, Phase 4 |
-
-One consequence worth stating plainly: because the synchronisation exit
-condition lands in Phase 1, the current build reaches `SYNCING` and stays
-there. That is expected for this phase, and the proof-of-life line says so
-explicitly on every emission rather than leaving you guessing.
+| Daily profit and loss engine, day anchor, ratcheted floor | ✅ implemented |
+| Breach detection, account-wide `LOCKED` state | ✅ implemented |
+| Lock persistence and boot-derived lock, three independent witnesses | ✅ implemented |
+| `SYNCING` exit condition, history stability polls | ✅ implemented |
+| Weekly measurement and reporting | 🔜 planned |
+| Sweep engine, flatten positions and delete pending orders on a lock | 🔜 planned, Phase 3 |
+| Blocking new trades from opening while locked | 🔜 planned, later phase |
 
 ---
 
@@ -140,16 +141,18 @@ stateDiagram-v2
     SAFE_HALT --> [*]: manual restart only
 ```
 
-The diagram is the designed machine. In this build the `SYNCING` exit is not
-implemented, so the edges out of it to `ACTIVE` and `LOCKED` are Phase 1 work.
-`lock_reason` is one of `DAILY_BREACH` or `CORRUPT_STATE`, and a corrupt state
-file locks from any state, which the diagram leaves out for readability.
+The diagram is the designed machine, and this build implements every edge on
+it. The `SYNCING` exit, entry into `LOCKED` on a fresh breach or on a lock
+found at boot, and the expiry-only path back to `ACTIVE`, have each fired on a
+live account. `lock_reason` is one of `DAILY_BREACH` or `CORRUPT_STATE`, and a
+corrupt state file locks from any state, which the diagram leaves out for
+readability.
 
 | State | Meaning |
 |---|---|
 | `SYNCING` | Startup, while the terminal connection and trade history settle. Nothing is enforced until it exits. |
 | `ACTIVE` | Normal operation. The limit is evaluated on every timer pass. |
-| `LOCKED` | Entered on a daily breach, or on a corrupt state file. Sweeping is a behaviour of this state, not a separate state. |
+| `LOCKED` | Entered on a daily breach, or on a corrupt state file, and persisted so a restart cannot clear it early. Sweeping is designed as a behaviour of this state rather than a separate one, but the sweep engine itself has not shipped yet, see Status. |
 | `SAFE_HALT` | The guardian believes its own code is malfunctioning. It closes nothing and sweeps nothing, because a guardian that cannot trust itself must not be allowed to act on the account. |
 
 Every transition writes exactly one structured journal line carrying the
@@ -386,8 +389,8 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 
 ![platform](https://img.shields.io/badge/platform-MQL5-blue)
 ![terminal](https://img.shields.io/badge/terminal-MetaTrader%205-blue)
-![phase](https://img.shields.io/badge/phase-0%20skeleton-orange)
-![trading calls](https://img.shields.io/badge/trading%20calls-none%20in%20this%20build-red)
+![phase](https://img.shields.io/badge/phase-2%20lock%20live-blue)
+![enforcement](https://img.shields.io/badge/enforcement-detect%20and%20lock%20only-orange)
 
 </div>
 
@@ -396,9 +399,9 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 ## במבט מהיר
 
 * עוקבת אחרי ההפסד היומי המצטבר ב**חשבון כולו**, בלי קשר לשאלה מי פתח את הפוזיציה: יועץ אחר, הטרמינל במחשב, או האפליקציה בנייד.
-* בהפרה היא מוחקת כל פקודה ממתינה, סוגרת כל פוזיציה, ונועלת עד לפקיעה. השחרור הוא **בפקיעת זמן בלבד**, בלי עקיפה ידנית.
+* בהפרה היא נועלת את החשבון ושומרת את הנעילה על הדיסק כך שהפעלה מחדש אינה יכולה לבטל אותה מוקדם. השחרור הוא **בפקיעת זמן בלבד**, בלי עקיפה ידנית.
 * מסרבת לעלות על קלט ליבה פגום, ועוצרת את עצמה במקום לפעול כשהיא מאמינה שהקוד שלה עצמו שבור.
-* **הגרסה הזו אינה סוחרת.** שלב 0 הוא שלד ההישרדות. אין בו שום קריאת מסחר.
+* **הגרסה הזו מזהה ונועלת. היא עדיין אינה סוגרת דבר.** המנוע שאמור למחוק פקודות ממתינות ולסגור פוזיציות בעת נעילה הוא שלב 3 וטרם נכתב, ולכן פוזיציה פתוחה נשארת פתוחה גם דרך נעילה, נכון להיום.
 
 ---
 
@@ -443,9 +446,11 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 
 מספר אחד קובע הכל: מגבלת ההפסד היומי.
 
-כשההפסד היומי מגיע למגבלה, השומר מוחק כל פקודה ממתינה וסוגר כל פוזיציה
-פתוחה בחשבון, ואז נועל עד לפקיעה. בזמן הנעילה, כל דבר שנפתח מחדש נסגר שוב
-תוך שניות מהרגע שהפלטפורמה מאשרת סגירה לאותו סימבול.
+כשההפסד היומי מגיע למגבלה, השומר נועל את החשבון עד לפקיעה. לפי התכנון, נעילה
+זו מוחקת כל פקודה ממתינה וסוגרת כל פוזיציה פתוחה, וכל דבר שנפתח מחדש בזמן
+הנעילה נסגר שוב תוך שניות. המנוע שמבצע את הסגירה ומחיקת הפקודות הממתינות טרם
+נכתב, ולכן כיום הנעילה נאכפת על ידי מצב והתראה בלבד, ופוזיציה פתוחה נשארת
+פתוחה דרכה. ראו סטטוס בהמשך.
 
 אפשר להגדיר שתי מגבלות והמחמירה מביניהן גוברת. `DailyLossPercent` הוא אחוז
 מהבסיס של תחילת היום, ו `DailyLossCurrency` הוא סכום קבוע במטבע החשבון.
@@ -454,8 +459,8 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 השחרור מתרחש רק בפקיעת זמן. אין עקיפה ידנית, אין כפתור שחרור, ואין דרך
 לקצר נעילה. בהפרה יומית הנעילה נמשכת עד עוגן היום הבא.
 
-מדידת רווח והפסד שבועית היא לדיווח בלבד. שום נתיב שבועי אינו יכול לנעול,
-לסגור או לסרוק.
+מדידת רווח והפסד שבועית מתוכננת להיות לדיווח בלבד, ולעולם לא לנעול, לסגור
+או לסרוק. המדידה עצמה טרם נכתבה, כיום קיים רק דגל הקלט שיפקח עליה בעתיד.
 
 ---
 
@@ -463,15 +468,15 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 
 ## 🚧 סטטוס, ומה באמת רץ היום
 
-הגרסה בריפו הזה היא **שלב 0, שלד ההישרדות**. חשוב לדייק במשמעות:
+הגרסה בריפו הזה סגרה את **שלבים 0 עד 2**. חשוב לדייק במשמעות:
 
-> **הגרסה הנוכחית אינה מכילה שום קריאת מסחר.** היא אינה מודדת רווח והפסד,
-> אינה מזהה הפרה, ואינה סוגרת דבר. הקובץ `Sweep.mqh` ריק במכוון מקריאות
-> מסחר, וכל הבנייה נבדקת על כך בסריקה סטטית. אין להתקין אותה מתוך ציפייה
-> שהחשבון מוגן היום.
-
-מה ששלב 0 כן מספק הוא כל מה שהשומר צריך כדי להיות אמין בהמשך: הוא נשאר
-לרוץ, הוא מסרב לרוץ במצב פגום, והוא לעולם אינו מסתיר תקלה.
+> **הגרסה הנוכחית מודדת הפסד יומי מצטבר, מזהה הפרה, ונועלת את החשבון
+> באמצעות מצב וקובץ נעילה ששורד הפעלה מחדש.** כל זה רץ על חשבון אמיתי,
+> כולל הפרה אמיתית, סגירה כפויה אמיתית מצד הברוקר, ונעילה ששרדה הן הפעלה
+> מחדש של הטרמינל והן אתחול לא מתוכנן. **היא עדיין אינה סוגרת דבר.** הקובץ
+> `Sweep.mqh`, שאמור לסגור פוזיציות ולמחוק פקודות ממתינות, עדיין ריק
+> במכוון מקריאות מסחר, וכל הבנייה נבדקת על כך בסריקה סטטית. הפרה כיום
+> נועלת את המצב ומתריעה בקול, ואינה נוגעת בשום פוזיציה.
 
 | תחום | מצב |
 |---|---|
@@ -480,14 +485,13 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 | אימות הגדרות וסירוב על קלט ליבה פגום | ✅ ממומש |
 | זיהוי לולאת קריסה, קובץ עצירה, `SAFE_HALT` | ✅ ממומש |
 | תיעוד סימני חיים, כרזה על הגרף | ✅ ממומש |
-| מנוע רווח והפסד, חלונות יום ושבוע | 🔜 מתוכנן, שלב 1 |
-| קובץ מצב נעילה, פקיעה, גזירה בעלייה | 🔜 מתוכנן, שלב 2 |
-| מנוע סריקה, סגירה ומחיקת ממתינות | 🔜 מתוכנן, שלב 3 |
-| דיווח שבועי | 🔜 מתוכנן, שלב 4 |
-
-השלכה אחת שראוי לומר במפורש: מכיוון שתנאי היציאה מהסנכרון נוחת בשלב 1,
-הגרסה הנוכחית מגיעה למצב `SYNCING` ונשארת בו. זה צפוי בשלב הזה, ושורת
-סימני החיים אומרת זאת במפורש בכל פליטה במקום להשאיר את הקורא בניחושים.
+| מנוע רווח והפסד יומי, עוגן יום, רצפה מדורגת | ✅ ממומש |
+| זיהוי הפרה, מצב `LOCKED` ברמת החשבון | ✅ ממומש |
+| שמירת נעילה וגזירת נעילה בעלייה, שלושה עדים עצמאיים | ✅ ממומש |
+| תנאי היציאה ממצב `SYNCING`, סבבי יציבות היסטוריה | ✅ ממומש |
+| מדידה ודיווח שבועי | 🔜 מתוכנן |
+| מנוע סריקה, סגירת פוזיציות ומחיקת ממתינות בעת נעילה | 🔜 מתוכנן, שלב 3 |
+| חסימת פתיחת עסקאות חדשות בזמן נעילה | 🔜 מתוכנן, שלב מאוחר יותר |
 
 ---
 
@@ -501,16 +505,17 @@ deposit cannot quietly enlarge the amount you are allowed to lose.
 [state diagram](#en-states).
 הוא מוצג שם ולא כאן מפני שתרשים מסוג `mermaid` בהקשר של כתיבה מימין לשמאל
 עלול להיפרס בצורה שגויה, והכפלת התרשים הייתה יוצרת שני מקורות לאותה אמת.
-התרשים מתאר את המכונה המתוכננת. בגרסה הזו היציאה ממצב `SYNCING` אינה
-ממומשת, ולכן הקשתות היוצאות ממנו הן עבודה של שלב 1. הערך `lock_reason` הוא
-`DAILY_BREACH` או `CORRUPT_STATE`, וקובץ מצב פגום נועל מכל מצב, מה שהושמט
-מהתרשים לטובת הקריאוּת.
+התרשים מתאר את המכונה המתוכננת, וגרסה זו ממשת כל קשת בו. היציאה ממצב
+`SYNCING`, הכניסה למצב `LOCKED` על הפרה טרייה או על נעילה שנמצאה בעלייה,
+והנתיב חזרה ל `ACTIVE` בפקיעת זמן בלבד, כולם נצפו בפועל על חשבון אמיתי.
+הערך `lock_reason` הוא `DAILY_BREACH` או `CORRUPT_STATE`, וקובץ מצב פגום
+נועל מכל מצב, מה שהושמט מהתרשים לטובת הקריאוּת.
 
 | מצב | משמעות |
 |---|---|
 | `SYNCING` | עלייה, בזמן שחיבור הטרמינל והיסטוריית העסקאות מתייצבים. שום דבר אינו נאכף עד היציאה ממנו. |
 | `ACTIVE` | מצב עבודה רגיל. המגבלה נבדקת בכל מחזור טיימר. |
-| `LOCKED` | נכנס בהפרה יומית, או בקובץ מצב פגום. הסריקה היא התנהגות של המצב הזה ולא מצב נפרד. |
+| `LOCKED` | נכנס בהפרה יומית, או בקובץ מצב פגום, ונשמר כך שהפעלה מחדש אינה יכולה לבטלו מוקדם. הסריקה מתוכננת כהתנהגות של המצב הזה ולא כמצב נפרד, אך מנוע הסריקה עצמו טרם נכתב, ראו סטטוס. |
 | `SAFE_HALT` | השומר מאמין שהקוד שלו עצמו פגום. הוא אינו סוגר דבר ואינו סורק דבר, כי שומר שאינו יכול לסמוך על עצמו אסור שיפעל על החשבון. |
 
 כל מעבר כותב שורת יומן מובנית אחת בדיוק, הנושאת חותמת זמן, מצב מוצא, מצב
