@@ -35,6 +35,7 @@
 * [Configuration](#en-configuration)
 * [What you will see in the journal](#en-journal)
 * [Repository layout](#en-layout)
+* [Known open defects](#en-known)
 * [Design notes worth knowing](#en-design)
 * [גרסה עברית](#he-top)
 
@@ -321,15 +322,48 @@ proof-of-life lines are emitted at any verbosity.
 MQL5/Experts/AccountGuardian/AccountGuardian.mq5   entry point, event wiring only
 MQL5/Include/AccountGuardian/State.mqh             state machine, transitions, reasons
 MQL5/Include/AccountGuardian/Pnl.mqh               day and week windows, base, validation
-MQL5/Include/AccountGuardian/Sweep.mqh             flatten engine, empty until Phase 3
+MQL5/Include/AccountGuardian/Sweep.mqh             flatten engine, declarations only until Phase 3
 MQL5/Include/AccountGuardian/Persist.mqh           halt file, state file, mutex, checksums
 MQL5/Include/AccountGuardian/Clock.mqh             server time source, day and week anchors
 MQL5/Include/AccountGuardian/Log.mqh               logging contract
+MQL5/Scripts/AccountGuardian/                      vector-capture scripts for the clock and state tests
+LEDGER.md                                          issues, actions and decisions, the project's record
 docs/SPEC_v0.1.md                                  the specification the code is measured against
+docs/PLAN_PHASE0.md · docs/PLAN_PHASE1_PNL_CORE.md · docs/DESIGN_PHASE1_2.md
+docs/REVIEW_v0.md                                  the review the hardening work answers
 docs/vectors/                                      input validation preset files
+docs/evidence/                                     banked journals, state files and vector captures
+docs/residue/                                      a preserved corrupt-state artifact
+docs/status/index.html                             a static status view
+scripts/agtest.ps1                                 test driver
 ```
 
+`Sweep.mqh` is not an empty file: it holds the Phase 3 contract as comments and declarations,
+with no trade API reference at all. That absence is what the static grep checks.
+
 </details>
+
+---
+
+<a id="en-known"></a>
+
+## 🐞 Known open defects
+
+The build that locked a live account is the build under acceptance, so findings raised during
+that acceptance were recorded rather than patched mid-stage. [`LEDGER.md`](LEDGER.md) is the
+record — it currently carries **26 open and 5 blocked entries** across issues, actions and
+decisions. The ones that change what you should expect from a running instance:
+
+| Defect | Effect today |
+|---|---|
+| The global-variable lock mirror is overwritten with `0` on the first ticks of every cold boot, before its own witness reads it | The third independent lock-recovery witness fires only when the advisor kept its memory. With the state file deleted, restart recovery rests on the derived history witness alone. Confirmed on two independent cold boots. |
+| A boot-derived lock persists an empty Q6 snapshot and loses `breach_at` | Not an enforcement hole — the file witness re-fires on reason plus an unexpired `locked_until` — but the breach timestamp is lost permanently, and the tier-1 snapshot protection is absent for every boot-derived lock. |
+| `LOCKED` proof-of-life lines carry no numbers | During a real broker liquidation the journal recorded 76 identical lines and not one figure; balance and equity at that moment were unrecoverable from any artifact. |
+| A disconnect or frozen quote straddling the lock expiry leaves the first post-expiry pass ungated | Expiry enters `ACTIVE` directly rather than through `SYNCING`, so no history-stability check runs on that pass. The precondition was observed live on 2026-08-19; the consequence has not been exercised. |
+| `.gitignore` still ignores patterns that can silently swallow files copied into `docs/evidence/` | Thirteen evidence journals were lost this way and recovered. The mechanism is unchanged and unruled — verify with `git ls-files`, never with a command's exit code. |
+
+Owner has instructed the first four into the next build. Nothing here weakens the daily lock
+itself, which the file and derived witnesses both carry.
 
 ---
 
