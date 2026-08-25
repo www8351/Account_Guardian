@@ -1,0 +1,232 @@
+﻿=== RUN B P53 NEXT BOOT, EXPERTS JOURNAL, 2026-08-26, build 1C88C4A1, read only harvest ===
+
+PROVENANCE. The OWNER copied the source files out of the MetaTrader Terminal data folder into
+`C:\Users\www83\Downloads\AI\AccountGuardian\tmp`, per the evidence handling ruling of this run.
+The executor read the banked content from that tmp folder ONLY. Every executor touch of the
+Terminal folder in this session was a directory listing, a file hash or a byte prefix read, all
+read only, and nothing under that folder was written, deleted or renamed, per RULE A.
+
+SOURCE FILE AND INTEGRITY, verified before any line below was quoted:
+  ...\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Logs\20260826.log
+      TODAY, STILL BEING WRITTEN. Prefix check over the tmp copy length of 76248 bytes:
+      md5 of original[0..76247] 6AA8248FECA711C5EF79F5CD90445B34, md5 of tmp copy identical, and
+      a byte comparison over the same 76248 bytes returned equal. The original stood at 81384
+      bytes when the check was taken, so this file is an EXACT PREFIX and not the whole day.
+
+ENCODING. Source UTF-16LE with a BOM, banked transcoded to UTF-8 with a BOM, character for
+character. The md5 above hashes the UTF-16LE ORIGINAL PREFIX and NOT this banked file.
+
+BANKED WHOLE AS COPIED, 171 journal lines, from the first line of the day through 01:15:14.
+
+WHAT THIS FILE SETTLES, AND IT IS THE ACCEPTANCE FILE FOR BOTH OPEN ROWS.
+
+THE EXPIRY TIME RE LOCK, the event P49 waited on and the one Run A could not produce. The lock of
+2026-08-25 22:00 reached its 01:00:00 anchor with the two sells still open, and the pass took the
+BOOT DERIVATION route exactly as P32 says it must under shape A:
+  01:00:06.588  INFO|lock expired|locked_until=2026.08.26 01:00:00
+  01:00:06.595  TRANSITION|LOCKED->SYNCING|lock expired|...|polls=0/3
+  01:00:09.579  INFO|boot witness DERIVED fired|...|limit_cmp=101.40|tier=live|...
+  01:00:09.586  TRANSITION|SYNCING->LOCKED|boot derivation: DAILY_BREACH|locked_until=2026.08.27 01:00:00
+There is NO `TRANSITION|SYNCING->ACTIVE` at this expiry and there is NO `TRANSITION|ACTIVE->LOCKED`
+anywhere between the expiry and the re lock. P27 of the defect 1 plan did not appear here and its
+absence is CORRECT rather than a regression: the boot derived lock replaces the ACTIVE resume when
+the loser is still open, which is what P31 describes.
+
+THE DELIBERATE RESTART AND THE P53 BOOT. The owner performed ONE terminal restart while the new
+lock was live, `deinit|reason=9|session marked clean` at 01:12:30.788, and the boot that followed
+is the P53 boot:
+  01:12:43.687  INFO|lock state file loaded|reason=DAILY_BREACH|locked_until=2026.08.27 01:00:00
+  01:12:43.690  TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s
+  01:12:46.698  INFO|boot witness FILE fired|reason=DAILY_BREACH|raw=2026.08.27 01:00:00|bounded=2026.08.27 01:00:00
+  01:12:46.699  INFO|boot witness DERIVED fired|...|limit_cmp=101.40|tier=snapshot|bounded=2026.08.27 01:00:00
+  01:12:46.702  TRANSITION|SYNCING->LOCKED|boot derivation: DAILY_BREACH|locked_until=2026.08.27 01:00:00
+`tier=snapshot` is the single field P53 named, and the retired build `74D666E9` could structurally
+print only `tier=floor` or `tier=live` on this path.
+
+THE TIER PAIR IS THE POINT AND IT IS WHY BOTH BOOTS ARE BANKED. The 01:00 derivation read
+`tier=live`, because no snapshot existed yet to read; the 01:12 derivation read `tier=snapshot`,
+because the 01:00 pass had written one. The same `limit_cmp=101.40` on both lines with the tier
+changing between them is the before and after of the defect 3 fix inside one hour on one binary.
+
+THE COUNTS OVER THE WHOLE BANKED DAY, each a count over this file:
+  `TRANSITION|ACTIVE->LOCKED`   ZERO
+  `TRANSITION|SYNCING->ACTIVE`  ZERO
+  `TRANSITION|LOCKED->ACTIVE`   ZERO
+  `TRANSITION|SYNCING->LOCKED`  TWO, at 01:00:09.586 and at 01:12:46.702
+
+THE POSITIONS WERE NEVER TOUCHED. The terminal journal of the same date reports `2 positions,
+0 orders` at the 01:12:43.275 authorization, and floating moved from -135.20 at the 01:00
+derivation to -165.20 at the 01:12 one, which is a price move on the same two open sells.
+
+--- BANKED CONTENT BEGINS ON THE NEXT LINE, SOURCE FILE VERBATIM ---
+QS	0	00:00:20.572	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7194|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=142s|server=2026.08.25 23:57:59|local=2026.08.26 00:00:20
+MG	0	00:00:50.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7224|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=172s|server=2026.08.25 23:57:59|local=2026.08.26 00:00:50
+HJ	0	00:01:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7254|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=202s|server=2026.08.25 23:57:59|local=2026.08.26 00:01:20
+IM	0	00:01:50.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7284|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=232s|server=2026.08.25 23:57:59|local=2026.08.26 00:01:50
+JP	0	00:02:20.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7314|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=262s|server=2026.08.25 23:57:59|local=2026.08.26 00:02:20
+OD	0	00:02:50.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7344|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=292s|server=2026.08.25 23:57:59|local=2026.08.26 00:02:50
+GG	0	00:03:20.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7374|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=322s|server=2026.08.25 23:57:59|local=2026.08.26 00:03:20
+JJ	0	00:03:50.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7404|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=352s|server=2026.08.25 23:57:59|local=2026.08.26 00:03:50
+RM	0	00:04:20.572	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7434|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=382s|server=2026.08.25 23:57:59|local=2026.08.26 00:04:20
+IQ	0	00:04:50.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7464|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=412s|server=2026.08.25 23:57:59|local=2026.08.26 00:04:50
+OD	0	00:05:20.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7494|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=442s|server=2026.08.25 23:57:59|local=2026.08.26 00:05:20
+LG	0	00:05:50.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7524|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=472s|server=2026.08.25 23:57:59|local=2026.08.26 00:05:50
+QJ	0	00:06:20.585	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7554|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=502s|server=2026.08.25 23:57:59|local=2026.08.26 00:06:20
+FN	0	00:06:50.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7584|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=532s|server=2026.08.25 23:57:59|local=2026.08.26 00:06:50
+GQ	0	00:07:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7614|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=562s|server=2026.08.25 23:57:59|local=2026.08.26 00:07:20
+ED	0	00:07:50.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7644|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=592s|server=2026.08.25 23:57:59|local=2026.08.26 00:07:50
+LG	0	00:08:20.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7674|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=622s|server=2026.08.25 23:57:59|local=2026.08.26 00:08:20
+CK	0	00:08:50.568	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7704|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=652s|server=2026.08.25 23:57:59|local=2026.08.26 00:08:50
+CN	0	00:09:20.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7734|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=682s|server=2026.08.25 23:57:59|local=2026.08.26 00:09:20
+KQ	0	00:09:50.585	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7764|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=712s|server=2026.08.25 23:57:59|local=2026.08.26 00:09:50
+ND	0	00:10:20.588	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7794|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=742s|server=2026.08.25 23:57:59|local=2026.08.26 00:10:20
+HH	0	00:10:50.572	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7824|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=772s|server=2026.08.25 23:57:59|local=2026.08.26 00:10:50
+GK	0	00:11:20.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7854|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=802s|server=2026.08.25 23:57:59|local=2026.08.26 00:11:20
+DN	0	00:11:50.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7884|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=832s|server=2026.08.25 23:57:59|local=2026.08.26 00:11:50
+HQ	0	00:12:20.572	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7914|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=862s|server=2026.08.25 23:57:59|local=2026.08.26 00:12:20
+HE	0	00:12:50.574	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7944|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=892s|server=2026.08.25 23:57:59|local=2026.08.26 00:12:50
+HH	0	00:13:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=7974|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=922s|server=2026.08.25 23:57:59|local=2026.08.26 00:13:20
+IK	0	00:13:50.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8004|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=952s|server=2026.08.25 23:57:59|local=2026.08.26 00:13:50
+HN	0	00:14:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8034|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=982s|server=2026.08.25 23:57:59|local=2026.08.26 00:14:20
+CQ	0	00:14:50.574	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8064|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1012s|server=2026.08.25 23:57:59|local=2026.08.26 00:14:50
+KF	0	00:15:20.574	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8094|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1042s|server=2026.08.25 23:57:59|local=2026.08.26 00:15:20
+FK	0	00:15:50.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8124|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1072s|server=2026.08.25 23:57:59|local=2026.08.26 00:15:50
+EH	0	00:16:20.572	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8154|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1102s|server=2026.08.25 23:57:59|local=2026.08.26 00:16:20
+NM	0	00:16:50.584	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8184|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1132s|server=2026.08.25 23:57:59|local=2026.08.26 00:16:50
+GR	0	00:17:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8214|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1162s|server=2026.08.25 23:57:59|local=2026.08.26 00:17:20
+IG	0	00:17:50.566	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8244|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1192s|server=2026.08.25 23:57:59|local=2026.08.26 00:17:50
+HD	0	00:18:20.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8274|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1222s|server=2026.08.25 23:57:59|local=2026.08.26 00:18:20
+DH	0	00:18:50.567	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8304|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1252s|server=2026.08.25 23:57:59|local=2026.08.26 00:18:50
+EM	0	00:19:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8334|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1282s|server=2026.08.25 23:57:59|local=2026.08.26 00:19:20
+HR	0	00:19:50.564	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8364|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1312s|server=2026.08.25 23:57:59|local=2026.08.26 00:19:50
+LG	0	00:20:20.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8394|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1342s|server=2026.08.25 23:57:59|local=2026.08.26 00:20:20
+RD	0	00:20:50.576	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8424|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1372s|server=2026.08.25 23:57:59|local=2026.08.26 00:20:50
+HI	0	00:21:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8454|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1402s|server=2026.08.25 23:57:59|local=2026.08.26 00:21:20
+NN	0	00:21:50.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8484|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1432s|server=2026.08.25 23:57:59|local=2026.08.26 00:21:50
+FS	0	00:22:20.569	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8514|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1462s|server=2026.08.25 23:57:59|local=2026.08.26 00:22:20
+FG	0	00:22:50.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8544|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1492s|server=2026.08.25 23:57:59|local=2026.08.26 00:22:50
+PD	0	00:23:20.586	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8574|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1522s|server=2026.08.25 23:57:59|local=2026.08.26 00:23:20
+II	0	00:23:50.588	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8604|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1552s|server=2026.08.25 23:57:59|local=2026.08.26 00:23:50
+FN	0	00:24:20.581	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8634|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1582s|server=2026.08.25 23:57:59|local=2026.08.26 00:24:20
+FS	0	00:24:50.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8664|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1612s|server=2026.08.25 23:57:59|local=2026.08.26 00:24:50
+RP	0	00:25:20.584	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8694|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1642s|server=2026.08.25 23:57:59|local=2026.08.26 00:25:20
+JE	0	00:25:50.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8724|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1672s|server=2026.08.25 23:57:59|local=2026.08.26 00:25:50
+LJ	0	00:26:20.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8754|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1702s|server=2026.08.25 23:57:59|local=2026.08.26 00:26:20
+HN	0	00:26:50.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8784|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1732s|server=2026.08.25 23:57:59|local=2026.08.26 00:26:50
+MS	0	00:27:20.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8814|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1762s|server=2026.08.25 23:57:59|local=2026.08.26 00:27:20
+FP	0	00:27:50.567	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8844|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1792s|server=2026.08.25 23:57:59|local=2026.08.26 00:27:50
+DE	0	00:28:20.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8874|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1822s|server=2026.08.25 23:57:59|local=2026.08.26 00:28:20
+IJ	0	00:28:50.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8904|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1852s|server=2026.08.25 23:57:59|local=2026.08.26 00:28:50
+PO	0	00:29:20.581	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8934|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1882s|server=2026.08.25 23:57:59|local=2026.08.26 00:29:20
+GL	0	00:29:50.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8964|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1912s|server=2026.08.25 23:57:59|local=2026.08.26 00:29:50
+LQ	0	00:30:20.568	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=8994|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1942s|server=2026.08.25 23:57:59|local=2026.08.26 00:30:20
+QE	0	00:30:50.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9024|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=1972s|server=2026.08.25 23:57:59|local=2026.08.26 00:30:50
+LJ	0	00:31:20.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9054|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2002s|server=2026.08.25 23:57:59|local=2026.08.26 00:31:20
+PO	0	00:31:50.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9084|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2032s|server=2026.08.25 23:57:59|local=2026.08.26 00:31:50
+CL	0	00:32:20.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9114|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2062s|server=2026.08.25 23:57:59|local=2026.08.26 00:32:20
+CQ	0	00:32:50.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9144|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2092s|server=2026.08.25 23:57:59|local=2026.08.26 00:32:50
+MF	0	00:33:20.574	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9174|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2122s|server=2026.08.25 23:57:59|local=2026.08.26 00:33:20
+IK	0	00:33:50.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9204|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2152s|server=2026.08.25 23:57:59|local=2026.08.26 00:33:50
+QH	0	00:34:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9234|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2182s|server=2026.08.25 23:57:59|local=2026.08.26 00:34:20
+KL	0	00:34:50.581	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9264|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2212s|server=2026.08.25 23:57:59|local=2026.08.26 00:34:50
+NQ	0	00:35:20.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9294|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2242s|server=2026.08.25 23:57:59|local=2026.08.26 00:35:20
+EF	0	00:35:50.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9324|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2272s|server=2026.08.25 23:57:59|local=2026.08.26 00:35:50
+GK	0	00:36:20.576	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9354|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2302s|server=2026.08.25 23:57:59|local=2026.08.26 00:36:20
+NH	0	00:36:50.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9384|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2332s|server=2026.08.25 23:57:59|local=2026.08.26 00:36:50
+OM	0	00:37:20.577	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9414|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2362s|server=2026.08.25 23:57:59|local=2026.08.26 00:37:20
+GR	0	00:37:50.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9444|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2392s|server=2026.08.25 23:57:59|local=2026.08.26 00:37:50
+FG	0	00:38:20.568	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9474|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2422s|server=2026.08.25 23:57:59|local=2026.08.26 00:38:20
+HK	0	00:38:50.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9504|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2452s|server=2026.08.25 23:57:59|local=2026.08.26 00:38:50
+RH	0	00:39:20.567	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9534|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2482s|server=2026.08.25 23:57:59|local=2026.08.26 00:39:20
+EM	0	00:39:50.561	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9564|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2512s|server=2026.08.25 23:57:59|local=2026.08.26 00:39:50
+LR	0	00:40:20.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9594|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2542s|server=2026.08.25 23:57:59|local=2026.08.26 00:40:20
+NG	0	00:40:50.565	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9624|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2572s|server=2026.08.25 23:57:59|local=2026.08.26 00:40:50
+ED	0	00:41:20.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9654|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2602s|server=2026.08.25 23:57:59|local=2026.08.26 00:41:20
+JI	0	00:41:50.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9684|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2632s|server=2026.08.25 23:57:59|local=2026.08.26 00:41:50
+IN	0	00:42:20.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9714|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2662s|server=2026.08.25 23:57:59|local=2026.08.26 00:42:20
+ER	0	00:42:50.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9744|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2692s|server=2026.08.25 23:57:59|local=2026.08.26 00:42:50
+RG	0	00:43:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9774|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2722s|server=2026.08.25 23:57:59|local=2026.08.26 00:43:20
+JD	0	00:43:50.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9804|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2752s|server=2026.08.25 23:57:59|local=2026.08.26 00:43:50
+II	0	00:44:20.564	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9834|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2782s|server=2026.08.25 23:57:59|local=2026.08.26 00:44:20
+IN	0	00:44:50.569	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9864|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2812s|server=2026.08.25 23:57:59|local=2026.08.26 00:44:50
+NS	0	00:45:20.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9894|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2842s|server=2026.08.25 23:57:59|local=2026.08.26 00:45:20
+RP	0	00:45:50.576	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9924|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2872s|server=2026.08.25 23:57:59|local=2026.08.26 00:45:50
+GE	0	00:46:20.581	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9954|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2902s|server=2026.08.25 23:57:59|local=2026.08.26 00:46:20
+LI	0	00:46:50.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=9984|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2932s|server=2026.08.25 23:57:59|local=2026.08.26 00:46:50
+IM	0	00:47:20.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10014|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2962s|server=2026.08.25 23:57:59|local=2026.08.26 00:47:20
+OP	0	00:47:50.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10044|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=2992s|server=2026.08.25 23:57:59|local=2026.08.26 00:47:50
+IS	0	00:48:20.568	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10074|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3022s|server=2026.08.25 23:57:59|local=2026.08.26 00:48:20
+NF	0	00:48:50.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10104|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3052s|server=2026.08.25 23:57:59|local=2026.08.26 00:48:50
+JI	0	00:49:20.588	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10134|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3082s|server=2026.08.25 23:57:59|local=2026.08.26 00:49:20
+HL	0	00:49:50.578	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10164|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3112s|server=2026.08.25 23:57:59|local=2026.08.26 00:49:50
+FO	0	00:50:20.574	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10194|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3142s|server=2026.08.25 23:57:59|local=2026.08.26 00:50:20
+MR	0	00:50:50.589	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10224|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3172s|server=2026.08.25 23:57:59|local=2026.08.26 00:50:50
+GE	0	00:51:20.584	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10254|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3202s|server=2026.08.25 23:57:59|local=2026.08.26 00:51:20
+QH	0	00:51:50.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10284|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3232s|server=2026.08.25 23:57:59|local=2026.08.26 00:51:50
+HK	0	00:52:20.586	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10314|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3262s|server=2026.08.25 23:57:59|local=2026.08.26 00:52:20
+JN	0	00:52:50.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10344|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3292s|server=2026.08.25 23:57:59|local=2026.08.26 00:52:50
+FQ	0	00:53:20.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10374|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3322s|server=2026.08.25 23:57:59|local=2026.08.26 00:53:20
+OD	0	00:53:50.565	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10404|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3352s|server=2026.08.25 23:57:59|local=2026.08.26 00:53:50
+DG	0	00:54:20.577	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10434|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3382s|server=2026.08.25 23:57:59|local=2026.08.26 00:54:20
+NJ	0	00:54:50.589	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10464|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3412s|server=2026.08.25 23:57:59|local=2026.08.26 00:54:50
+QM	0	00:55:20.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10494|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3442s|server=2026.08.25 23:57:59|local=2026.08.26 00:55:20
+GP	0	00:55:50.585	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10524|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3472s|server=2026.08.25 23:57:59|local=2026.08.26 00:55:50
+LS	0	00:56:20.589	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10554|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3502s|server=2026.08.25 23:57:59|local=2026.08.26 00:56:20
+GF	0	00:56:50.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10584|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3532s|server=2026.08.25 23:57:59|local=2026.08.26 00:56:50
+EI	0	00:57:20.583	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10614|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3562s|server=2026.08.25 23:57:59|local=2026.08.26 00:57:20
+CL	0	00:57:50.565	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10644|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3592s|server=2026.08.25 23:57:59|local=2026.08.26 00:57:50
+MO	0	00:58:20.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10674|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3622s|server=2026.08.25 23:57:59|local=2026.08.26 00:58:20
+DR	0	00:58:50.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10704|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3652s|server=2026.08.25 23:57:59|local=2026.08.26 00:58:50
+RE	0	00:59:20.580	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10734|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3682s|server=2026.08.25 23:57:59|local=2026.08.26 00:59:20
+PH	0	00:59:50.570	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.25 23:57:59|LIFE|state=LOCKED|seconds_in_state=10764|waiting_on=expiry: TimeCurrent >= locked_until|quote_age=3712s|server=2026.08.25 23:57:59|local=2026.08.26 00:59:50
+QD	0	01:00:06.588	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:07|INFO|lock expired|locked_until=2026.08.26 01:00:00|server=2026.08.26 01:00:07
+EK	0	01:00:06.595	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:07|TRANSITION|LOCKED->SYNCING|lock expired|history stability required before the first post-expiry breach decision|polls=0/3
+LO	0	01:00:09.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:10|INFO|boot witness DERIVED fired|live=1|replay=0|realized=0.00|floating=-135.20|running_min=0.00|limit_cmp=101.40|tier=live|bounded=2026.08.27 01:00:00
+NO	0	01:00:09.586	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:10|TRANSITION|SYNCING->LOCKED|boot derivation: DAILY_BREACH|locked_until=2026.08.27 01:00:00
+CO	0	01:00:09.586	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:10|ALERT|LOCKED at boot by derivation (DAILY_BREACH) until 2026.08.27 01:00:00. Phase 2 locks the state machine and sends no order: open positions stay open until you close them by hand.
+KL	0	01:00:09.586	AccountGuardian (XAUUSD.ecn,M15)	Alert: AccountGuardian: LOCKED at boot by derivation (DAILY_BREACH) until 2026.08.27 01:00:00. Phase 2 locks the state machine and sends no order: open positions stay open until you close them by hand.
+GR	0	01:00:20.585	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:21|LIFE|state=LOCKED|seconds_in_state=11|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:00:21|local=2026.08.26 01:00:20
+KO	0	01:00:50.586	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:00:51|LIFE|state=LOCKED|seconds_in_state=41|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:00:51|local=2026.08.26 01:00:50
+HE	0	01:01:20.568	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:01:21|LIFE|state=LOCKED|seconds_in_state=71|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:01:21|local=2026.08.26 01:01:20
+KQ	0	01:01:50.569	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:01:51|LIFE|state=LOCKED|seconds_in_state=101|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:01:51|local=2026.08.26 01:01:50
+IL	0	01:02:20.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:02:21|LIFE|state=LOCKED|seconds_in_state=131|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:02:21|local=2026.08.26 01:02:20
+IF	0	01:02:50.587	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:02:51|LIFE|state=LOCKED|seconds_in_state=161|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:02:51|local=2026.08.26 01:02:50
+GQ	0	01:03:20.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:03:20|LIFE|state=LOCKED|seconds_in_state=191|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:03:20|local=2026.08.26 01:03:20
+EL	0	01:03:50.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:03:51|LIFE|state=LOCKED|seconds_in_state=221|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:03:51|local=2026.08.26 01:03:50
+RG	0	01:04:20.593	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:04:21|LIFE|state=LOCKED|seconds_in_state=251|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:04:21|local=2026.08.26 01:04:20
+QQ	0	01:04:50.582	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:04:51|LIFE|state=LOCKED|seconds_in_state=281|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:04:51|local=2026.08.26 01:04:50
+PL	0	01:05:20.563	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:05:21|LIFE|state=LOCKED|seconds_in_state=311|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:05:21|local=2026.08.26 01:05:20
+FG	0	01:05:50.564	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:05:51|LIFE|state=LOCKED|seconds_in_state=341|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:05:51|local=2026.08.26 01:05:50
+LR	0	01:06:20.587	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:06:21|LIFE|state=LOCKED|seconds_in_state=371|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:06:21|local=2026.08.26 01:06:20
+IL	0	01:06:50.584	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:06:51|LIFE|state=LOCKED|seconds_in_state=401|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:06:51|local=2026.08.26 01:06:50
+PG	0	01:07:20.566	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:07:21|LIFE|state=LOCKED|seconds_in_state=431|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:07:21|local=2026.08.26 01:07:20
+DR	0	01:07:50.572	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:07:51|LIFE|state=LOCKED|seconds_in_state=461|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:07:51|local=2026.08.26 01:07:50
+CM	0	01:08:20.569	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:08:21|LIFE|state=LOCKED|seconds_in_state=491|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:08:21|local=2026.08.26 01:08:20
+RG	0	01:08:50.571	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:08:51|LIFE|state=LOCKED|seconds_in_state=521|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:08:51|local=2026.08.26 01:08:50
+FR	0	01:09:20.581	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:09:21|LIFE|state=LOCKED|seconds_in_state=551|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:09:21|local=2026.08.26 01:09:20
+LM	0	01:09:50.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:09:51|LIFE|state=LOCKED|seconds_in_state=581|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:09:51|local=2026.08.26 01:09:50
+DH	0	01:10:20.573	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:10:21|LIFE|state=LOCKED|seconds_in_state=611|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:10:21|local=2026.08.26 01:10:20
+QR	0	01:10:50.575	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:10:51|LIFE|state=LOCKED|seconds_in_state=641|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:10:51|local=2026.08.26 01:10:50
+MM	0	01:11:20.576	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:11:21|LIFE|state=LOCKED|seconds_in_state=671|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:11:21|local=2026.08.26 01:11:20
+RH	0	01:11:50.579	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:11:51|LIFE|state=LOCKED|seconds_in_state=701|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:11:51|local=2026.08.26 01:11:50
+IS	0	01:12:20.588	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:21|LIFE|state=LOCKED|seconds_in_state=731|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:12:21|local=2026.08.26 01:12:20
+IS	0	01:12:30.788	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:31|INFO|deinit|reason=9|session marked clean|timer_armed=1|timer_ticks=18941
+QP	0	01:12:43.686	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|INFO|init|build=Phase2|account=1200252169|server=JustMarkets-Demo3
+DQ	0	01:12:43.687	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|INFO|mutex acquire|id_name=AG_ID_1200252169|id_set=1|id_exists=1|hb_name=AG_HB_1200252169|hb_set=1|hb_exists=1|hb_value=1787706763
+NS	0	01:12:43.687	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|INFO|lock state file loaded|reason=DAILY_BREACH|locked_until=2026.08.27 01:00:00|weighed by the boot derivation at the SYNCING exit
+IF	0	01:12:43.687	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|INFO|ratchet floor loaded|anchor=2026.08.25 01:00:00|floor=100.72
+RH	0	01:12:43.690	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|DEBUG|crash-loop check|chain=1/3 consecutive unclean, gap bound 300s
+FG	0	01:12:43.690	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|TRANSITION|BOOT->SYNCING|boot|weekly=on|timer=1s
+DD	0	01:12:43.690	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:44|INFO|timer armed|period=1s
+DG	0	01:12:44.703	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:45|LIFE|state=SYNCING|seconds_in_state=1|waiting_on=history stability poll not yet run this session|server=2026.08.26 01:12:45|local=2026.08.26 01:12:44
+LQ	0	01:12:46.698	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:47|INFO|boot witness FILE fired|reason=DAILY_BREACH|raw=2026.08.27 01:00:00|bounded=2026.08.27 01:00:00
+GI	0	01:12:46.699	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:47|INFO|boot witness DERIVED fired|live=1|replay=0|realized=0.00|floating=-165.20|running_min=0.00|limit_cmp=101.40|tier=snapshot|bounded=2026.08.27 01:00:00
+MG	0	01:12:46.702	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:47|TRANSITION|SYNCING->LOCKED|boot derivation: DAILY_BREACH|locked_until=2026.08.27 01:00:00
+HG	0	01:12:46.702	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:12:47|ALERT|LOCKED at boot by derivation (DAILY_BREACH) until 2026.08.27 01:00:00. Phase 2 locks the state machine and sends no order: open positions stay open until you close them by hand.
+KD	0	01:12:46.702	AccountGuardian (XAUUSD.ecn,M15)	Alert: AccountGuardian: LOCKED at boot by derivation (DAILY_BREACH) until 2026.08.27 01:00:00. Phase 2 locks the state machine and sends no order: open positions stay open until you close them by hand.
+RJ	0	01:13:14.700	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:13:15|LIFE|state=LOCKED|seconds_in_state=28|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:13:15|local=2026.08.26 01:13:14
+JG	0	01:13:44.691	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:13:45|LIFE|state=LOCKED|seconds_in_state=58|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:13:45|local=2026.08.26 01:13:44
+RM	0	01:14:14.706	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:14:15|LIFE|state=LOCKED|seconds_in_state=88|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:14:15|local=2026.08.26 01:14:14
+RI	0	01:14:44.698	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:14:45|LIFE|state=LOCKED|seconds_in_state=118|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:14:45|local=2026.08.26 01:14:44
+RD	0	01:15:14.699	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:15:15|LIFE|state=LOCKED|seconds_in_state=148|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:15:15|local=2026.08.26 01:15:14
+CN	0	01:15:44.701	AccountGuardian (XAUUSD.ecn,M15)	AG|2026.08.26 01:15:45|LIFE|state=LOCKED|seconds_in_state=178|waiting_on=expiry: TimeCurrent >= locked_until|server=2026.08.26 01:15:45|local=2026.08.26 01:15:44
