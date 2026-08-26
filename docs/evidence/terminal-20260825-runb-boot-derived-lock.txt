@@ -1,0 +1,80 @@
+﻿=== RUN B BOOT DERIVED LOCK, TERMINAL JOURNAL, 2026-08-25, read only harvest ===
+
+PROVENANCE. The OWNER copied the source files out of the MetaTrader Terminal data folder into
+`C:\Users\www83\Downloads\AI\AccountGuardian\tmp`, per the evidence handling ruling of this run.
+The executor read the banked content from that tmp folder ONLY. Every executor touch of the
+Terminal folder in this session was a directory listing, a file hash or a byte prefix read, all
+read only, and nothing under that folder was written, deleted or renamed, per RULE A.
+
+SOURCE FILE AND INTEGRITY, verified before any line below was quoted:
+  ...\D0E8209F77C8CF37AD8BF550E51FF075\Logs\20260825.log
+      CLOSED DAY LOG. md5 original 6FC491F1020DADE02403EA7779C10779, md5 tmp copy identical,
+      9368 bytes on both sides.
+
+ENCODING. Source UTF-16LE with a BOM, banked transcoded to UTF-8 with a BOM, character for
+character. The md5 above hashes the UTF-16LE ORIGINAL and NOT this banked file.
+
+BANKED WHOLE, 50 journal lines, the entire day.
+
+WHAT THIS FILE SETTLES. THE TWO POSITIONS THAT BUILT THE BREACH AND THE FACT THAT NEITHER WAS
+CLOSED. `19:57:01.743 deal #319889107 sell 0.04 XAUUSD.ecn at 4643.92` and `20:05:14.349 deal
+#319932249 sell 0.04 XAUUSD.ecn at 4639.70`, and NO closing buy against either one anywhere in
+the file. That is the Run B precondition stated as an artifact rather than as a report, and it is
+exactly what Run A lacked, its own loser having been closed by hand at 14:32:30 and 14:32:33.
+
+THE FILE ENDS AT 20:05:14. There is NO terminal entry across the 22:00:26 lock and NO terminal
+entry across the 2026-08-26 01:00:00 anchor, so the terminal was connected and quiet through
+both. The last restart of the day is at 19:56:47, well ahead of the lock, and it synchronized
+`0 positions, 0 orders`.
+
+--- BANKED CONTENT BEGINS ON THE NEXT LINE, SOURCE FILE VERBATIM ---
+LL	0	02:41:08.419	Experts	expert AccountGuardian (XAUUSD.ecn,M15) removed
+GK	0	02:41:09.691	Terminal	exit with code 0
+KF	0	02:41:10.174	Network	'1200252169': disconnected from JustMarkets-Demo3
+KF	0	02:41:10.280	Terminal	stopped with 0
+GF	0	02:41:10.292	Terminal	shutdown with 0
+IL	0	02:41:15.892	Terminal	MetaTrader 5 x64 build 6140 started for MetaQuotes Ltd.
+QD	0	02:41:15.892	Terminal	Windows 11 build 26200, 10 x 12th Gen Intel Core i5-1235U, AVX2, 5 / 15 Gb memory, 157 / 346 Gb disk, UAC, GMT+2
+CK	0	02:41:15.892	Terminal	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075
+FE	0	02:41:15.894	MCP	started on 127.0.0.1:22346
+JL	0	02:41:16.892	Experts	expert AccountGuardian (XAUUSD.ecn,M15) loaded successfully
+OE	0	02:41:17.312	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 73.07 ms, build 5800)
+EK	0	02:41:17.312	Network	'1200252169': previous successful authorization performed from 5.29.16.153 on 2026.08.24 09:02:19
+HE	0	02:41:17.581	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 272 symbols, 0 spreads
+OD	0	02:41:17.581	Network	'1200252169': trading has been enabled, demo account - hedging mode
+KH	0	02:41:17.581	Network	'1200252169': balance management has been disabled - demo account
+EP	0	03:23:18.775	Trades	'1200252169': market sell 0.04 XAUUSD.ecn
+EI	0	03:23:18.851	Trades	'1200252169': accepted market sell 0.04 XAUUSD.ecn
+MP	0	03:23:18.851	Trades	'1200252169': deal #314285624 sell 0.04 XAUUSD.ecn at 4681.59 done (based on order #521819052)
+FO	0	03:23:18.851	Trades	'1200252169': order #521819052 sell 0.04 / 0.04 XAUUSD.ecn at 4681.59 done in 75.909 ms
+JO	0	03:23:19.754	Trades	use MetaTrader VPS Hosting Service to speed up the execution: 2.35 ms via 'VPS London LD4 60' instead of 73.07 ms
+GN	0	03:25:47.570	Trades	'1200252169': market buy 0.04 XAUUSD.ecn, close #521819052 sell 0.04 XAUUSD.ecn 4681.59
+MO	0	03:25:47.643	Trades	'1200252169': accepted market buy 0.04 XAUUSD.ecn, close #521819052 sell 0.04 XAUUSD.ecn 4681.59
+ML	0	03:25:47.646	Trades	'1200252169': deal #314296663 buy 0.04 XAUUSD.ecn at 4678.01 done (based on order #521843978)
+OL	0	03:25:47.647	Trades	'1200252169': order #521843978 buy 0.04 / 0.04 XAUUSD.ecn at 4678.01 done in 77.210 ms
+DM	0	03:29:23.008	Experts	expert AccountGuardian (XAUUSD.ecn,M15) removed
+LH	0	03:29:24.360	Terminal	exit with code 0
+NQ	0	03:29:24.892	Network	'1200252169': disconnected from JustMarkets-Demo3
+JD	0	03:29:25.031	Terminal	stopped with 0
+LG	0	03:29:25.043	Terminal	shutdown with 0
+GR	0	19:56:47.033	Terminal	MetaTrader 5 x64 build 6140 started for MetaQuotes Ltd.
+CE	0	19:56:47.034	Terminal	Windows 11 build 26200, 10 x 12th Gen Intel Core i5-1235U, AVX2, 9 / 15 Gb memory, 163 / 346 Gb disk, UAC, GMT+2
+DM	0	19:56:47.034	Terminal	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075
+KG	0	19:56:47.038	MCP	started on 127.0.0.1:22346
+OM	0	19:56:48.393	Experts	expert AccountGuardian (XAUUSD.ecn,M15) loaded successfully
+JS	0	19:56:49.006	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 73.07 ms, build 5800)
+GH	0	19:56:49.006	Network	'1200252169': previous successful authorization performed from 5.29.16.153 on 2026.08.25 02:41:19
+KG	0	19:56:49.282	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 0 positions, 0 orders, 272 symbols, 0 spreads
+DE	0	19:56:49.282	Network	'1200252169': trading has been enabled, demo account - hedging mode
+CI	0	19:56:49.283	Network	'1200252169': balance management has been disabled - demo account
+CR	0	19:56:49.505	Network	'1200252169': scanning network for access points
+ER	0	19:56:58.190	Network	'1200252169': scanning network finished
+PD	0	19:57:01.655	Trades	'1200252169': market sell 0.04 XAUUSD.ecn
+FN	0	19:57:01.742	Trades	'1200252169': accepted market sell 0.04 XAUUSD.ecn
+FD	0	19:57:01.743	Trades	'1200252169': deal #319889107 sell 0.04 XAUUSD.ecn at 4643.92 done (based on order #533395060)
+IJ	0	19:57:01.747	Trades	'1200252169': order #533395060 sell 0.04 / 0.04 XAUUSD.ecn at 4643.92 done in 92.756 ms
+QJ	0	19:57:02.240	Trades	use MetaTrader VPS Hosting Service to speed up the execution: 2.33 ms via 'VPS London LD4 61' instead of 72.71 ms
+FG	0	20:05:14.274	Trades	'1200252169': market sell 0.04 XAUUSD.ecn
+HM	0	20:05:14.349	Trades	'1200252169': accepted market sell 0.04 XAUUSD.ecn
+IK	0	20:05:14.349	Trades	'1200252169': deal #319932249 sell 0.04 XAUUSD.ecn at 4639.70 done (based on order #533484093)
+CK	0	20:05:14.351	Trades	'1200252169': order #533484093 sell 0.04 / 0.04 XAUUSD.ecn at 4639.70 done in 77.229 ms

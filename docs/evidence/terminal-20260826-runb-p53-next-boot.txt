@@ -1,0 +1,52 @@
+﻿=== RUN B P53 NEXT BOOT, TERMINAL JOURNAL, 2026-08-26, read only harvest ===
+
+PROVENANCE. The OWNER copied the source files out of the MetaTrader Terminal data folder into
+`C:\Users\www83\Downloads\AI\AccountGuardian\tmp`, per the evidence handling ruling of this run.
+The executor read the banked content from that tmp folder ONLY. Every executor touch of the
+Terminal folder in this session was a directory listing, a file hash or a byte prefix read, all
+read only, and nothing under that folder was written, deleted or renamed, per RULE A.
+
+SOURCE FILE AND INTEGRITY, verified before any line below was quoted:
+  ...\D0E8209F77C8CF37AD8BF550E51FF075\Logs\20260826.log
+      TODAY, STILL BEING WRITTEN. Prefix check over the tmp copy length of 2652 bytes:
+      md5 of original[0..2651] 0B701C17C956662AEB0304A322623AE3, md5 of tmp copy identical, and
+      a byte comparison over the same 2652 bytes returned equal. The original stood at 2652 bytes
+      when the check was taken, so the prefix happens to cover the file as it then stood.
+
+ENCODING. Source UTF-16LE with a BOM, banked transcoded to UTF-8 with a BOM, character for
+character. The md5 above hashes the UTF-16LE ORIGINAL PREFIX and NOT this banked file.
+
+BANKED WHOLE AS COPIED, 15 journal lines.
+
+WHAT THIS FILE SETTLES. THREE THINGS, AND EACH ONE ANSWERS A QUESTION THE EXPERTS JOURNAL CANNOT.
+
+ONE, THE 01:00 ANCHOR HAS NO TERMINAL ENTRY AT ALL. This file opens at 01:12:30.808 and the
+2026-08-25 file closes at 20:05:14. The expiry and the boot derived re lock at 01:00 therefore
+fall inside a terminal silence with no disconnect and no reconnect, so the route was the frozen
+quote while connected one and not the reconnect one.
+
+TWO, THE RESTART WAS ONE DELIBERATE RESTART AND IT IS ORDERED ON ARTIFACTS. `01:12:30.808 expert
+AccountGuardian removed`, `01:12:32.043 Terminal exit with code 0`, `01:12:41.726 MetaTrader 5 x64
+build 6140 started`, `01:12:42.316 expert AccountGuardian loaded successfully`. One down, one up,
+nothing else in the file.
+
+THREE, THE TWO LOSING SELLS WERE STILL OPEN ACROSS THE RESTART. `01:12:43.503 terminal
+synchronized with Just Global Markets Ltd.: 2 positions, 0 orders`. THE FILE CARRIES NO `Trades`
+LINE OF ANY KIND, so nothing was opened, closed or modified inside this window by anyone.
+
+--- BANKED CONTENT BEGINS ON THE NEXT LINE, SOURCE FILE VERBATIM ---
+NL	0	01:12:30.808	Experts	expert AccountGuardian (XAUUSD.ecn,M15) removed
+CK	0	01:12:32.043	Terminal	exit with code 0
+CF	0	01:12:32.852	Network	'1200252169': disconnected from JustMarkets-Demo3
+HF	0	01:12:32.938	Terminal	stopped with 0
+IF	0	01:12:32.943	Terminal	shutdown with 0
+EL	0	01:12:41.726	Terminal	MetaTrader 5 x64 build 6140 started for MetaQuotes Ltd.
+RD	0	01:12:41.726	Terminal	Windows 11 build 26200, 10 x 12th Gen Intel Core i5-1235U, AVX2, 7 / 15 Gb memory, 163 / 346 Gb disk, UAC, GMT+2
+GK	0	01:12:41.726	Terminal	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075
+CE	0	01:12:41.727	MCP	started on 127.0.0.1:22346
+GL	0	01:12:42.316	Experts	expert AccountGuardian (XAUUSD.ecn,M15) loaded successfully
+KE	0	01:12:43.275	Network	'1200252169': authorized on JustMarkets-Demo3 through UK6 (ping: 72.71 ms, build 5800)
+EK	0	01:12:43.275	Network	'1200252169': previous successful authorization performed from 5.29.16.153 on 2026.08.25 19:56:49
+LE	0	01:12:43.503	Network	'1200252169': terminal synchronized with Just Global Markets Ltd.: 2 positions, 0 orders, 272 symbols, 0 spreads
+ED	0	01:12:43.503	Network	'1200252169': trading has been enabled, demo account - hedging mode
+IH	0	01:12:43.503	Network	'1200252169': balance management has been disabled - demo account

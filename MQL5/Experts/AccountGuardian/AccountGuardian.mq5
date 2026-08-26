@@ -195,11 +195,29 @@ bool AgQuoteFrozen()
 //| HistorySelect must never be read as "no deals, therefore no      |
 //| breach", so it blocks the SYNCING exit for another pass instead  |
 //| of licensing an unlock.                                          |
+//|                                                                  |
+//| Defect 3, shape 1 (owner ruling 2026-08-20): the four out        |
+//| parameters after until_out exist so the caller can persist a Q6  |
+//| snapshot when there is no loaded one to preserve. They are the   |
+//| values THIS derivation computed and they leave the function      |
+//| unread on both NOT EVALUABLE paths, where nothing locks anyway.  |
+//| breach_time_out is the DERIVATION INSTANT and not the instant    |
+//| the loss crossed the limit, which the ruling requires be         |
+//| recorded as such rather than implied by the field's name.        |
 //+------------------------------------------------------------------+
-int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out)
+int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out,
+                     bool &have_snapshot_out, datetime &breach_time_out,
+                     double &limit_out, double &base_out)
   {
    reason_out = AG_LOCK_NONE;
    until_out  = 0;
+   //--- Defect 3: initialised here so an early NOT EVALUABLE return leaves
+   //--- them defined rather than indeterminate. No lock follows either of
+   //--- those returns, so these values are never read on that path.
+   have_snapshot_out = false;
+   breach_time_out   = 0;
+   limit_out         = 0.0;
+   base_out          = 0.0;
    datetime now = AgServerNow();
    bool fired   = false;
 
@@ -279,6 +297,21 @@ int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out)
       limit_cmp = g_ag_state_limit_snap;                          // tier 1
    else
       limit_cmp = AgFloorEffectiveLimit(live_limit, anchor);      // tier 2, else tier 3
+
+   //--- Defect 3, shape 1: hand the caller what this pass computed, so a lock
+   //--- entered with NO loaded snapshot can persist a real one instead of the
+   //--- default-constructed zeros. The values are published unconditionally
+   //--- rather than only when a witness fires, because the caller decides on
+   //--- have_snapshot and not on which witness won, and publishing here keeps
+   //--- that decision at one site. limit_out is the ENFORCED limit, the same
+   //--- limit_cmp the disjuncts below compare against, which is what Q6 means
+   //--- by the snapshot and what the ratchet ruling of 2026-08-18 requires:
+   //--- snapshotting the raw live value instead would loosen the locked
+   //--- window by exactly the amount the floor was holding back.
+   have_snapshot_out = have_snapshot;
+   limit_out         = limit_cmp;
+   base_out          = base;
+   breach_time_out   = now;
 
    double floating = AgFloating();
    bool disjunct_live   = (realized + floating <= -limit_cmp + AG_PNL_EPSILON);
@@ -363,18 +396,39 @@ void AgDeclareLock(const datetime breach_time, const double limit, const double 
 
 //+------------------------------------------------------------------+
 //| Enter LOCKED from the boot derivation rather than from a breach  |
-//| this session saw. Separate from AgDeclareLock because there is   |
-//| no fresh computation behind it: the limit and base snapshots are |
-//| whatever the file already held, and inventing new ones from live |
-//| inputs would be exactly the substitution Q6 forbids.             |
+//| this session saw. Separate from AgDeclareLock because the        |
+//| provenance of the snapshot differs: there, a live computation    |
+//| produced it; here it is either preserved from the file or        |
+//| supplied by the replay that has just run.                        |
 //|                                                                  |
 //| The bounded locked_until IS persisted, including when the lock   |
 //| came from the derived witness with the file silent, so the next  |
 //| boot recognizes it without a second full replay. That write is   |
 //| legitimate under never-loaded-never-written because AgStateLoad  |
 //| ran in OnInit.                                                   |
+//|                                                                  |
+//| DEFECT 3, SHAPE 1 (owner ruling 2026-08-20). This used to pass   |
+//| the EXISTING model values back into AgStateSetBreach, which is   |
+//| right when the FILE witness loaded them and wrong when only the  |
+//| DERIVED witness fired: the model is then default-constructed, so |
+//| it persisted breach_time 0 and both snapshots 0.00000000 while   |
+//| the derivation that had just computed the real numbers threw     |
+//| them away. The rule is NOT a blanket overwrite, and that is the  |
+//| whole of the fix: a LOADED snapshot still governs and is         |
+//| preserved untouched, per Q6 (FINAL), and the derivation's own    |
+//| values are written ONLY when have_snapshot is false, which is    |
+//| exactly the case Q6 has nothing to govern. derived_breach_time   |
+//| is the DERIVATION INSTANT, not the instant the loss crossed the  |
+//| limit; the ruling of 2026-08-20 requires that be recorded as     |
+//| such, and it is recorded in LEDGER.md, in the fix plan, and by   |
+//| the journal, where this path is preceded by a "boot witness      |
+//| DERIVED fired" line and the ACTIVE path by "breach arithmetic".  |
+//| The state file carries no marker of its own and gains no field:  |
+//| the format stays frozen, per the third ruling of 2026-08-20.     |
 //+------------------------------------------------------------------+
-void AgEnterLockFromBoot(const ENUM_AG_LOCK_REASON reason, const datetime until)
+void AgEnterLockFromBoot(const ENUM_AG_LOCK_REASON reason, const datetime until,
+                         const bool have_snapshot, const datetime derived_breach_time,
+                         const double derived_limit, const double derived_base)
   {
    g_ag_lock_reason  = reason;
    g_ag_locked_until = until;
@@ -388,9 +442,24 @@ void AgEnterLockFromBoot(const ENUM_AG_LOCK_REASON reason, const datetime until)
    g_ag_lock_inputs_captured = true;
 
    if(reason == AG_LOCK_CORRUPT_STATE)
+      //--- Untouched by defect 3 and deliberately so: AgStateSetCorrupt zeroes
+      //--- all three fields, because a CORRUPT_STATE lock has no trustworthy
+      //--- snapshot and claiming one would be worse than admitting none.
       AgStateSetCorrupt(until);
-   else
+   else if(have_snapshot)
+      //--- Q6 (FINAL): a valid loaded snapshot governs the locked window
+      //--- unconditionally and is preserved byte for byte. Only locked_until
+      //--- moves. Writing the derivation's values here instead would be the
+      //--- substitution Q6 forbids, which is why this is not a blanket
+      //--- overwrite of all three fields.
       AgStateSetBreach(until, g_ag_state_breach_time, g_ag_state_limit_snap, g_ag_state_base_snap);
+   else
+      //--- No snapshot to preserve, so Q6's rule has nothing to govern and the
+      //--- derivation's own freshly computed values are the best record there
+      //--- is. This is the defect 3 fix: the zeros that used to land here are
+      //--- what made have_snapshot false on every later boot for this lock,
+      //--- putting tier 1 of the cascade permanently out of reach.
+      AgStateSetBreach(until, derived_breach_time, derived_limit, derived_base);
    if(!AgStateSave())
       AgWarn("boot-derived lock was NOT persisted; it holds in memory for this session");
 
@@ -414,6 +483,22 @@ void AgEnterLockFromBoot(const ENUM_AG_LOCK_REASON reason, const datetime until)
 //| which errs locked and needs no special case. The Friday breach   |
 //| that outlives its computed expiry by about 48 hours across the   |
 //| weekend freeze is that behaviour working, not a defect.          |
+//|                                                                  |
+//| EXPIRY ENTERS SYNCING, NOT ACTIVE (defect 1, shape A, owner      |
+//| ruling 2026-08-20). The unlock itself is unchanged: the same     |
+//| comparison on the same clock decides it. What changes is the     |
+//| destination, so the first pass eligible to declare a breach is   |
+//| preceded by the same history-stability discipline every cold     |
+//| boot already runs. The defect this closes: g_ag_resyncing is     |
+//| written only inside AgEvaluateActive, which does not run while   |
+//| LOCKED, so a disconnect or a frozen quote straddling the expiry  |
+//| left the Q10 coherence gate unarmed and the first post-expiry    |
+//| pass took no stability check at all. Routing through SYNCING is  |
+//| unconditional, so it covers BOTH straddle routes, the            |
+//| disconnect and the frozen quote while connected, without         |
+//| inspecting either and without gating on quote freshness, which   |
+//| the stale quote ruling of 2026-08-18 (FINAL) forbids.            |
+//| Plan: docs/FIXPLAN_PHASE3_DEFECT1_2026-08-19.md, section Shape A.|
 //+------------------------------------------------------------------+
 void AgEvaluateLocked()
   {
@@ -449,13 +534,34 @@ void AgEvaluateLocked()
       if(!AgStateSave())
          AgWarn("lock expiry was NOT persisted: the state file still names the expired lock,"
                 " which is self-correcting on read since a past locked_until reads as not-locked");
-      //--- Re-entering ACTIVE re-derives everything from history; nothing is
-      //--- carried across the boundary. The Q9 baseline is deliberately reset
-      //--- so the first ACTIVE pass cannot inherit a stale deal count.
+      //--- Re-entering the state machine re-derives everything from history;
+      //--- nothing is carried across the boundary. The Q9 baseline is
+      //--- deliberately reset so the first ACTIVE pass cannot inherit a stale
+      //--- deal count.
       g_ag_last_deal_count      = -1;
       g_ag_breach_deferred_once = false;
-      AgTransition(AG_STATE_ACTIVE, "lock expired", "");
-      g_ag_dynamic_waiting_on = "";
+      //--- Defect 1, shape A: the stability counter MUST be reset here, and
+      //--- this is why the destination change is not a one-word edit.
+      //--- g_ag_stable_polls and g_ag_last_history_total are advanced only
+      //--- inside AgHistoryStable, which runs in SYNCING and in the Q10
+      //--- RESYNC gate and therefore never once while LOCKED, so they still
+      //--- hold whatever the last SYNCING occupancy left them at. Entering
+      //--- SYNCING without this reset, on an account whose deal count has
+      //--- not moved since, takes AgHistoryStable's count-unchanged branch
+      //--- and increments straight past HistoryStablePolls on the FIRST
+      //--- poll, leaving SYNCING on the very tick it was entered and buying
+      //--- none of the discipline this fix exists for. The two assignments
+      //--- are exactly Pnl.mqh's own disconnect reset, so the semantics are
+      //--- borrowed from the file that owns these globals, not invented.
+      g_ag_stable_polls       = 0;
+      g_ag_last_history_total = -1;
+      AgTransition(AG_STATE_SYNCING, "lock expired",
+                   "history stability required before the first post-expiry"
+                   " breach decision|polls=0/" + (string)HistoryStablePolls);
+      //--- Accurate rather than empty: AgWaitingOn's SYNCING default reads
+      //--- "history stability poll not yet run this session", which is false
+      //--- after an expiry, because the boot occupancy already ran one.
+      g_ag_dynamic_waiting_on = "polls=0/" + (string)HistoryStablePolls;
      }
   }
 
@@ -923,14 +1029,22 @@ void OnTimer()
          //--- eligible to leave rather than being licensed to unlock.
          ENUM_AG_LOCK_REASON boot_reason = AG_LOCK_NONE;
          datetime            boot_until  = 0;
-         int derived = AgBootDerivation(boot_reason, boot_until);
+         //--- Defect 3, shape 1: carried from the derivation to the lock entry
+         //--- so a lock with no loaded snapshot persists a real one.
+         bool     boot_have_snapshot = false;
+         datetime boot_breach_time   = 0;
+         double   boot_limit         = 0.0;
+         double   boot_base          = 0.0;
+         int derived = AgBootDerivation(boot_reason, boot_until, boot_have_snapshot,
+                                        boot_breach_time, boot_limit, boot_base);
          if(derived == 2)
            {
             g_ag_dynamic_waiting_on = "boot derivation not evaluable, retrying";
            }
          else if(derived == 1)
            {
-            AgEnterLockFromBoot(boot_reason, boot_until);
+            AgEnterLockFromBoot(boot_reason, boot_until, boot_have_snapshot,
+                                boot_breach_time, boot_limit, boot_base);
            }
          else
            {
