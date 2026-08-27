@@ -46,6 +46,7 @@ datetime g_ag_last_logged_anchor   = 0;     // monotonic rollover-line latch (2.
 bool     g_ag_rollover_seeded      = false; // latch seeded on the first ACTIVE pass, logging nothing
 datetime g_ag_last_breach_alert    = 0;     // Q2 ALERT cadence, local clock
 datetime g_ag_last_anchor_alert    = 0;     // Q8-amendment ALERT cadence, local clock
+datetime g_ag_last_locklevel_log   = 0;     // version 1 lock level line cadence, local clock
 bool     g_ag_have_pnl_numbers     = false; // false until the first ACTIVE pass completes
 bool     g_ag_resyncing            = false; // Q10 NEW RULING 2026-08-09: gates reconnect on AgHistoryStable
 datetime g_ag_last_anchor          = 0;
@@ -761,6 +762,35 @@ void AgEvaluateActive()
    double peak_level    = AgPeakUpdate(window_anchor, enforced_limit, AG_LIFE_INTERVAL_SECONDS);
    double ratchet_level = -enforced_limit;
    double lock_level    = MathMax(ratchet_level, peak_level);
+
+   //--- THE LOCK LEVEL LINE. It is the only artifact that can show WHICH of
+   //--- the two mechanisms set the level a breach was judged against, which
+   //--- is why it carries both terms and the winner rather than the result
+   //--- alone. Built here, once, and emitted from two places below: at the
+   //--- LIFE cadence on an ordinary ACTIVE pass, and UNCONDITIONALLY at a
+   //--- breach declaration, cadence or no cadence.
+   //--- `chosen` is honest about what MathMax actually did rather than about
+   //--- what a symmetric max might do. The peak term can never sit BELOW the
+   //--- ratchet term, a running maximum starting at zero and peak_level being
+   //--- peak minus the same enforced_limit the ratchet term negates, so the
+   //--- field reads `tie` while the day has no realized gain and `peak` once
+   //--- it has one. `ratchet` is unreachable while that invariant holds and
+   //--- is written here so that seeing it in a journal is a finding.
+   string chosen = (peak_level > ratchet_level)
+                   ? "peak"
+                   : ((peak_level < ratchet_level) ? "ratchet" : "tie");
+   string lock_level_line = "lock level|enforced_limit=" + DoubleToString(enforced_limit, 2)
+                            + "|peak=" + DoubleToString(g_ag_peak_currency, 2)
+                            + "|ratchet_level=" + DoubleToString(ratchet_level, 2)
+                            + "|peak_level=" + DoubleToString(peak_level, 2)
+                            + "|chosen=" + chosen
+                            + "|pnl=" + DoubleToString(pnl, 2)
+                            + "|realized=" + DoubleToString(realized, 2)
+                            + "|floating=" + DoubleToString(floating, 2);
+   datetime now_local_level = TimeLocal();   // A1 clock class, as every cadence here is
+   bool level_line_due = (g_ag_last_locklevel_log == 0
+                          || now_local_level - g_ag_last_locklevel_log >= AG_LIFE_INTERVAL_SECONDS);
+
    bool breach_now = (pnl <= lock_level + AG_PNL_EPSILON);
    if(breach_now)
      {
@@ -787,6 +817,14 @@ void AgEvaluateActive()
          //--- needs no extra obligation; snapshotting the live value instead
          //--- would silently loosen the locked window by exactly the amount
          //--- the ratchet had been holding back.
+         //--- Emitted BEFORE the declaration and unconditionally, so the
+         //--- journal carries the level this breach was judged against on
+         //--- the same pass that acted on it, ahead of the breach
+         //--- arithmetic and the transition lines. A declaration returns
+         //--- below, so the cadence copy at the end of this function is
+         //--- never reached on this path and the line cannot double.
+         AgInfo(lock_level_line);
+         g_ag_last_locklevel_log = now_local_level;
          AgDeclareLock(AgServerNow(), enforced_limit, base, pnl, realized, floating);
          return;   // LOCKED from this pass on; nothing further is ACTIVE work
         }
@@ -794,6 +832,16 @@ void AgEvaluateActive()
    else
       g_ag_breach_deferred_once = false;
    g_ag_last_deal_count = current_count;
+
+   //--- The LIFE-cadence copy. Reached on every ACTIVE pass that did not
+   //--- declare, the deferred-breach pass included, which is deliberate: the
+   //--- one pass Q9 holds a breach back for is exactly the pass a reader
+   //--- most wants the level from.
+   if(level_line_due)
+     {
+      AgInfo(lock_level_line);
+      g_ag_last_locklevel_log = now_local_level;
+     }
   }
 
 //+------------------------------------------------------------------+
