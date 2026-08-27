@@ -733,7 +733,35 @@ void AgEvaluateActive()
    //--- required to stay byte identical across Phase 2.
    double enforced_limit = AgRatchetUpdate(window_anchor, limit, AG_LIFE_INTERVAL_SECONDS);
    long current_count = HistoryDealsTotal();
-   bool breach_now = (pnl <= -enforced_limit + AG_PNL_EPSILON);
+   //--- VERSION 1 OF THE REALIZED PEAK TRAILING FLOOR (D1 through D8 FINAL
+   //--- 2026-08-24). One added call and one changed comparison, both here in
+   //--- the breach tail and for the same two reasons the ratchet sits here:
+   //--- the peak is PRE-BREACH ONLY (D8) so its only legitimate consumer is
+   //--- the comparison directly below, and the region above this tail is
+   //--- required to stay byte identical.
+   //--- ORDER: after the HistoryDealsTotal read above, deliberately. The fold
+   //--- inside AgPeakUpdate re-selects the same window with the same anchor,
+   //--- so the count cannot differ either way, and reading it first keeps the
+   //--- Q9 deferral's count provably the one Phase 1 took.
+   //--- THE TWO TERMS. ratchet_level is -enforced_limit, the day allowance
+   //--- measured from the day anchor, which is what this build enforced
+   //--- before today. peak_level is the day's realized high water mark minus
+   //--- the POST RATCHET enforced_limit (D7), which is the same allowance
+   //--- measured from the day's realized high instead. MathMax is D2:
+   //--- stricter always wins, in every scenario and with no exceptions.
+   //--- WHAT IS COMPARED AGAINST IT IS UNCHANGED, and that is D1.2: pnl is
+   //--- realized plus floating, already full account equity relative to the
+   //--- day base by the Q2 identity, so an open position diving below the
+   //--- level locks immediately rather than waiting to be closed and NO
+   //--- Equity read is introduced anywhere. The asymmetry is the mechanism:
+   //--- floating can trigger the lock and can never move the level that
+   //--- triggers it, the peak being fed by closed deals alone (D1.1).
+   //--- The epsilon is the flat 2026-07-30 epsilon, in the same place and in
+   //--- the same direction it has always been, erring toward breach.
+   double peak_level    = AgPeakUpdate(window_anchor, enforced_limit, AG_LIFE_INTERVAL_SECONDS);
+   double ratchet_level = -enforced_limit;
+   double lock_level    = MathMax(ratchet_level, peak_level);
+   bool breach_now = (pnl <= lock_level + AG_PNL_EPSILON);
    if(breach_now)
      {
       if(current_count == g_ag_last_deal_count && !g_ag_breach_deferred_once)
@@ -896,6 +924,29 @@ int OnInit()
       AgWarn("ratchet floor file was quarantined at load (code " + (string)floor_result
              + "); it reseeds from the live limit on the next completed pass"
              " and no lock follows, the floor not being lock state");
+
+   //--- Realized peak (version 1, D6 and D3.1 FINAL 2026-08-24). Loaded for
+   //--- the same reason the floor is: AgPeakSave refuses while
+   //--- g_ag_peak_loaded is false, so without this the peak could never be
+   //--- persisted at all. WHAT IS LOADED HERE IS A CROSS CHECK AND NEVER AN
+   //--- AUTHORITY, which is the whole of D3.1: the first ACTIVE pass
+   //--- reconstructs the peak from today's deal history and reconciles this
+   //--- value against it, and that reconciliation decides the peak. A peak
+   //--- from a prior day therefore loads cleanly and is simply stale, exactly
+   //--- as a stale floor is, and needs no special handling here.
+   int peak_result = AgPeakLoad();
+   if(peak_result == 0)
+      AgInfo("realized peak loaded|anchor="
+             + TimeToString(g_ag_peak_anchor, TIME_DATE | TIME_SECONDS)
+             + "|peak=" + DoubleToString(g_ag_peak_currency, 2)
+             + "|source=persisted|cross-check only, the first ACTIVE pass reconciles it"
+               " against a reconstruction from deal history");
+   else if(peak_result == 1)
+      AgVerbose("no realized peak file, first session on this account");
+   else
+      AgWarn("realized peak file was quarantined at load (code " + (string)peak_result
+             + "); it reconstructs from today's deal history on the next completed pass"
+             " and no lock follows, the peak not being lock state");
 
    double gv_halt = 0.0;
    bool   was_halted_before = (GlobalVariableGet(AgGvHaltFlag(), gv_halt) && gv_halt > 0.5);
