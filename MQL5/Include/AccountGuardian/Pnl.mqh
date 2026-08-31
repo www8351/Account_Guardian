@@ -80,11 +80,44 @@ double AgDealValue(const ulong ticket)
 //|                                                                  |
 //| Failure discipline is unchanged from Phase 1 (F6): a false       |
 //| HistorySelect is a stability failure, never zero deals.          |
+//|                                                                  |
+//| VERSION 1 OF THE REALIZED PEAK TRAILING FLOOR (D1.1, D1.3 FINAL  |
+//| 2026-08-24) ADDS running_max TO THIS SAME WALK. It is P_n, the   |
+//| mirror of M_n: P_0 = 0 and P_k = max(P_{k-1}, R_k), monotonically|
+//| non-decreasing. Only closed deals move it, which is D1.1 exactly:|
+//| this fold sees the F12 whitelist of closures and nothing else, so|
+//| floating profit cannot reach it by any path. It resets by the    |
+//| WINDOW MOVING and never by an action: when the anchor advances,  |
+//| the walk starts again from R_0 = 0 and P_0 = 0 by construction   |
+//| (D3.2, whose Reason states it in exactly those terms).           |
+//| max_ticket and max_time name the deal that last raised P_k and   |
+//| are what the `realized peak raised` journal line reports; both   |
+//| stay 0 while the running maximum has never left 0.               |
+//|                                                                  |
+//| NO SECOND WALK EXISTS TO ADD. The running maximum comes out of   |
+//| the SAME sorted fold that already produces the running minimum,  |
+//| which is what keeps the defect 3 shape 1 FINAL of 2026-08-20     |
+//| satisfied in letter: AgRealizedFold below keeps its frozen       |
+//| signature and its two outputs and is now a forwarder onto this.  |
+//|                                                                  |
+//| The rise test here is a plain >, deliberately, and the epsilon   |
+//| band belongs one level up in AgPeakUpdate. Both operands here    |
+//| are doubles produced by this same fold in this same pass, so no  |
+//| round trip through storage exists for an exact comparison to     |
+//| trip on; the persisted peak, which HAS been through              |
+//| DoubleToString and back, is compared under AG_PNL_EPSILON where  |
+//| it is read. That is the split the ratchet epsilon FINAL of       |
+//| 2026-08-18 draws, and it is why running_min beside it is a plain |
+//| < and always has been.                                           |
 //+------------------------------------------------------------------+
-double AgRealizedFold(const datetime anchor, bool &ok, double &running_min)
+double AgRealizedRunFold(const datetime anchor, bool &ok, double &running_min,
+                         double &running_max, ulong &max_ticket, datetime &max_time)
   {
    ok          = true;
    running_min = 0.0;
+   running_max = 0.0;
+   max_ticket  = 0;
+   max_time    = 0;
    if(!HistorySelect(anchor, AG_HISTORY_SELECT_TO))
      {
       ok = false;
@@ -136,8 +169,31 @@ double AgRealizedFold(const datetime anchor, bool &ok, double &running_min)
       cumulative += AgDealValue(tickets[i]);   // Q3 per-deal formula
       if(cumulative < running_min)
          running_min = cumulative;
+      if(cumulative > running_max)
+        {
+         running_max = cumulative;
+         max_ticket  = tickets[i];
+         max_time    = times[i];
+        }
      }
    return cumulative;
+  }
+
+//+------------------------------------------------------------------+
+//| Phase 2's two-output fold, FROZEN in signature and in its two    |
+//| outputs by the defect 3 shape 1 FINAL of 2026-08-20 and left     |
+//| exactly that way here: a forwarder that discards the version 1   |
+//| outputs. Every figure it has ever produced is reproduced, the    |
+//| walk underneath being the identical walk with three further out  |
+//| parameters written to.                                           |
+//+------------------------------------------------------------------+
+double AgRealizedFold(const datetime anchor, bool &ok, double &running_min)
+  {
+   double   discard_max    = 0.0;
+   ulong    discard_ticket = 0;
+   datetime discard_time   = 0;
+   return AgRealizedRunFold(anchor, ok, running_min,
+                            discard_max, discard_ticket, discard_time);
   }
 
 //+------------------------------------------------------------------+

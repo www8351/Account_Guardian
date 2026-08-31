@@ -847,6 +847,371 @@ double AgRatchetUpdate(const datetime window_anchor, const double live_limit,
   }
 
 //+------------------------------------------------------------------+
+//| REALIZED PEAK FILE (version 1 of the realized peak trailing      |
+//| floor, ruling set D1 through D8 FINAL 2026-08-24)                |
+//|                                                                  |
+//| Its own file, `peak_<login>.dat`, written through AgAtomicWrite, |
+//| exactly as D6 ruled and for the same reason the ratchet floor    |
+//| above got one: `floor_<login>.dat` STAYS BYTE IDENTICAL to what  |
+//| is deployed today, and question SEVEN is not superseded in any   |
+//| clause. `state_<login>.dat` and AG_STATE_FORMAT_VERSION are      |
+//| likewise untouched, per D8 and the two FINAL rulings of          |
+//| 2026-08-20.                                                      |
+//|                                                                  |
+//| THE ONE DELIBERATE DIFFERENCE FROM THE FLOOR BLOCK ABOVE, and it |
+//| is the whole of what D3.1 changes: a corrupt or missing floor    |
+//| RESEEDS from the live limit, while a corrupt or missing peak     |
+//| RECONSTRUCTS FROM TODAY'S DEAL HISTORY. Broker history is the    |
+//| source of truth for the peak and this file is a CROSS CHECK      |
+//| ONLY, so losing it costs nothing that the next completed pass    |
+//| cannot rebuild, and nothing here ever seeds a peak from an       |
+//| input. `peak_day_anchor` is not a second tracked quantity, it is |
+//| what makes a leftover peak from a prior day recognisable as      |
+//| stale, the same job it does for the floor.                       |
+//|                                                                  |
+//| PRE-BREACH ONLY, per D8. Nothing in LOCKED calls anything in     |
+//| this block. Q6's snapshot governs the locked window              |
+//| unconditionally and the peak never touches it, exactly as the    |
+//| ratchet never does.                                              |
+//+------------------------------------------------------------------+
+#define AG_PEAK_FORMAT_VERSION 1
+
+datetime g_ag_peak_anchor     = 0;
+double   g_ag_peak_currency   = 0.0;   // the day's realized high water mark
+bool     g_ag_peak_loaded     = false; // never-loaded-never-written, same rule
+bool     g_ag_peak_reconciled = false; // the D3.1 reconciliation runs once per session
+
+//--- Cadence for the backward-step WARN, local clock, A1 class. Its own
+//--- cadence rather than a share of the ratchet's: two mechanisms holding
+//--- against the same rewound clock must each be able to say so, or the
+//--- artifact records one of them and leaves the other looking silent.
+datetime g_ag_last_peak_warn = 0;
+
+string AgPeakPath() { return AG_FILES_DIR + "\\peak_" + (string)g_ag_login + ".dat"; }
+
+string AgPeakSerialize()
+  {
+   string body = "AGPEAK|" + (string)AG_PEAK_FORMAT_VERSION + "|" + (string)g_ag_login + "\n";
+   body += "P|" + (string)((long)g_ag_peak_anchor)
+           + "|" + DoubleToString(g_ag_peak_currency, AG_STATE_MONEY_DIGITS) + "\n";
+   body += "C|" + (string)AgChecksum(body) + "\n";
+   return body;
+  }
+
+bool AgPeakSave()
+  {
+   if(!g_ag_peak_loaded)
+     {
+      AgWarn("peak file NOT written: the realized peak model was never loaded this session,"
+             " so writing it would overwrite a real peak with a default-constructed empty one");
+      return false;
+     }
+   return AgAtomicWrite(AgPeakPath(), AgPeakSerialize());
+  }
+
+void AgPeakResetModel()
+  {
+   g_ag_peak_anchor   = 0;
+   g_ag_peak_currency = 0.0;
+  }
+
+//+------------------------------------------------------------------+
+//| Same quarantine discipline as the state and floor files: a free  |
+//| name, never overwriting an earlier quarantine, then a reset      |
+//| model. A corrupt peak does NOT lock anything and does NOT        |
+//| reseed: the peak is a pre-breach tightening rather than lock     |
+//| state, and D3.1 makes deal history its source of truth, so the   |
+//| next completed ACTIVE pass RECONSTRUCTS it. That is a strictly   |
+//| smaller residual than the floor's, whose reseed genuinely does   |
+//| lose a day's tightening when the file is destroyed.              |
+//+------------------------------------------------------------------+
+int AgPeakQuarantine(const string path, const int code, const string why)
+  {
+   string bad = AgStateQuarantinePath(path);
+   if(!FileMove(path, 0, bad, FILE_REWRITE))
+      AgWarn("peak file quarantine move FAILED onto " + bad + ", error " + (string)GetLastError());
+   AgPeakResetModel();
+   AgWarn("peak file " + why + ", quarantined as " + bad
+          + ", the realized peak RECONSTRUCTS from today's deal history on the next completed"
+          + " pass and is never reseeded from an input (no lock follows: the peak is not lock state)");
+   AgPeakSave();
+   return code;
+  }
+
+//+------------------------------------------------------------------+
+//| Returns: 0 = loaded, 1 = missing, 2 = corrupt, 3 = login         |
+//| mismatch. Same shape and the same discipline as AgFloorLoad.     |
+//| What is loaded here is a CROSS CHECK and never an authority: the |
+//| first ACTIVE pass reconciles it against a reconstruction and     |
+//| that reconciliation, not this load, decides the peak (D3.1).     |
+//+------------------------------------------------------------------+
+int AgPeakLoad()
+  {
+   AgPeakResetModel();
+   g_ag_peak_loaded = true;   // before the exists check, as for every model above
+
+   string path = AgPeakPath();
+   if(!FileIsExist(path))
+      return 1;
+
+   int handle = FileOpen(path, FILE_READ | FILE_TXT | FILE_ANSI);
+   if(handle == INVALID_HANDLE)
+     {
+      AgWarn("peak file exists but cannot be opened, error " + (string)GetLastError());
+      return AgPeakQuarantine(path, 2, "cannot be opened");
+     }
+
+   string body = "";
+   string checksum_line = "";
+   bool ok = false;
+   while(!FileIsEnding(handle))
+     {
+      string line = FileReadString(handle);
+      if(StringFind(line, "C|") == 0)
+        {
+         checksum_line = line;
+         ok = true;
+         break;
+        }
+      body += line + "\n";
+     }
+   FileClose(handle);
+
+   bool valid = ok && (checksum_line == "C|" + (string)AgChecksum(body));
+   long file_login = 0;
+   if(valid)
+     {
+      string lines[];
+      int count = StringSplit(body, '\n', lines);
+      string header[];
+      if(count < 2
+         || StringSplit(lines[0], '|', header) < 3
+         || header[0] != "AGPEAK"
+         || header[1] != (string)AG_PEAK_FORMAT_VERSION)
+         valid = false;
+      else
+        {
+         file_login = StringToInteger(header[2]);
+         for(int i = 1; i < count; i++)
+           {
+            string fields[];
+            if(StringSplit(lines[i], '|', fields) < 3)
+               continue;
+            if(fields[0] == "P")
+              {
+               g_ag_peak_anchor   = (datetime)StringToInteger(fields[1]);
+               g_ag_peak_currency = StringToDouble(fields[2]);
+              }
+           }
+        }
+     }
+
+   if(!valid)
+      return AgPeakQuarantine(path, 2, "failed checksum or does not parse");
+   if(file_login != g_ag_login)
+      return AgPeakQuarantine(path, 3,
+                              "carries login " + (string)file_login
+                              + " but this account is " + (string)g_ag_login);
+   return 0;
+  }
+
+//+------------------------------------------------------------------+
+//| The peak term of the lock level: realized peak minus the POST    |
+//| RATCHET enforced_limit (D7), never the raw live limit.           |
+//|                                                                  |
+//| The staleness rules are the floor's, deliberately and to the     |
+//| letter, because they answer the same three clock cases. A peak   |
+//| belonging to an EARLIER day is stale and contributes nothing,    |
+//| which is a leftover file no pass has reconciled because the EA   |
+//| has not run a tick since the rollover. A peak belonging to the   |
+//| SAME day applies, the ordinary case. A peak belonging to a LATER |
+//| day also applies, which is what a backward clock step produces,  |
+//| and keeping the tighter value enforced is the strict direction   |
+//| for the identical reason the floor gives: the alternative hands  |
+//| a one-step disarm to anyone able to move the clock back once.    |
+//|                                                                  |
+//| A peak of zero contributes nothing, which is not a special case  |
+//| but the arithmetic: peak - enforced_limit is then exactly        |
+//| -enforced_limit, the ratchet term, and MathMax at the call site  |
+//| sees a tie.                                                      |
+//+------------------------------------------------------------------+
+double AgPeakEffectiveLevel(const double enforced_limit, const datetime window_anchor)
+  {
+   if(g_ag_peak_anchor < window_anchor || g_ag_peak_currency <= 0.0)
+      return -enforced_limit;
+   return g_ag_peak_currency - enforced_limit;
+  }
+
+//+------------------------------------------------------------------+
+//| THE REALIZED PEAK (version 1, D1 through D8 FINAL 2026-08-24).   |
+//| Called from the breach tail beside AgRatchetUpdate and from      |
+//| nowhere else, so it inherits that region's PRE-BREACH ONLY       |
+//| constraint and the Q10, Q10 amendment, Q8 and Q9 guards above it |
+//| rather than restating any of them.                               |
+//|                                                                  |
+//| Returns peak_level, the peak term of the lock level. The caller  |
+//| takes MathMax against the ratchet term, which is D2: stricter    |
+//| always wins, in every scenario, no exceptions.                   |
+//|                                                                  |
+//| THE PEAK IS RECONSTRUCTED FROM DEAL HISTORY ON EVERY PASS, not   |
+//| accumulated across passes, which is D3.1 applied uniformly       |
+//| rather than only at boot. A pass that samples the cumulative     |
+//| realized cannot see a dip and recovery that happened between two |
+//| samples, while the running maximum inside the sorted walk sees   |
+//| every deal in order, and reconstructing everywhere means the     |
+//| restart path is the ordinary path and gets no separate code to   |
+//| be wrong on its own. The cost is stated rather than hidden: this |
+//| adds one more call into the same fold AgRealized already runs    |
+//| each pass. It is a second CALL and not a second WALK, the fold   |
+//| itself existing once in Pnl.mqh with the F12 whitelist and the   |
+//| Q3 formula written down once, which is what the defect 3 shape 1 |
+//| FINAL of 2026-08-20 protects.                                    |
+//|                                                                  |
+//| It runs AFTER the caller has read HistoryDealsTotal for the Q9   |
+//| deferral, deliberately: the fold re-selects the same window with |
+//| the same anchor, so the count is unchanged either way, and the   |
+//| ordering keeps the Q9 reading provably the one Phase 1 took.     |
+//+------------------------------------------------------------------+
+double AgPeakUpdate(const datetime window_anchor, const double enforced_limit,
+                    const int warn_cadence_seconds)
+  {
+   if(!g_ag_peak_loaded)
+      return -enforced_limit;   // never loaded, never written; the peak says nothing
+
+   //--- RECONSTRUCT. Broker history is the source of truth (D3.1) and the
+   //--- persisted value below is only ever weighed against this.
+   bool     ok            = true;
+   double   discard_min   = 0.0;
+   double   reconstructed = 0.0;
+   ulong    max_ticket    = 0;
+   datetime max_time      = 0;
+   AgRealizedRunFold(window_anchor, ok, discard_min, reconstructed, max_ticket, max_time);
+   if(!ok)
+     {
+      //--- F6: a false HistorySelect is a stability failure and never zero
+      //--- deals. The fold has already logged it loudly. The model is left
+      //--- exactly as it stands and the level it already implies is still
+      //--- enforced, which holds rather than loosens.
+      return AgPeakEffectiveLevel(enforced_limit, window_anchor);
+     }
+
+   //--- FIRST ACTIVE PASS OF THE SESSION: the D3.1 reconciliation, whose four
+   //--- cases are the four this table names. The persisted value is a cross
+   //--- check in every one of them and the authority in none.
+   if(!g_ag_peak_reconciled)
+     {
+      double taken  = reconstructed;
+      string source = "no_file";
+      if(g_ag_peak_anchor == 0)
+        {
+         taken  = reconstructed;             // nothing on disk: reconstruction stands alone
+         source = "no_file";
+        }
+      else if(g_ag_peak_anchor == window_anchor)
+        {
+         taken  = MathMax(g_ag_peak_currency, reconstructed);   // mismatch: stricter of the two
+         source = "equal_anchor_max";
+        }
+      else if(g_ag_peak_anchor < window_anchor)
+        {
+         taken  = reconstructed;             // a prior day's peak is stale, not stricter
+         source = "stale_anchor_reconstructed";
+        }
+      else
+        {
+         taken  = MathMax(g_ag_peak_currency, reconstructed);   // backward clock step
+         source = "backward_step_max";
+        }
+
+      AgInfo("realized peak reconciled|anchor="
+             + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+             + "|reconstructed=" + DoubleToString(reconstructed, 2)
+             + "|persisted=" + DoubleToString(g_ag_peak_currency, 2)
+             + "|taken=" + DoubleToString(taken, 2)
+             + "|source=" + source);
+
+      //--- The anchor moves FORWARD ONLY. On the backward-step case the peak's
+      //--- anchor is held at the later day, so a clock rewind cannot turn the
+      //--- correction back into a rollover and reset the peak in one act; that
+      //--- is the ratchet's NO RESEED ON A BACKWARD STEP clause applied here.
+      if(window_anchor > g_ag_peak_anchor)
+         g_ag_peak_anchor = window_anchor;
+      g_ag_peak_currency   = taken;
+      g_ag_peak_reconciled = true;
+      AgPeakSave();
+      return AgPeakEffectiveLevel(enforced_limit, window_anchor);
+     }
+
+   //--- ROLLOVER. There is NO RESET ACTION here and none is wanted: the walk's
+   //--- window moved with the anchor, so `reconstructed` is already the new
+   //--- day's running maximum starting from zero. All this branch does is
+   //--- re-stamp the anchor and say so in the journal (D3.2, and the Reason of
+   //--- the same FINAL, which records that the reset is the window moving).
+   if(window_anchor > g_ag_peak_anchor)
+     {
+      AgInfo("realized peak reset at rollover|old_anchor="
+             + TimeToString(g_ag_peak_anchor, TIME_DATE | TIME_SECONDS)
+             + "|new_anchor=" + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+             + "|old_peak=" + DoubleToString(g_ag_peak_currency, 2)
+             + "|new_peak=" + DoubleToString(reconstructed, 2));
+      g_ag_peak_anchor   = window_anchor;
+      g_ag_peak_currency = reconstructed;
+      AgPeakSave();
+      return AgPeakEffectiveLevel(enforced_limit, window_anchor);
+     }
+
+   //--- NO REWIND ON A BACKWARD STEP, the ratchet's clause applied to the peak.
+   //--- The peak is HELD and stays enforced. It is not raised from this pass's
+   //--- reconstruction either, and that is the point rather than an oversight:
+   //--- a rewound anchor widens the walk's window into the previous day, so the
+   //--- running maximum it returns is a two-day figure and tightening on it
+   //--- would enforce a peak that no single day ever reached. Holding does not
+   //--- loosen anything, so D2 is untouched: D2 governs the max BETWEEN the two
+   //--- mechanisms, and neither term moves down here.
+   if(window_anchor < g_ag_peak_anchor)
+     {
+      datetime now_local_back = TimeLocal();
+      if(g_ag_last_peak_warn == 0
+         || now_local_back - g_ag_last_peak_warn >= warn_cadence_seconds)
+        {
+         AgWarn("realized peak NOT rewound on a backward clock step: window anchor "
+                + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+                + " is behind the peak's anchor "
+                + TimeToString(g_ag_peak_anchor, TIME_DATE | TIME_SECONDS)
+                + "; peak " + DoubleToString(g_ag_peak_currency, 2)
+                + " is held and still enforced, and is not raised from a widened window");
+         g_ag_last_peak_warn = now_local_back;
+        }
+      return AgPeakEffectiveLevel(enforced_limit, window_anchor);
+     }
+
+   //--- SAME DAY. Monotone: it rises or it stays (D1.3). There is no lowering
+   //--- branch anywhere in this function, which is what makes a losing deal
+   //--- after a gain leave the floor exactly where the gain put it.
+   //--- THE RISE TEST GOES THROUGH AG_PNL_EPSILON, per the ratchet epsilon
+   //--- FINAL of 2026-08-18 and for its reason rather than by analogy:
+   //--- g_ag_peak_currency reaches this line by two routes, straight out of
+   //--- the fold in the pass that set it, or through AgPeakSerialize's
+   //--- 8-decimal DoubleToString and back through StringToDouble after a
+   //--- restart, and those two routes are not required to yield the same
+   //--- double. An exact > would promote a difference below the last written
+   //--- digit into a journal line and a file write on every pass, which is the
+   //--- shape of the 220 spurious lines the ratchet produced on 2026-08-18.
+   if(reconstructed > g_ag_peak_currency + AG_PNL_EPSILON)
+     {
+      AgInfo("realized peak raised|anchor="
+             + TimeToString(window_anchor, TIME_DATE | TIME_SECONDS)
+             + "|old=" + DoubleToString(g_ag_peak_currency, 2)
+             + "|new=" + DoubleToString(reconstructed, 2)
+             + "|deal_ticket=" + (string)max_ticket
+             + "|deal_time=" + TimeToString(max_time, TIME_DATE | TIME_SECONDS));
+      g_ag_peak_currency = reconstructed;
+      AgPeakSave();
+     }
+   return AgPeakEffectiveLevel(enforced_limit, window_anchor);
+  }
+
+//+------------------------------------------------------------------+
 //| Single-instance mutex heartbeat (SPEC 5, F8).                    |
 //| Live other instance: refuse. Stale mutex heartbeat: takeover.    |
 //| Mutex heartbeat 0 = deliberate release by a clean OnDeinit.      |
