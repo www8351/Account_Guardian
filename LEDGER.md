@@ -3,15 +3,7 @@
 ## ISSUES
 
 Issue:  NEXT BEST ACTION. VERSION 1 OF THE REALIZED PEAK TRAILING FLOOR IS ACCEPTED ON ALL FOUR ROWS, V1-A, V1-B, V1-C AND V1-D, each closed in the 2026-09-01 ACTIONS entry above on the eight files banked at commit `7aef069` and the build identity of owner ruling TWO of 2026-08-31, `AccountGuardian.ex5` md5 `124BA610201A6D67C050572C6A84DE37`, 86866 bytes. Two things remain open and neither is this entry's work to finish.
-Action: G6 investigation on metaeditor.log, then D2/D4 plan session, then input hardening plan session per R10, then enforcement phase kickoff, Sweep.mqh flatten engine.
-Status: OPEN
-
-Issue:  THE 2026-08-27 IMPLEMENTATION SESSION LEFT `AccountGuardian.mq5` AND A COMPILED `AccountGuardian.ex5` AT THE TERMINAL EXPERTS ROOT, `MQL5\Experts\`, outside this project's `MQL5\Experts\AccountGuardian\` subfolder, writes under the Terminal data folder contrary to RULE A. The owner deleted both files by hand. The 2026-09-01 closure session was instructed to record this and did not.
-Action: NONE PROPOSED. Suspected cause is a `metaeditor64.exe /compile` command side effect; not investigated. Investigation ordered 2026-09-02 against metaeditor.log, owner copy-out pending.
-Status: OPEN
-
-Issue:  THE WORKTREE'S `AccountGuardian.mq5` WAS FOUND DELETED FROM DISK TWICE ON 2026-08-27, showing as ` D` in `git status` both times, and was restored from git both times, source md5 `6CF5F6A78E8D9A333D84780C33DE475A` each time. One occurrence is already narrated in ACTIONS at the 2026-08-27 consolidation entry, restored with `git checkout --`, verified byte identical to HEAD, cause not investigated; the second occurrence is not otherwise recorded. The 2026-09-01 closure session was instructed to record this as its own issue and did not.
-Action: NONE PROPOSED. Cause unknown on both occurrences, not investigated. Investigation ordered 2026-09-02 against metaeditor.log, owner copy-out pending.
+Action: Input hardening plan session per R10, then D2/D4 plan session, then enforcement phase kickoff, Sweep.mqh flatten engine.
 Status: OPEN
 
 Issue:  ZERO GUARDIAN ENFORCEMENT EXISTS WHILE THE TERMINAL IS NOT RUNNING, evidenced concretely by the 31 minute 44 second gap of 2026-08-30, `docs/evidence/terminal-20260830-zero-positions.txt:19` `System|terminal stopped due to system shutdown` at `15:14:10` to `:20` `Terminal|MetaTrader 5 x64 build 6140 started` at `15:45:54`, during which about 192 was lost to mobile trades the guardian could only detect after the fact, on restart, by replaying server history. Owner ruling FOUR accepts that catch as correct; it does not rule on the window itself.
@@ -72,10 +64,6 @@ Status: OPEN
 
 Issue:  NOTE, deferred phase. common.ini carries WebRequest=1 with the URL whitelist stored as an opaque 534-character encoded blob that cannot be decoded from outside the terminal. v0 has no network path, so it is inert now.
 Action: Leave it. Re-examine when the deferred visibility phase opens, together with the fresh network-heartbeat check and its new UUID.
-Status: OPEN
-
-Issue:  The commit-msg hook at .git/hooks/commit-msg is rewritten with a UTF8 BOM and CRLF endings by the Start-ClaudeWorkspace PowerShell profile function on every run, and git cannot spawn a hook that starts with a BOM ("Exec format error", blocks every commit). Found broken on 2026-07-30 with a file timestamp of that morning, after having been fixed once on 2026-07-29. It will recur every time the profile reprovisions it.
-Action: Rewrote the hook BOM free with LF endings and verified it strips an attribution line from a test file. Durable fix needs the profile function changed to write without a BOM (Set-Content -Encoding UTF8 emits one under Windows PowerShell 5.1), which is the owner's file, outside this repo.
 Status: OPEN
 
 Issue:  A prior, unrelated AccountGuardian implementation exists inside the terminal data folder, outside this repo: MQL5\Experts\AccountGuardian_foreign.mq5.bak dated 2026-07-24, plus metaeditor.log references from 2026-07-25 to an AccountGuardian.mq5 and three AG_* scripts that are no longer on disk. The charter declares this project greenfield and any reference to prior implementations invalid by definition.
