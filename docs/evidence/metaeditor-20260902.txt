@@ -1,0 +1,493 @@
+0	2026.07.05 06:34:58.640	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMACD.mq5 - 0 errors, 0 warnings, 1286 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:34:58.650	Compiler	compiled ExpertMACD.mq5
+0	2026.07.05 06:34:59.504	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMAMA.mq5 - 0 errors, 0 warnings, 853 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:34:59.512	Compiler	compiled ExpertMAMA.mq5
+0	2026.07.05 06:35:00.371	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMAPSAR.mq5 - 0 errors, 0 warnings, 855 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:00.376	Compiler	compiled ExpertMAPSAR.mq5
+0	2026.07.05 06:35:01.404	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMAPSARSizeOptimized.mq5 - 0 errors, 0 warnings, 1024 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:01.410	Compiler	compiled ExpertMAPSARSizeOptimized.mq5
+0	2026.07.05 06:35:01.801	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\ChartInChart\ChartInChart.mq5 - 0 errors, 0 warnings, 387 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:01.803	Compiler	compiled ChartInChart.mq5
+0	2026.07.05 06:35:02.951	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\Controls\Controls.mq5 - 0 errors, 0 warnings, 1143 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:02.956	Compiler	compiled Controls.mq5
+0	2026.07.05 06:35:04.533	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\Correlation Matrix 3D\Correlation Matrix 3D.mqproj - 0 errors, 0 warnings, 1580 ms elapsed, cpu='X64 Regular'
+0	2026.07.05 06:35:04.533	Compiler	compiled Correlation Matrix 3D.mqproj
+0	2026.07.05 06:35:04.998	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\MACD\MACD Sample.mq5 - 0 errors, 0 warnings, 452 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:04.998	Compiler	compiled MACD Sample.mq5
+0	2026.07.05 06:35:05.482	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\Math 3D\Math 3D.mqproj - 0 errors, 0 warnings, 472 ms elapsed, cpu='X64 Regular'
+0	2026.07.05 06:35:05.484	Compiler	compiled Math 3D.mqproj
+0	2026.07.05 06:35:06.780	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\Math 3D Morpher\Math 3D Morpher.mqproj - 0 errors, 0 warnings, 1294 ms elapsed, cpu='X64 Regular'
+0	2026.07.05 06:35:06.780	Compiler	compiled Math 3D Morpher.mqproj
+0	2026.07.05 06:35:07.194	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Examples\Moving Average\Moving Average.mq5 - 0 errors, 0 warnings, 403 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:07.197	Compiler	compiled Moving Average.mq5
+0	2026.07.05 06:35:07.643	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BlackCrows WhiteSoldiers CCI.mq5 - 0 errors, 0 warnings, 444 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:07.643	Compiler	compiled BlackCrows WhiteSoldiers CCI.mq5
+0	2026.07.05 06:35:08.084	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BlackCrows WhiteSoldiers MFI.mq5 - 0 errors, 0 warnings, 440 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:08.084	Compiler	compiled BlackCrows WhiteSoldiers MFI.mq5
+0	2026.07.05 06:35:08.542	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BlackCrows WhiteSoldiers RSI.mq5 - 0 errors, 0 warnings, 450 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:08.553	Compiler	compiled BlackCrows WhiteSoldiers RSI.mq5
+0	2026.07.05 06:35:09.001	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BlackCrows WhiteSoldiers Stoch.mq5 - 0 errors, 0 warnings, 448 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:09.001	Compiler	compiled BlackCrows WhiteSoldiers Stoch.mq5
+0	2026.07.05 06:35:09.468	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Engulfing CCI.mq5 - 0 errors, 0 warnings, 469 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:09.484	Compiler	compiled BullishBearish Engulfing CCI.mq5
+0	2026.07.05 06:35:09.925	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Engulfing MFI.mq5 - 0 errors, 0 warnings, 448 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:09.941	Compiler	compiled BullishBearish Engulfing MFI.mq5
+0	2026.07.05 06:35:10.385	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Engulfing RSI.mq5 - 0 errors, 0 warnings, 440 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:10.387	Compiler	compiled BullishBearish Engulfing RSI.mq5
+0	2026.07.05 06:35:10.816	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Engulfing Stoch.mq5 - 0 errors, 0 warnings, 434 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:10.816	Compiler	compiled BullishBearish Engulfing Stoch.mq5
+0	2026.07.05 06:35:11.258	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Harami CCI.mq5 - 0 errors, 0 warnings, 436 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:11.258	Compiler	compiled BullishBearish Harami CCI.mq5
+0	2026.07.05 06:35:11.701	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Harami MFI.mq5 - 0 errors, 0 warnings, 439 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:11.701	Compiler	compiled BullishBearish Harami MFI.mq5
+0	2026.07.05 06:35:12.143	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Harami RSI.mq5 - 0 errors, 0 warnings, 434 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:12.143	Compiler	compiled BullishBearish Harami RSI.mq5
+0	2026.07.05 06:35:12.593	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish Harami Stoch.mq5 - 0 errors, 0 warnings, 445 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:12.609	Compiler	compiled BullishBearish Harami Stoch.mq5
+0	2026.07.05 06:35:13.051	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish MeetingLines CCI.mq5 - 0 errors, 0 warnings, 441 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:13.051	Compiler	compiled BullishBearish MeetingLines CCI.mq5
+0	2026.07.05 06:35:13.497	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish MeetingLines MFI.mq5 - 0 errors, 0 warnings, 435 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:13.500	Compiler	compiled BullishBearish MeetingLines MFI.mq5
+0	2026.07.05 06:35:13.961	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish MeetingLines RSI.mq5 - 0 errors, 0 warnings, 457 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:13.961	Compiler	compiled BullishBearish MeetingLines RSI.mq5
+0	2026.07.05 06:35:14.445	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\BullishBearish MeetingLines Stoch.mq5 - 0 errors, 0 warnings, 475 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:14.448	Compiler	compiled BullishBearish MeetingLines Stoch.mq5
+0	2026.07.05 06:35:14.912	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\DarkCloud PiercingLine CCI.mq5 - 0 errors, 0 warnings, 460 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:14.915	Compiler	compiled DarkCloud PiercingLine CCI.mq5
+0	2026.07.05 06:35:15.344	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\DarkCloud PiercingLine MFI.mq5 - 0 errors, 0 warnings, 440 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:15.360	Compiler	compiled DarkCloud PiercingLine MFI.mq5
+0	2026.07.05 06:35:15.799	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\DarkCloud PiercingLine RSI.mq5 - 0 errors, 0 warnings, 435 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:15.799	Compiler	compiled DarkCloud PiercingLine RSI.mq5
+0	2026.07.05 06:35:16.240	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\DarkCloud PiercingLine Stoch.mq5 - 0 errors, 0 warnings, 434 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:16.240	Compiler	compiled DarkCloud PiercingLine Stoch.mq5
+0	2026.07.05 06:35:16.681	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\HangingMan Hammer CCI.mq5 - 0 errors, 0 warnings, 433 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:16.683	Compiler	compiled HangingMan Hammer CCI.mq5
+0	2026.07.05 06:35:17.111	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\HangingMan Hammer MFI.mq5 - 0 errors, 0 warnings, 435 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:17.111	Compiler	compiled HangingMan Hammer MFI.mq5
+0	2026.07.05 06:35:17.590	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\HangingMan Hammer RSI.mq5 - 0 errors, 0 warnings, 464 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:17.590	Compiler	compiled HangingMan Hammer RSI.mq5
+0	2026.07.05 06:35:18.064	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\HangingMan Hammer Stoch.mq5 - 0 errors, 0 warnings, 461 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:18.066	Compiler	compiled HangingMan Hammer Stoch.mq5
+0	2026.07.05 06:35:18.505	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\MorningEvening StarDoji CCI.mq5 - 0 errors, 0 warnings, 439 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:18.513	Compiler	compiled MorningEvening StarDoji CCI.mq5
+0	2026.07.05 06:35:18.951	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\MorningEvening StarDoji MFI.mq5 - 0 errors, 0 warnings, 449 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:18.968	Compiler	compiled MorningEvening StarDoji MFI.mq5
+0	2026.07.05 06:35:19.438	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\MorningEvening StarDoji RSI.mq5 - 0 errors, 0 warnings, 465 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:19.441	Compiler	compiled MorningEvening StarDoji RSI.mq5
+0	2026.07.05 06:35:19.899	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Free Robots\MorningEvening StarDoji Stoch.mq5 - 0 errors, 0 warnings, 460 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:19.899	Compiler	compiled MorningEvening StarDoji Stoch.mq5
+0	2026.07.05 06:35:20.190	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Accelerator.mq5 - 0 errors, 0 warnings, 287 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:20.206	Compiler	compiled Accelerator.mq5
+0	2026.07.05 06:35:20.494	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\AD.mq5 - 0 errors, 0 warnings, 282 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:20.495	Compiler	compiled AD.mq5
+0	2026.07.05 06:35:20.823	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ADX.mq5 - 0 errors, 0 warnings, 323 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:20.826	Compiler	compiled ADX.mq5
+0	2026.07.05 06:35:21.148	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ADXW.mq5 - 0 errors, 0 warnings, 325 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:21.148	Compiler	compiled ADXW.mq5
+0	2026.07.05 06:35:21.465	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Alligator.mq5 - 0 errors, 0 warnings, 304 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:21.465	Compiler	compiled Alligator.mq5
+0	2026.07.05 06:35:21.765	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\AMA.mq5 - 0 errors, 0 warnings, 294 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:21.765	Compiler	compiled AMA.mq5
+0	2026.07.05 06:35:22.065	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ASI.mq5 - 0 errors, 0 warnings, 295 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:22.065	Compiler	compiled ASI.mq5
+0	2026.07.05 06:35:22.373	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ATR.mq5 - 0 errors, 0 warnings, 304 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:22.373	Compiler	compiled ATR.mq5
+0	2026.07.05 06:35:22.685	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Awesome_Oscillator.mq5 - 0 errors, 0 warnings, 300 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:22.687	Compiler	compiled Awesome_Oscillator.mq5
+0	2026.07.05 06:35:23.005	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\BB.mq5 - 0 errors, 0 warnings, 314 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:23.005	Compiler	compiled BB.mq5
+0	2026.07.05 06:35:23.289	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Bears.mq5 - 0 errors, 0 warnings, 279 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:23.291	Compiler	compiled Bears.mq5
+0	2026.07.05 06:35:23.586	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Bulls.mq5 - 0 errors, 0 warnings, 298 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:23.595	Compiler	compiled Bulls.mq5
+0	2026.07.05 06:35:23.932	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\BW-ZoneTrade.mq5 - 0 errors, 0 warnings, 332 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:23.932	Compiler	compiled BW-ZoneTrade.mq5
+0	2026.07.05 06:35:24.351	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Canvas\FlameChart.mq5 - 0 errors, 0 warnings, 416 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:24.351	Compiler	compiled FlameChart.mq5
+0	2026.07.05 06:35:24.640	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\CCI.mq5 - 0 errors, 0 warnings, 285 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:24.640	Compiler	compiled CCI.mq5
+0	2026.07.05 06:35:24.977	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\CHO.mq5 - 0 errors, 0 warnings, 331 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:24.977	Compiler	compiled CHO.mq5
+0	2026.07.05 06:35:25.314	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\CHV.mq5 - 0 errors, 0 warnings, 327 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:25.314	Compiler	compiled CHV.mq5
+0	2026.07.05 06:35:25.601	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ColorBars.mq5 - 0 errors, 0 warnings, 283 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:25.601	Compiler	compiled ColorBars.mq5
+0	2026.07.05 06:35:25.889	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ColorCandlesDaily.mq5 - 0 errors, 0 warnings, 278 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:25.889	Compiler	compiled ColorCandlesDaily.mq5
+0	2026.07.05 06:35:26.175	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ColorLine.mq5 - 0 errors, 0 warnings, 282 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:26.175	Compiler	compiled ColorLine.mq5
+0	2026.07.05 06:35:26.438	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Custom Moving Average.mq5 - 0 errors, 0 warnings, 251 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:26.438	Compiler	compiled Custom Moving Average.mq5
+0	2026.07.05 06:35:26.646	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\DEMA.mq5 - 0 errors, 0 warnings, 207 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:26.646	Compiler	compiled DEMA.mq5
+0	2026.07.05 06:35:26.854	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\DeMarker.mq5 - 0 errors, 0 warnings, 210 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:26.854	Compiler	compiled DeMarker.mq5
+0	2026.07.05 06:35:27.078	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\DPO.mq5 - 0 errors, 0 warnings, 209 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:27.078	Compiler	compiled DPO.mq5
+0	2026.07.05 06:35:27.334	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Envelopes.mq5 - 0 errors, 0 warnings, 250 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:27.334	Compiler	compiled Envelopes.mq5
+0	2026.07.05 06:35:27.559	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Force_Index.mq5 - 0 errors, 0 warnings, 230 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:27.559	Compiler	compiled Force_Index.mq5
+0	2026.07.05 06:35:27.766	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Fractals.mq5 - 0 errors, 0 warnings, 202 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:27.766	Compiler	compiled Fractals.mq5
+0	2026.07.05 06:35:27.973	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\FrAMA.mq5 - 0 errors, 0 warnings, 201 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:27.973	Compiler	compiled FrAMA.mq5
+0	2026.07.05 06:35:28.214	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Gator.mq5 - 0 errors, 0 warnings, 237 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:28.230	Compiler	compiled Gator.mq5
+0	2026.07.05 06:35:28.470	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Gator_2.mq5 - 0 errors, 0 warnings, 238 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:28.470	Compiler	compiled Gator_2.mq5
+0	2026.07.05 06:35:28.677	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Heiken_Ashi.mq5 - 0 errors, 0 warnings, 213 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:28.677	Compiler	compiled Heiken_Ashi.mq5
+0	2026.07.05 06:35:28.902	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Ichimoku.mq5 - 0 errors, 0 warnings, 222 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:28.918	Compiler	compiled Ichimoku.mq5
+0	2026.07.05 06:35:29.125	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\MACD.mq5 - 0 errors, 0 warnings, 206 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:29.125	Compiler	compiled MACD.mq5
+0	2026.07.05 06:35:29.336	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\MarketFacilitationIndex.mq5 - 0 errors, 0 warnings, 203 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:29.340	Compiler	compiled MarketFacilitationIndex.mq5
+0	2026.07.05 06:35:29.556	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\MFI.mq5 - 0 errors, 0 warnings, 217 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:29.556	Compiler	compiled MFI.mq5
+0	2026.07.05 06:35:29.812	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\MI.mq5 - 0 errors, 0 warnings, 249 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:29.812	Compiler	compiled MI.mq5
+0	2026.07.05 06:35:30.051	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Momentum.mq5 - 0 errors, 0 warnings, 240 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:30.051	Compiler	compiled Momentum.mq5
+0	2026.07.05 06:35:30.306	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\OBV.mq5 - 0 errors, 0 warnings, 243 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:30.306	Compiler	compiled OBV.mq5
+0	2026.07.05 06:35:30.544	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\OsMA.mq5 - 0 errors, 0 warnings, 241 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:30.544	Compiler	compiled OsMA.mq5
+0	2026.07.05 06:35:31.151	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Panels\ChartPanel\ChartPanel.mq5 - 0 errors, 0 warnings, 602 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:31.165	Compiler	compiled ChartPanel.mq5
+0	2026.07.05 06:35:31.776	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Panels\SimplePanel\SimplePanel.mq5 - 0 errors, 0 warnings, 615 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:31.776	Compiler	compiled SimplePanel.mq5
+0	2026.07.05 06:35:32.016	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ParabolicSAR.mq5 - 0 errors, 0 warnings, 237 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:32.016	Compiler	compiled ParabolicSAR.mq5
+0	2026.07.05 06:35:32.225	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Price_Channel.mq5 - 0 errors, 0 warnings, 197 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:32.225	Compiler	compiled Price_Channel.mq5
+0	2026.07.05 06:35:32.432	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\PVT.mq5 - 0 errors, 0 warnings, 196 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:32.432	Compiler	compiled PVT.mq5
+0	2026.07.05 06:35:32.624	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ROC.mq5 - 0 errors, 0 warnings, 197 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:32.624	Compiler	compiled ROC.mq5
+0	2026.07.05 06:35:32.864	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\RSI.mq5 - 0 errors, 0 warnings, 230 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:32.864	Compiler	compiled RSI.mq5
+0	2026.07.05 06:35:33.104	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\RVI.mq5 - 0 errors, 0 warnings, 229 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:33.104	Compiler	compiled RVI.mq5
+0	2026.07.05 06:35:33.344	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\StdDev.mq5 - 0 errors, 0 warnings, 240 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:33.344	Compiler	compiled StdDev.mq5
+0	2026.07.05 06:35:33.568	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Stochastic.mq5 - 0 errors, 0 warnings, 220 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:33.568	Compiler	compiled Stochastic.mq5
+0	2026.07.05 06:35:33.792	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\TEMA.mq5 - 0 errors, 0 warnings, 222 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:33.792	Compiler	compiled TEMA.mq5
+0	2026.07.05 06:35:34.016	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\TRIX.mq5 - 0 errors, 0 warnings, 211 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:34.016	Compiler	compiled TRIX.mq5
+0	2026.07.05 06:35:34.225	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Ultimate_Oscillator.mq5 - 0 errors, 0 warnings, 205 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:34.225	Compiler	compiled Ultimate_Oscillator.mq5
+0	2026.07.05 06:35:34.418	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\VIDYA.mq5 - 0 errors, 0 warnings, 198 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:34.418	Compiler	compiled VIDYA.mq5
+0	2026.07.05 06:35:34.625	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\Volumes.mq5 - 0 errors, 0 warnings, 193 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:34.625	Compiler	compiled Volumes.mq5
+0	2026.07.05 06:35:34.833	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\VROC.mq5 - 0 errors, 0 warnings, 208 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:34.833	Compiler	compiled VROC.mq5
+0	2026.07.05 06:35:35.057	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\WPR.mq5 - 0 errors, 0 warnings, 219 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:35.057	Compiler	compiled WPR.mq5
+0	2026.07.05 06:35:35.264	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\W_AD.mq5 - 0 errors, 0 warnings, 205 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:35.264	Compiler	compiled W_AD.mq5
+0	2026.07.05 06:35:35.489	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ZigZag.mq5 - 0 errors, 0 warnings, 208 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:35.489	Compiler	compiled ZigZag.mq5
+0	2026.07.05 06:35:35.712	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Examples\ZigzagColor.mq5 - 0 errors, 0 warnings, 226 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:35.712	Compiler	compiled ZigzagColor.mq5
+0	2026.07.05 06:35:35.967	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Camarilla Channel.mq5 - 0 errors, 0 warnings, 248 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:35.967	Compiler	compiled Camarilla Channel.mq5
+0	2026.07.05 06:35:36.191	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\DeMark Channel.mq5 - 0 errors, 0 warnings, 215 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:36.191	Compiler	compiled DeMark Channel.mq5
+0	2026.07.05 06:35:36.399	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Donchian Channel.mq5 - 0 errors, 0 warnings, 211 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:36.399	Compiler	compiled Donchian Channel.mq5
+0	2026.07.05 06:35:36.653	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Fibonacci Channel.mq5 - 0 errors, 0 warnings, 247 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:36.653	Compiler	compiled Fibonacci Channel.mq5
+0	2026.07.05 06:35:36.908	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Keltner Channel.mq5 - 0 errors, 0 warnings, 245 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:36.908	Compiler	compiled Keltner Channel.mq5
+0	2026.07.05 06:35:37.227	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\MarketProfile Canvas.mq5 - 0 errors, 0 warnings, 312 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:37.227	Compiler	compiled MarketProfile Canvas.mq5
+0	2026.07.05 06:35:37.468	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\MarketProfile.mq5 - 0 errors, 0 warnings, 236 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:37.468	Compiler	compiled MarketProfile.mq5
+0	2026.07.05 06:35:37.723	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\MurreyMath Channel.mq5 - 0 errors, 0 warnings, 255 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:37.723	Compiler	compiled MurreyMath Channel.mq5
+0	2026.07.05 06:35:37.962	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\NRTR Channel.mq5 - 0 errors, 0 warnings, 234 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:37.962	Compiler	compiled NRTR Channel.mq5
+0	2026.07.05 06:35:38.201	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Parabolic Channel.mq5 - 0 errors, 0 warnings, 233 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:38.201	Compiler	compiled Parabolic Channel.mq5
+0	2026.07.05 06:35:38.457	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Pivot Channel.mq5 - 0 errors, 0 warnings, 245 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:38.457	Compiler	compiled Pivot Channel.mq5
+0	2026.07.05 06:35:38.681	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Indicators\Free Indicators\Woodie Channel.mq5 - 0 errors, 0 warnings, 226 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:38.681	Compiler	compiled Woodie Channel.mq5
+0	2026.07.05 06:35:38.937	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\AccountInfo\AccountInfoSample.mq5 - 0 errors, 0 warnings, 241 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:38.937	Compiler	compiled AccountInfoSample.mq5
+0	2026.07.05 06:35:39.192	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\ArrayDouble\ArrayDoubleSample.mq5 - 0 errors, 0 warnings, 256 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:39.192	Compiler	compiled ArrayDoubleSample.mq5
+0	2026.07.05 06:35:39.496	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\Canvas\CanvasSample.mq5 - 0 errors, 0 warnings, 302 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:39.496	Compiler	compiled CanvasSample.mq5
+0	2026.07.05 06:35:39.879	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\Canvas\Charts\HistogramChartSample.mq5 - 0 errors, 0 warnings, 374 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:39.879	Compiler	compiled HistogramChartSample.mq5
+0	2026.07.05 06:35:40.263	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\Canvas\Charts\LineChartSample.mq5 - 0 errors, 0 warnings, 370 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:40.263	Compiler	compiled LineChartSample.mq5
+0	2026.07.05 06:35:40.715	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\Canvas\Charts\PieChartSample.mq5 - 0 errors, 0 warnings, 446 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:40.715	Compiler	compiled PieChartSample.mq5
+0	2026.07.05 06:35:41.263	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\ObjectChart\ObjChartSample.mq5 - 0 errors, 0 warnings, 550 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:41.276	Compiler	compiled ObjChartSample.mq5
+0	2026.07.05 06:35:41.611	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\ObjectSphere\SphereSample.mq5 - 0 errors, 0 warnings, 335 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:41.611	Compiler	compiled SphereSample.mq5
+0	2026.07.05 06:35:41.932	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Double\BitonicSort.mq5 - 0 errors, 0 warnings, 308 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:41.932	Compiler	compiled BitonicSort.mq5
+0	2026.07.05 06:35:42.246	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Double\FFT.mq5 - 0 errors, 0 warnings, 308 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:42.246	Compiler	compiled FFT.mq5
+0	2026.07.05 06:35:42.501	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Double\MatrixMult.mq5 - 0 errors, 0 warnings, 251 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:42.501	Compiler	compiled MatrixMult.mq5
+0	2026.07.05 06:35:43.091	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Double\Wavelet.mq5 - 0 errors, 0 warnings, 579 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:43.091	Compiler	compiled Wavelet.mq5
+0	2026.07.05 06:35:43.331	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Float\BitonicSort.mq5 - 0 errors, 0 warnings, 234 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:43.331	Compiler	compiled BitonicSort.mq5
+0	2026.07.05 06:35:43.636	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Float\FFT.mq5 - 0 errors, 0 warnings, 296 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:43.638	Compiler	compiled FFT.mq5
+0	2026.07.05 06:35:43.893	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Float\MatrixMult.mq5 - 0 errors, 0 warnings, 256 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:43.893	Compiler	compiled MatrixMult.mq5
+0	2026.07.05 06:35:44.468	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Float\Wavelet.mq5 - 0 errors, 0 warnings, 563 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:44.468	Compiler	compiled Wavelet.mq5
+0	2026.07.05 06:35:44.757	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OpenCL\Seascape\Seascape.mqproj - 0 errors, 0 warnings, 285 ms elapsed, cpu='X64 Regular'
+0	2026.07.05 06:35:44.757	Compiler	compiled Seascape.mqproj
+0	2026.07.05 06:35:44.997	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\OrderInfo\OrderInfoSample.mq5 - 0 errors, 0 warnings, 241 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:44.997	Compiler	compiled OrderInfoSample.mq5
+0	2026.07.05 06:35:45.240	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\PositionInfo\PositionInfoSample.mq5 - 0 errors, 0 warnings, 234 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:45.240	Compiler	compiled PositionInfoSample.mq5
+0	2026.07.05 06:35:45.540	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\Remnant 3D\Remnant 3D.mqproj - 0 errors, 0 warnings, 287 ms elapsed, cpu='X64 Regular'
+0	2026.07.05 06:35:45.541	Compiler	compiled Remnant 3D.mqproj
+0	2026.07.05 06:35:45.797	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\Examples\SymbolInfo\SymbolInfoSample.mq5 - 0 errors, 0 warnings, 255 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 06:35:45.797	Compiler	compiled SymbolInfoSample.mq5
+
+0	2026.07.05 18:31:59.855	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\SmcXau_EA.mq5 - 0 errors, 0 warnings, 633 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.05 18:31:59.884	Compiler	compiled SmcXau_EA.mq5
+
+0	2026.07.21 01:20:51.692	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\src\EA_Core.mq5 - 0 errors, 2 warnings, 624 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.21 01:21:15.958	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\src\EA_Core.mq5 - 0 errors, 0 warnings, 571 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.21 01:50:27.396	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\src\EA_Core.mq5 - 0 errors, 0 warnings, 588 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.21 15:08:49.609	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\src\EA_Core.mq5 - 0 errors, 0 warnings, 601 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 11:32:02.504	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\tools\EA_ExportBars.mq5 - 0 errors, 0 warnings, 840 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 11:50:59.912	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\tools\EA_ExportBars.mq5 - 0 errors, 0 warnings, 2523 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 12:43:03.763	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\tools\EA_LiveCollector.mq5 - 0 errors, 0 warnings, 463 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 12:46:30.477	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\tools\EA_LiveCollector.mq5 - 0 errors, 0 warnings, 345 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 17:19:16.041	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1112 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 17:21:30.488	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1038 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 17:35:12.181	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1746 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 17:36:19.914	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 334 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 19:22:28.794	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\tools\EA_HtfTesterProbe.mq5 - 0 errors, 0 warnings, 346 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 19:24:38.543	Compile	C:\Users\www83\Downloads\AI\Claude_Bot\tools\EA_LiveCollector.mq5 - 0 errors, 0 warnings, 363 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 21:51:14.941	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 3386 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 21:51:32.742	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 400 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 21:52:45.637	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestPlantGlobals.mq5 - 0 errors, 0 warnings, 417 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 22:13:07.665	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 2851 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 22:13:08.782	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 402 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.22 22:13:09.765	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestPlantGlobals.mq5 - 0 errors, 0 warnings, 369 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:49:23.497	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 2268 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:49:24.629	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 362 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:49:25.510	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestPlantGlobals.mq5 - 0 errors, 0 warnings, 317 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:52:30.521	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 2499 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:52:31.854	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestWindows.mq5 - 0 errors, 0 warnings, 564 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:52:32.819	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 354 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 16:52:33.757	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestPlantGlobals.mq5 - 0 errors, 0 warnings, 316 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 17:02:29.338	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 2359 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 17:02:30.488	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestWindows.mq5 - 0 errors, 0 warnings, 535 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 17:02:31.368	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 329 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 17:02:32.247	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestPlantGlobals.mq5 - 0 errors, 0 warnings, 300 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 19:28:02.878	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 3116 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.24 20:28:52.431	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 3184 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.25 15:05:36.089	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMACD.mq5 - 0 errors, 0 warnings, 1092 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.25 15:05:36.131	Compiler	compiled ExpertMACD.mq5
+0	2026.07.25 15:05:37.047	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMAMA.mq5 - 0 errors, 0 warnings, 896 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.25 15:05:37.070	Compiler	compiled ExpertMAMA.mq5
+0	2026.07.25 15:05:37.965	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMAPSAR.mq5 - 0 errors, 0 warnings, 888 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.25 15:05:37.989	Compiler	compiled ExpertMAPSAR.mq5
+0	2026.07.25 15:05:39.109	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\Advisors\ExpertMAPSARSizeOptimized.mq5 - 0 errors, 0 warnings, 1107 ms elapsed without optimizations, cpu='X64 Regular'
+0	2026.07.25 15:05:39.120	Compiler	compiled ExpertMAPSARSizeOptimized.mq5
+
+0	2026.07.25 15:08:14.733	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 3223 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.25 15:18:24.609	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_ResetState.mq5 - 0 errors, 0 warnings, 360 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.25 15:18:25.440	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestPlantGlobals.mq5 - 0 errors, 0 warnings, 338 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.25 15:18:26.557	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AG_TestWindows.mq5 - 0 errors, 0 warnings, 638 ms elapsed, cpu='X64 Regular'
+
+2	2026.07.29 13:35:23.491	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 1 errors, 1 warnings
+
+0	2026.07.29 13:35:40.344	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 1 warnings, 896 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.29 13:35:55.963	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 1 warnings, 703 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.29 13:36:14.308	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 611 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.29 13:37:57.241	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 604 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.29 13:41:56.871	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AG_Probe.mq5 - 0 errors, 0 warnings, 343 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.29 16:42:49.974	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 565 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.29 16:43:06.205	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 629 ms elapsed, cpu='X64 Regular'
+
+0	2026.07.30 22:39:30.696	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1364 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.03 01:40:37.309	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 888 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.04 14:16:31.487	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\stage5a-crashloop\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 833 ms elapsed, cpu='X64 Regular'
+
+2	2026.08.04 14:17:23.030	Compile	C:\Users\www83\AppData\Local\Temp\claude\C--Users-www83-Downloads-AI-AccountGuardian--claude-worktrees-stage5a-crashloop\732d4e34-08e4-46cf-af1e-b8ff0790f4f6\scratchpad\MQL5\Experts\AG\Broken.mq5 - 3 errors, 0 warnings
+
+0	2026.08.04 14:27:33.765	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 588 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.04 14:28:34.433	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\stage5a-crashloop\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 579 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.04 14:28:37.379	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 584 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.04 14:29:44.782	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 574 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.04 14:29:47.723	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 589 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.04 14:29:50.587	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 582 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.09 18:32:24.032	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 729 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.09 18:32:39.275	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase1ClockVectors.mq5 - 0 errors, 0 warnings, 427 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.09 19:10:59.420	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 670 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.09 19:11:01.159	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase1ClockVectors.mq5 - 0 errors, 0 warnings, 420 ms elapsed, cpu='X64 Regular'
+
+2	2026.08.17 21:18:33.096	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 101 errors, 12 warnings
+
+0	2026.08.17 21:19:26.387	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 770 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 21:19:57.019	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1072 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 21:23:13.063	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 692 ms elapsed, cpu='X64 Regular'
+
+2	2026.08.17 22:09:02.973	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 101 errors, 12 warnings
+
+0	2026.08.17 22:22:56.470	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 700 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 22:24:45.649	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 784 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 22:52:21.213	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 849 ms elapsed, cpu='X64 Regular'
+
+2	2026.08.17 22:53:26.888	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 6 errors, 0 warnings
+
+0	2026.08.17 22:53:52.123	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 580 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 23:54:10.334	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1031 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 23:55:03.601	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 935 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.17 23:55:54.488	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase2-lock\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 770 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.18 01:59:16.228	MCP	started on 127.0.0.1:22345
+
+0	2026.08.18 01:59:56.076	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 921 ms elapsed, cpu='AVX2 + FMA3'
+
+0	2026.08.18 11:23:24.231	MCP	started on 127.0.0.1:22345
+
+0	2026.08.18 11:26:05.030	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 911 ms elapsed, cpu='AVX2 + FMA3'
+
+0	2026.08.18 11:27:01.965	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 654 ms elapsed, cpu='AVX2 + FMA3'
+0	2026.08.18 11:27:16.750	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 966 ms elapsed, cpu='AVX2 + FMA3'
+
+0	2026.08.20 20:33:18.681	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase3-defect-fixes\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 948 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.20 20:33:53.538	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\phase3-defect-fixes\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 675 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 00:36:09.311	MCP	started on 127.0.0.1:22345
+
+0	2026.08.27 00:41:11.879	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian.mq5 - 0 errors, 0 warnings, 894 ms elapsed, cpu='AVX2 + FMA3'
+
+0	2026.08.27 02:28:20.530	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 961 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 02:29:49.554	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 954 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 02:32:33.072	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 925 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 02:32:41.963	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Scripts\AccountGuardian\AgPhase1ClockVectors.mq5 - 0 errors, 0 warnings, 402 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 02:32:42.987	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 662 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 12:08:49.077	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1026 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 12:10:13.999	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1404 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 12:12:45.914	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1021 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 12:15:12.131	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1001 ms elapsed, cpu='X64 Regular'
+
+0	2026.08.27 12:29:15.067	MCP	started on 127.0.0.1:22345
+
+2	2026.08.27 12:30:10.891	Compile	C:\Users\www83\Downloads\AI\AccountGuardian\.claude\worktrees\worktree-v1-realized-peak\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 11 errors, 2 warnings
+
+2	2026.08.27 12:30:42.663	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian.mq5 - 11 errors, 2 warnings
+
+0	2026.08.27 15:10:53.397	MCP	started on 127.0.0.1:22345
+
+0	2026.08.27 15:11:52.235	Compile	C:\Users\www83\AppData\Roaming\MetaQuotes\Terminal\D0E8209F77C8CF37AD8BF550E51FF075\MQL5\Experts\AccountGuardian.mq5 - 0 errors, 0 warnings, 992 ms elapsed, cpu='AVX2 + FMA3'
+
+0	2026.08.27 17:44:09.096	MCP	started on 127.0.0.1:22345
+
+0	2026.08.27 17:44:20.483	MCP	started on 127.0.0.1:22345
+
+0	2026.09.01 20:32:42.144	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 677 ms elapsed, cpu='X64 Regular'
+
+2	2026.09.01 21:35:43.992	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 76 errors, 10 warnings
+
+0	2026.09.01 21:36:50.871	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 769 ms elapsed, cpu='X64 Regular'
+
+0	2026.09.01 21:36:59.741	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1021 ms elapsed, cpu='X64 Regular'
+
+0	2026.09.01 21:37:42.439	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 781 ms elapsed, cpu='X64 Regular'
+
+0	2026.09.01 21:37:44.840	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1040 ms elapsed, cpu='X64 Regular'
+
+2	2026.09.01 21:39:03.367	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 36 errors, 7 warnings
+
+0	2026.09.01 21:39:28.729	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 754 ms elapsed, cpu='X64 Regular'
+
+0	2026.09.01 21:39:30.138	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1073 ms elapsed, cpu='X64 Regular'
+
+2	2026.09.01 21:41:07.674	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 50 errors, 9 warnings
+
+0	2026.09.01 21:42:11.439	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Scripts\AccountGuardian\AgPhase2StateVectors.mq5 - 0 errors, 0 warnings, 804 ms elapsed, cpu='X64 Regular'
+
+0	2026.09.01 21:42:19.481	Compile	C:\Users\www83\Downloads\AI\Account_Guardian-V2\.claude\worktrees\v2-impl-20260901\MQL5\Experts\AccountGuardian\AccountGuardian.mq5 - 0 errors, 0 warnings, 1024 ms elapsed, cpu='X64 Regular'
