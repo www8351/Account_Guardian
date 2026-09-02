@@ -23,6 +23,7 @@ __pycache__/
 .venv/
 node_modules/
 *.log
+!docs/evidence/**
 
 # Owner profile backups of CLAUDE.md, local config residue
 CLAUDE.md.bak*
