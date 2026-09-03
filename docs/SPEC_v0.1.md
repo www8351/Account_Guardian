@@ -87,7 +87,7 @@ Authority order: broker history is the authority; file and GV are witnesses (acc
 
 ### 4.3 Base and limit (Q2 amendment, FINAL)
 - Base = current balance minus the sum of ALL deals since the day anchor, trading and balance types alike, same per-deal formula as 4.2 including DEAL_FEE (A6, Q3 FINAL). Algebraically equal to the day-anchor balance, reconstructed live, no caching. Deposits and withdrawals cancel exactly in both directions.
-- limit_currency = min headroom of the enabled limits (Q8, FINAL): percent limit = DailyLossPercent% of base; fixed limit = DailyLossCurrency. Stricter wins. 0 disables each. Both zero refuses init (section 5).
+- limit_currency = min of the two legs (Q8 FINAL, D1f FINAL 2026-09-03): percent limit = DailyLossPercent% of base; fixed limit = DailyLossCurrency. Stricter wins. Both legs are mandatory list inputs; a value off either list refuses init (section 5).
 - Permanent acceptance test: a deposit or withdrawal moves loss headroom in neither direction.
 
 ### 4.4 Breach and sweep
@@ -111,19 +111,17 @@ Identical PnL formula over the week window. Measure and report only: journal lin
 ## 5. Inputs
 
 Config classes (Q4, FINAL):
-- Core class (daily limits, lock behavior): malformed value, or both limits zero, means OnInit returns INIT_PARAMETERS_INCORRECT and the EA visibly refuses to run.
+- Core class (daily limits, lock behavior): a value that is not a member of its own list (D1f FINAL 2026-09-03) means OnInit returns INIT_PARAMETERS_INCORRECT and the EA visibly refuses to run.
 - Optional class (weekly reporting, cosmetics): malformed means that feature fully off plus WARN, never half-enforced.
 
 | Input | Type | Default | Off-value | Class | Notes |
 |---|---|---|---|---|---|
-| DailyLossPercent | double | 5.0 | 0 | core | percent of day-anchor base |
-| DailyLossCurrency | double | 0 | 0 | core | absolute account currency; stricter of the two wins; both zero refuses init |
+| DailyLossPercent | enum, 22 members 0.25 to 5.50 step 0.25 | 5.50 | none | core | percent of day-anchor base; off-list refuses init |
+| DailyLossCurrency | enum, 48 members 1 to 10 step 1 then 15 to 200 step 5 | 200 | none | core | account currency; stricter of the two wins; off-list refuses init |
 | WeeklyReportEnabled | bool | true | false | optional | report-only path |
-| SweepPeriodSeconds | int | 1 | none | core | out of range refuses init; valid range 1..5 |
-| CrashLoopMaxInits | int | 3 | none | core | consecutive unclean sessions tolerated (A4) |
-| CrashLoopWindowSeconds | int | 300 | none | core | max gap between adjacent inits in a chain, not a rolling window (A4) |
-| HistoryStablePolls | int | 3 | none | core | SYNCING exit condition |
 | LogVerbosity | enum | NORMAL | none | optional | never suppresses transitions |
+
+SweepPeriodSeconds 1, HistoryStablePolls 3, CrashLoopMaxInits 3 and CrashLoopWindowSeconds 300 are compile-time constants from R10 (D7b, D11a FINAL 2026-09-03).
 
 No symbol filter, no magic filter. Scope is everything on the account. Single instance per account enforced at init (mutex heartbeat, stale takeover).
 
