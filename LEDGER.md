@@ -3,7 +3,7 @@
 ## ISSUES
 
 Issue:  NEXT BEST ACTION. VERSION 1 OF THE REALIZED PEAK TRAILING FLOOR IS ACCEPTED ON ALL FOUR ROWS, V1-A, V1-B, V1-C AND V1-D, each closed in the 2026-09-01 ACTIONS entry above on the eight files banked at commit `7aef069` and the build identity of owner ruling TWO of 2026-08-31, `AccountGuardian.ex5` md5 `124BA610201A6D67C050572C6A84DE37`, 86866 bytes. Two things remain open and neither is this entry's work to finish.
-Action: Input hardening plan session per R10, then D2/D4 plan session, then enforcement phase kickoff, Sweep.mqh flatten engine.
+Action: Input hardening RULED 2026-09-03, DECISIONS `:2205` (D1f, mandatory list inputs), `:2209` (D2/D3/D3b, void), `:2213` (D4a), `:2217` (D5a), `:2221` (D6a), `:2225` (D7b, SweepPeriodSeconds and HistoryStablePolls constants), `:2229` (D8b, a9 vectors), `:2233` (D9a), `:2237` (D10a, build scope), `:2241` (D11a, CrashLoop constants, dated 2026-09-02). NEXT: build D1f + D7b + D11a as one build per D10a, then a D2/D4 defect-fix plan session, then enforcement phase kickoff, Sweep.mqh flatten engine.
 Status: OPEN
 
 Issue:  ZERO GUARDIAN ENFORCEMENT EXISTS WHILE THE TERMINAL IS NOT RUNNING, evidenced concretely by the 31 minute 44 second gap of 2026-08-30, `docs/evidence/terminal-20260830-zero-positions.txt:19` `System|terminal stopped due to system shutdown` at `15:14:10` to `:20` `Terminal|MetaTrader 5 x64 build 6140 started` at `15:45:54`, during which about 192 was lost to mobile trades the guardian could only detect after the fact, on restart, by replaying server history. Owner ruling FOUR accepts that catch as correct; it does not rule on the window itself.
@@ -2201,3 +2201,46 @@ Status: FINAL, amends the reconnect clause of the entry below; mechanism as impl
 Decision: (Q10, owner ruling 2026-08-08) While the terminal is disconnected, the evaluation marks itself DEGRADED and takes no breach decision from a frozen quote, since no enforcement action is possible without a connection regardless of what the numbers say. On reconnect, evaluation resumes with an immediate clean re-evaluation, no re-sync wait beyond what already exists. No ALERT fires from data computed while DEGRADED, consistent with the Q2 interim-posture cadence only ever firing from a fresh, connected evaluation.
 Executor's mechanism, translating the ruling (not re-opening it): the connection check is `TerminalInfoInteger(TERMINAL_CONNECTED)`, the same signal design doc item 1's `AgHistoryStable` already resets on. When false, the ACTIVE-state evaluation for that pass is skipped entirely (no realized/floating/base/limit recompute, no Q8 anchor check, no Q9 coherence check, none of it), the LIFE line and banner show a DEGRADED marker alongside the last-known figures rather than fresh ones, and no ALERT of any kind fires from that pass. The instant `TERMINAL_CONNECTED` reads true again, the very next pass runs the full evaluation exactly as any other ACTIVE pass, with Q8 and Q9 both applying normally to it since nothing about disconnection touches the high-water anchor or the deal-count baseline. SPEC wording (amendment A6) and an acceptance row reusing the existing disconnect procedure (already exercised for the A8 weekend harvest and the kill-session work) land in the captured plan document: observe DEGRADED on the LIFE line through the gap, zero ALERTs during it, and one clean re-evaluation on the line immediately after reconnect.
 Status: FINAL, mechanism as translated above
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D1f) BOTH LIMITS BECOME MANDATORY LIST INPUTS. Neither can be zero, neither can be disabled from the dialog. `DailyLossPercent` is an enum of 22 values, 0.25 to 5.50 in steps of 0.25; the top value 5.50 is the ceiling. `DailyLossCurrency` is an enum of 48 values, 1 to 10 in steps of 1, then 15 to 200 in steps of 5; the top value 200 is the ceiling, in account currency. Any value not in its list, from the dialog, a `.set` file or last-used inputs, refuses init. The effective limit remains the min of the two legs, unchanged. There is no disable path inside the EA: disabling means the owner removes the EA from the chart and deletes the boot file by hand. This entry supersedes the both-limits-zero clause of Q4/F9 (owner ruling 2026-07-29, DECISIONS) and the "0 disables each, both zero refuses init" clause of Q8 (owner ruling 2026-07-29, DECISIONS), on that clause alone: every other clause of both entries stands unchanged.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D2/D3/D3b) VOID UNDER D1f. No `guard_<login>.dat` is created, no change is made to `floor_<login>.dat`, and no change is made to the RESEED AT ROLLOVER clause of the ratchet ratification (owner ruling 2026-08-18, DECISIONS, Phase 2 open question SEVEN).
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D4a) WITHIN THE CEILING WHILE LOCKED, an input change is rejected and journaled, current Q6 behaviour (Q6/F7, owner ruling 2026-07-29, DECISIONS), unchanged. ABOVE THE CEILING, the value is not a list member and init refuses, per D1f above.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D5a) A tightening of either limit from the dialog takes effect immediately.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D6a) THE RATCHET COMPARES THE DERIVED LIMIT, the min of the two legs, unchanged. THE CEILING CHECK IS PER RAW INPUT AT INIT, against each input's own list under D1f.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D7b) `SweepPeriodSeconds = 1` and `HistoryStablePolls = 3` become compile-time constants. This closes the refuse-versus-clamp deferral of 2026-07-30 (ACTIONS entry of that date and DECISIONS R1/R2 of that date) for these two inputs.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D8b) Struck a9 vectors are retired, not rewritten. `docs/vectors/README.md` is updated accordingly, not in this session. The FINAL at DECISIONS 2026-08-04 naming the twelve committed a9 vectors is not edited. This entry supersedes it on the vector count alone: of the twelve, ten are struck by D1f, D7b and D11a together, and two survive, `a9_defaults.set` and `a9_optional_bad.set`.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+CORRECTION, same session, dated 2026-09-03, not an in-place edit of the entry above. The ten struck files were read against D1f and D7b field by field: `a9_both_zero.set`, `a9_neg_percent.set`, `a9_neg_currency.set`, `a9_percent_over_100.set` and `a9_nonfinite.set` are struck by D1f, the list-membership check superseding the zero, negative, range and finite checks each one tests; `a9_sweep_zero.set` and `a9_sweep_over.set` are struck by D7b, `SweepPeriodSeconds` becoming a compile-time constant; `a9_polls_zero.set` is struck by D7b, `HistoryStablePolls` becoming a compile-time constant; `a9_crash_max_zero.set` and `a9_window_zero.set` are struck by D11a. The survivor count stays two, `a9_defaults.set` and `a9_optional_bad.set`, but NEITHER SURVIVOR'S CURRENT CONTENT PASSES D1f AS WRITTEN. Both carry `DailyLossCurrency=0.0`, and D1f's currency enum starts at 1, so 0.0 is not a list member; both would refuse init unmodified. `a9_defaults.set`'s `DailyLossPercent=5.0` IS a list member under D1f, `5.00 = 0.25 * 20`, and its `SweepPeriodSeconds=1` and `HistoryStablePolls=3` match the D7b constants exactly. A vector rewrite to fix the currency field on both files is not authorized in this session and is left for the build session named in D10a.
+Status: FINAL, correction to D8b's own content, the struck/survive count of ten and two unchanged
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D9a) An ignored widening uses the ratchet WARN form, "ratchet HOLDING against a raised limit", at the same cadence cap value, `AG_LIFE_INTERVAL_SECONDS`.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, input hardening session, R10, D10a) Hardening ships first as its own build: D1f, D7b and D11a together. The defect 2 (GV lock mirror self-erasure on cold boot) and defect 4 (LOCKED LIFE lines carry no numbers) fixes, per the fix order FINAL of 2026-08-19, are not part of this build.
+Reason: Owner's ruling, recorded as given, 2026-09-03 input hardening session (R10).
+Status: FINAL
+
+Decision: (owner ruling 2026-09-02, transcribed 2026-09-03 in the input hardening session, R10, D11a) CrashLoopMaxInits = 3 and CrashLoopWindowSeconds = 300 become compile-time constants. Two a9 vectors are struck: `a9_crash_max_zero.set` and `a9_window_zero.set`.
+Reason: Owner's ruling, dated 2026-09-02 by the owner's own instruction and recorded here on 2026-09-03 because no earlier entry captured it; the ten 2026-09-02 rulings recorded in this DECISIONS section under that date do not include it, checked before this entry was written.
+Status: FINAL, dated 2026-09-02
