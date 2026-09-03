@@ -15,18 +15,16 @@
 #include <AccountGuardian/Pnl.mqh>
 #include <AccountGuardian/Sweep.mqh>
 
-//--- core config class: malformed means the EA refuses to run (Q4)
-input double                 DailyLossPercent       = 5.0;   // Daily loss limit, percent of day-anchor base (0 = off)
-input double                 DailyLossCurrency      = 0.0;   // Daily loss limit, account currency (0 = off)
-input int                    SweepPeriodSeconds     = 1;     // Timer period, refused outside 1..5
-input int                    CrashLoopMaxInits      = 3;     // Consecutive unclean sessions tolerated
-input int                    CrashLoopWindowSeconds = 300;   // Max gap between adjacent inits in a chain
-input int                    HistoryStablePolls     = 3;     // SYNCING exit condition (used from Phase 1)
+//--- core config class: malformed means the EA refuses to run (Q4). R10,
+//--- D1f (FINAL 2026-09-03): both limits are mandatory list inputs, the
+//--- backing integer is the value, any non member refuses init, and there
+//--- is no disable path. Defaults FINAL 2026-09-03: the top of each list.
+input ENUM_AG_DAILY_LOSS_PERCENT  DailyLossPercent  = AG_DLP_5_50; // Daily loss limit, percent of day-anchor base
+input ENUM_AG_DAILY_LOSS_CURRENCY DailyLossCurrency = AG_DLC_200;  // Daily loss limit, account currency
 //--- optional config class: malformed means feature off plus WARN
 input bool                   WeeklyReportEnabled    = true;  // Weekly measurement and reporting
 input ENUM_AG_LOG_VERBOSITY  LogVerbosity           = AG_LOG_NORMAL; // Journal verbosity
 
-int  g_timer_seconds       = 1;
 bool g_weekly_enabled      = true;
 bool g_owns_mutex          = false;
 bool g_resumed_from_halt   = false;
@@ -35,6 +33,19 @@ int  g_timer_ticks         = 0;
 bool g_init_refused        = false;
 
 #define AG_LIFE_INTERVAL_SECONDS 30
+
+//--- R10, D7b and D11a (FINAL 2026-09-03): four former inputs are now
+//--- compile-time constants, the AG_LIFE_INTERVAL_SECONDS precedent of
+//--- 2026-07-29: "a config value that can disable the fail-visible
+//--- guarantee belongs to the core class or nowhere. Nowhere is simpler."
+//--- Values are the ruled defaults, unchanged. Formerly the inputs
+//--- SweepPeriodSeconds, HistoryStablePolls, CrashLoopMaxInits and
+//--- CrashLoopWindowSeconds; this comment is the only place the four old
+//--- names survive in the tree, which static row R10-S2 checks.
+#define AG_SWEEP_PERIOD_SECONDS       1
+#define AG_HISTORY_STABLE_POLLS       3
+#define AG_CRASH_LOOP_MAX_INITS       3
+#define AG_CRASH_LOOP_WINDOW_SECONDS  300
 
 //--- Phase 1 PnL evaluation state (A6, 4.3a/4.3b/4.4). All in-memory,
 //--- none persisted (never-loaded-never-written): a restart re-derives
@@ -111,6 +122,12 @@ bool     g_ag_lock_inputs_captured = false;
 bool     g_ag_obs_connected        = true;    // TERMINAL_CONNECTED, sampled every tick
 bool     g_ag_obs_resync_prev      = false;   // edge detector for the RESYNC lines
 
+//--- R10, D1f: the two limit inputs are enums whose backing integer is
+//--- the value. Every arithmetic read goes through these two accessors,
+//--- so no site can read the enum as if it were the double it replaced.
+double AgInputPercent()  { return AgDailyLossPercentValue(DailyLossPercent); }
+double AgInputCurrency() { return AgDailyLossCurrencyValue(DailyLossCurrency); }
+
 //+------------------------------------------------------------------+
 //| Single arming point for the timer, return value checked and      |
 //| logged. A timer that silently fails to arm freezes the mutex     |
@@ -119,9 +136,9 @@ bool     g_ag_obs_resync_prev      = false;   // edge detector for the RESYNC li
 //+------------------------------------------------------------------+
 void AgArmTimer()
   {
-   g_timer_armed = EventSetTimer(g_timer_seconds);
+   g_timer_armed = EventSetTimer(AG_SWEEP_PERIOD_SECONDS);
    if(g_timer_armed)
-      AgInfo("timer armed|period=" + (string)g_timer_seconds + "s");
+      AgInfo("timer armed|period=" + (string)AG_SWEEP_PERIOD_SECONDS + "s");
    else
       AgAlertEvent("EventSetTimer FAILED (error " + (string)GetLastError()
                    + "), the guardian cannot run: no evaluation, no sweep, and a frozen mutex heartbeat");
@@ -292,7 +309,7 @@ int AgBootDerivation(ENUM_AG_LOCK_REASON &reason_out, datetime &until_out,
    bool   have_snapshot = (g_ag_state_reason == AG_LOCK_DAILY_BREACH
                            && g_ag_state_locked_until > now
                            && g_ag_state_limit_snap > 0.0);
-   double live_limit = AgLimitCurrency(base, DailyLossPercent, DailyLossCurrency);
+   double live_limit = AgLimitCurrency(base, AgInputPercent(), AgInputCurrency());
    double limit_cmp;
    if(have_snapshot)
       limit_cmp = g_ag_state_limit_snap;                          // tier 1
@@ -367,8 +384,8 @@ void AgDeclareLock(const datetime breach_time, const double limit, const double 
 
    g_ag_lock_reason      = AG_LOCK_DAILY_BREACH;
    g_ag_locked_until     = until;
-   g_ag_locked_in_percent  = DailyLossPercent;
-   g_ag_locked_in_currency = DailyLossCurrency;
+   g_ag_locked_in_percent  = AgInputPercent();
+   g_ag_locked_in_currency = AgInputCurrency();
    g_ag_lock_inputs_captured = true;
 
    AgStateSetBreach(until, breach_time, limit, base);
@@ -438,8 +455,8 @@ void AgEnterLockFromBoot(const ENUM_AG_LOCK_REASON reason, const datetime until,
    //--- Stage 3 entry left for this stage: without it the first LOCKED pass
    //--- would compare live inputs against a default-constructed 0.0 and warn
    //--- about a change nobody made.
-   g_ag_locked_in_percent    = DailyLossPercent;
-   g_ag_locked_in_currency   = DailyLossCurrency;
+   g_ag_locked_in_percent    = AgInputPercent();
+   g_ag_locked_in_currency   = AgInputCurrency();
    g_ag_lock_inputs_captured = true;
 
    if(reason == AG_LOCK_CORRUPT_STATE)
@@ -507,16 +524,16 @@ void AgEvaluateLocked()
    //--- still governs and nothing about enforcement moves; this is a
    //--- witness, not a control path.
    if(g_ag_lock_inputs_captured
-      && (DailyLossPercent != g_ag_locked_in_percent || DailyLossCurrency != g_ag_locked_in_currency))
+      && (AgInputPercent() != g_ag_locked_in_percent || AgInputCurrency() != g_ag_locked_in_currency))
      {
       datetime now_local = TimeLocal();
       if(g_ag_last_inputchg_warn == 0
          || now_local - g_ag_last_inputchg_warn >= AG_LIFE_INTERVAL_SECONDS)
         {
          AgWarn("input changed while LOCKED and is being IGNORED (Q6): percent "
-                + DoubleToString(g_ag_locked_in_percent, 2) + "->" + DoubleToString(DailyLossPercent, 2)
+                + DoubleToString(g_ag_locked_in_percent, 2) + "->" + DoubleToString(AgInputPercent(), 2)
                 + ", currency " + DoubleToString(g_ag_locked_in_currency, 2) + "->"
-                + DoubleToString(DailyLossCurrency, 2)
+                + DoubleToString(AgInputCurrency(), 2)
                 + "; the locked window is judged by the breach snapshot limit="
                 + DoubleToString(g_ag_state_limit_snap, 2) + " base="
                 + DoubleToString(g_ag_state_base_snap, 2));
@@ -549,7 +566,7 @@ void AgEvaluateLocked()
       //--- hold whatever the last SYNCING occupancy left them at. Entering
       //--- SYNCING without this reset, on an account whose deal count has
       //--- not moved since, takes AgHistoryStable's count-unchanged branch
-      //--- and increments straight past HistoryStablePolls on the FIRST
+      //--- and increments straight past AG_HISTORY_STABLE_POLLS on the FIRST
       //--- poll, leaving SYNCING on the very tick it was entered and buying
       //--- none of the discipline this fix exists for. The two assignments
       //--- are exactly Pnl.mqh's own disconnect reset, so the semantics are
@@ -558,11 +575,11 @@ void AgEvaluateLocked()
       g_ag_last_history_total = -1;
       AgTransition(AG_STATE_SYNCING, "lock expired",
                    "history stability required before the first post-expiry"
-                   " breach decision|polls=0/" + (string)HistoryStablePolls);
+                   " breach decision|polls=0/" + (string)AG_HISTORY_STABLE_POLLS);
       //--- Accurate rather than empty: AgWaitingOn's SYNCING default reads
       //--- "history stability poll not yet run this session", which is false
       //--- after an expiry, because the boot occupancy already ran one.
-      g_ag_dynamic_waiting_on = "polls=0/" + (string)HistoryStablePolls;
+      g_ag_dynamic_waiting_on = "polls=0/" + (string)AG_HISTORY_STABLE_POLLS;
      }
   }
 
@@ -653,10 +670,10 @@ void AgEvaluateActive()
    //--- last-known throughout, since g_ag_degraded has not cleared yet.
    if(g_ag_resyncing)
      {
-      if(!AgHistoryStable(HistoryStablePolls))
+      if(!AgHistoryStable(AG_HISTORY_STABLE_POLLS))
         {
          g_ag_dynamic_waiting_on = "RESYNC: polls=" + (string)g_ag_stable_polls
-                                    + "/" + (string)HistoryStablePolls;
+                                    + "/" + (string)AG_HISTORY_STABLE_POLLS;
          return;
         }
       g_ag_resyncing = false;
@@ -713,7 +730,7 @@ void AgEvaluateActive()
    if(!ok)
       return;   // loud WARN already logged inside AgDayBase/AgDealsSumAll
    double floating = AgFloating();
-   double limit     = AgLimitCurrency(base, DailyLossPercent, DailyLossCurrency);
+   double limit     = AgLimitCurrency(base, AgInputPercent(), AgInputCurrency());
    double pnl       = realized + floating;
 
    g_ag_last_anchor      = window_anchor;
@@ -883,37 +900,19 @@ int OnInit()
   {
    g_ag_verbosity = LogVerbosity;
    g_ag_login     = AccountInfoInteger(ACCOUNT_LOGIN);
-   AgInfo("init|build=Phase2|account=" + (string)g_ag_login + "|server=" + AccountInfoString(ACCOUNT_SERVER));
+   AgInfo("init|build=R10|account=" + (string)g_ag_login + "|server=" + AccountInfoString(ACCOUNT_SERVER));
 
    //--- core config validation (Q4): refuse to run, visibly
    string why = "";
-   if(!AgValidateLimits(DailyLossPercent, DailyLossCurrency, why))
+   if(!AgValidateLimits((int)DailyLossPercent, (int)DailyLossCurrency, why))
      {
       AgAlertEvent("refusing to run, core config invalid: " + why);
       return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: " + why);
      }
-   if(CrashLoopMaxInits < 1)
-     {
-      AgAlertEvent("refusing to run, core config invalid: CrashLoopMaxInits must be at least 1");
-      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: CrashLoopMaxInits must be at least 1");
-     }
-   if(CrashLoopWindowSeconds < 1)
-     {
-      AgAlertEvent("refusing to run, core config invalid: CrashLoopWindowSeconds must be at least 1");
-      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: CrashLoopWindowSeconds must be at least 1");
-     }
-   if(SweepPeriodSeconds < 1 || SweepPeriodSeconds > 5)
-     {
-      AgAlertEvent("refusing to run, core config invalid: SweepPeriodSeconds out of range 1..5 ("
-                   + (string)SweepPeriodSeconds + ")");
-      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: SweepPeriodSeconds out of range 1..5");
-     }
-   if(HistoryStablePolls < 1)
-     {
-      AgAlertEvent("refusing to run, core config invalid: HistoryStablePolls must be at least 1");
-      return AgRefuseInit(INIT_PARAMETERS_INCORRECT, "core config invalid: HistoryStablePolls must be at least 1");
-     }
-   g_timer_seconds = SweepPeriodSeconds;
+   AgInfo("limits accepted|percent=" + DoubleToString(AgInputPercent(), 2)
+          + "|currency=" + DoubleToString(AgInputCurrency(), 2)
+          + "|raw=" + (string)(int)DailyLossPercent + "/" + (string)(int)DailyLossCurrency
+          + "|both list members (D1f), effective limit is the min of the two legs");
 
    //--- optional config class: off plus WARN, never half-enforced
    g_weekly_enabled = WeeklyReportEnabled;
@@ -1020,22 +1019,22 @@ int OnInit()
      }
 
    AgHaltAppendSession();
-   int chain = AgHaltUncleanChain(CrashLoopWindowSeconds);
+   int chain = AgHaltUncleanChain(AG_CRASH_LOOP_WINDOW_SECONDS);
    if(!AgHaltSave())
       AgAlertEvent("halt file could not be written, crash-loop evidence is not durable this session");
 
-   if(chain > CrashLoopMaxInits)
+   if(chain > AG_CRASH_LOOP_MAX_INITS)
      {
       AgEnterSafeHalt("crash loop: " + (string)chain + " consecutive unclean sessions, adjacent inits within "
-                      + (string)CrashLoopWindowSeconds + "s, limit " + (string)CrashLoopMaxInits);
+                      + (string)AG_CRASH_LOOP_WINDOW_SECONDS + "s, limit " + (string)AG_CRASH_LOOP_MAX_INITS);
       AgArmTimer();
       return INIT_SUCCEEDED;
      }
-   AgVerbose("crash-loop check|chain=" + (string)chain + "/" + (string)CrashLoopMaxInits
-             + " consecutive unclean, gap bound " + (string)CrashLoopWindowSeconds + "s");
+   AgVerbose("crash-loop check|chain=" + (string)chain + "/" + (string)AG_CRASH_LOOP_MAX_INITS
+             + " consecutive unclean, gap bound " + (string)AG_CRASH_LOOP_WINDOW_SECONDS + "s");
 
    AgTransition(AG_STATE_SYNCING, "boot", "weekly=" + (g_weekly_enabled ? "on" : "off")
-                + "|timer=" + (string)g_timer_seconds + "s");
+                + "|timer=" + (string)AG_SWEEP_PERIOD_SECONDS + "s");
    AgRefreshBanner();
    AgArmTimer();
    return INIT_SUCCEEDED;
@@ -1118,7 +1117,7 @@ void OnTimer()
    //--- Phase 2 adds expiry and witness code without touching this branch.
    if(g_ag_state == AG_STATE_SYNCING)
      {
-      if(AgHistoryStable(HistoryStablePolls))
+      if(AgHistoryStable(AG_HISTORY_STABLE_POLLS))
         {
          //--- Phase 2 Stage 4: boot lock derivation at the SYNCING exit.
          //--- The transition table's own structure is what guarantees a
@@ -1148,12 +1147,12 @@ void OnTimer()
          else
            {
             AgTransition(AG_STATE_ACTIVE, "history stable",
-                         "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls);
+                         "polls=" + (string)g_ag_stable_polls + "/" + (string)AG_HISTORY_STABLE_POLLS);
             g_ag_dynamic_waiting_on = "";
            }
         }
       else
-         g_ag_dynamic_waiting_on = "polls=" + (string)g_ag_stable_polls + "/" + (string)HistoryStablePolls;
+         g_ag_dynamic_waiting_on = "polls=" + (string)g_ag_stable_polls + "/" + (string)AG_HISTORY_STABLE_POLLS;
      }
    else if(g_ag_state == AG_STATE_ACTIVE)
       AgEvaluateActive();
