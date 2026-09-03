@@ -1,8 +1,4 @@
-DailyLossPercent=5.0
-DailyLossCurrency=0.0
-SweepPeriodSeconds=1
-CrashLoopMaxInits=3
-CrashLoopWindowSeconds=300
-HistoryStablePolls=3
+DailyLossPercent=550
+DailyLossCurrency=200
 WeeklyReportEnabled=true
 LogVerbosity=0

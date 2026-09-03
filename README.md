@@ -21,7 +21,7 @@
 ## What it does
 
 * **One daily loss limit for the whole account.** Not per trade, not per strategy, not per magic number. Every position and every deal on the login counts, whatever opened it: another advisor, the desktop terminal, or the phone.
-* **Two limit legs, the stricter one wins.** `DailyLossPercent` is a percentage of the day's opening base, `DailyLossCurrency` is a flat amount in account currency. Enable one or both. When both are enabled the smaller of the two is what gets enforced. Setting both to zero is refused at startup.
+* **Two limit legs, the stricter one wins.** `DailyLossPercent` is a percentage of the day's opening base, `DailyLossCurrency` is a flat amount in account currency. Both are mandatory. Each is picked from a fixed list of values, neither can be switched off, and the smaller of the two is what gets enforced. A value that is not on its own list is refused at startup.
 * **The trading day starts at 01:00 server time.** Every measurement window, every rollover, and every lock expiry is anchored to that boundary. It is a compile-time constant, not an input, so no setting can move it.
 * **Realized and floating loss are measured together.** Realized is the sum of the day's closed buy and sell deals, profit plus swap plus commission plus fee. Floating is profit plus swap across every open position. A position carried across the rollover counts its floating loss against the day it is still open on.
 * **A breach locks the account until the next day anchor.** The lock is written to disk with a snapshot of the limit and base at the moment it fired. The only way out is time: `TimeCurrent >= locked_until`. There is no manual override, no input that shortens it, and no reconnect that clears it.
@@ -57,7 +57,7 @@ stateDiagram-v2
 | State | Meaning |
 |---|---|
 | `BOOT` | Before the first transition. Inputs are validated here, and a malformed core input refuses startup outright with a dated `REFUSED` banner left on the chart. |
-| `SYNCING` | Waiting for the broker's deal history to settle. Leaving requires `HistoryStablePolls` consecutive stable, connected polls of the deal count. No breach decision is ever taken from this state. |
+| `SYNCING` | Waiting for the broker's deal history to settle. Leaving requires 3 consecutive stable, connected polls of the deal count. No breach decision is ever taken from this state. |
 | `ACTIVE` | Measuring. One evaluation pass per timer tick. |
 | `LOCKED` | A breach is in force. Positions stay open, no order is sent, the expiry clock is the only exit. |
 | `SAFE_HALT` | The advisor believes its own environment is broken, typically a crash loop. It closes nothing, sweeps nothing, and is excluded from expiry. Resume is manual: stop the advisor, delete the halt file, restart. |
@@ -81,7 +81,7 @@ flowchart TD
     T[timer tick] --> C{terminal connected?}
     C -- no --> D[DEGRADED: hold last known numbers, take no breach decision]
     C -- yes --> R{first pass after a disconnect?}
-    R -- yes --> S[RESYNC: wait for HistoryStablePolls stable polls]
+    R -- yes --> S[RESYNC: wait for 3 stable polls]
     R -- no --> A[anchor = last 01:00 server boundary]
     A --> B[base = balance - all deals since anchor]
     B --> RE[realized = buy and sell deals since anchor]
@@ -122,16 +122,14 @@ Three details in that diagram are worth spelling out.
 
 | Input | What it means | Default | Safe starting value |
 |---|---|---|---|
-| `DailyLossPercent` | Daily loss limit as a percentage of the day-anchor base. `0` disables this leg. Refused if negative or above 100. | `5.0` | `2.0` while you are learning what the advisor does on your account |
-| `DailyLossCurrency` | Daily loss limit as a flat amount in account currency. `0` disables this leg. When both legs are enabled the stricter one is enforced. | `0.0` | `0.0`, or a hard cash cap you are certain of |
-| `SweepPeriodSeconds` | Timer period. Every evaluation pass, the mutex heartbeat and the proof-of-life line run off this timer. Refused outside 1 to 5. | `1` | `1` |
-| `CrashLoopMaxInits` | How many consecutive unclean sessions are tolerated before the advisor puts itself in `SAFE_HALT`. Refused below 1. | `3` | `3` |
-| `CrashLoopWindowSeconds` | Maximum gap between two adjacent starts for them to count as one chain. Refused below 1. | `300` | `300` |
-| `HistoryStablePolls` | Consecutive stable polls of the broker deal count required to leave `SYNCING`, and to resume after a disconnect. Refused below 1. | `3` | `3` |
+| `DailyLossPercent` | Daily loss limit as a percentage of the day-anchor base. Picked from a fixed list, 0.25 to 5.50 in steps of 0.25. A value off the list refuses startup. | `5.50` | `2.00` while you are learning what the advisor does on your account |
+| `DailyLossCurrency` | Daily loss limit as a flat amount in account currency. Picked from a fixed list, 1 to 10 in steps of 1, then 15 to 200 in steps of 5. When both legs are set the stricter one is enforced. A value off the list refuses startup. | `200` | a hard cash cap you are certain of |
 | `WeeklyReportEnabled` | Weekly measurement and reporting. Optional class: a bad value turns the feature off with a warning and startup continues. | `true` | `true` |
 | `LogVerbosity` | `Normal` or `Verbose`. Verbose adds diagnostics and never suppresses a transition or proof-of-life line. | `Normal` | `Verbose` for the first few days |
 
-The two limit inputs and the four integers above them are the core class: a malformed value there returns `INIT_PARAMETERS_INCORRECT`, raises an alert naming the field, and leaves a dated `REFUSED` banner on the chart. The advisor never starts half-configured.
+The timer period, the number of stable polls required to leave `SYNCING`, and the two crash-loop bounds are not inputs. They are fixed in the build at 1 second, 3 polls, 3 consecutive unclean sessions and 300 seconds.
+
+The two limit inputs are the core class: a value off either list returns `INIT_PARAMETERS_INCORRECT`, raises an alert naming the field, and leaves a dated `REFUSED` banner on the chart. The advisor never starts half-configured.
 
 ### The first journal lines
 
@@ -273,7 +271,7 @@ This software is provided as is, with no warranty of any kind. Nothing here is f
 ## מה זה עושה
 
 * **מגבלת הפסד יומית אחת לחשבון כולו.** לא לכל עסקה, לא לכל אסטרטגיה, לא לפי מספר קסם. כל פוזיציה וכל עסקה בחשבון נספרות, לא משנה מי פתח אותן: יועץ אחר, הטרמינל בשולחן העבודה, או הטלפון.
-* **שתי רגלי מגבלה, המחמירה מנצחת.** הקלט `DailyLossPercent` הוא אחוז מבסיס פתיחת היום, והקלט `DailyLossCurrency` הוא סכום קבוע במטבע החשבון. אפשר להפעיל אחת מהן או את שתיהן. כששתיהן פעילות, הקטנה מבין השתיים היא זו שנאכפת. הגדרת שתיהן לאפס נדחית בעלייה.
+* **שתי רגלי מגבלה, המחמירה מנצחת.** הקלט `DailyLossPercent` הוא אחוז מבסיס פתיחת היום, והקלט `DailyLossCurrency` הוא סכום קבוע במטבע החשבון. שתי הרגליים הן חובה. כל אחת נבחרת מתוך רשימת ערכים קבועה, אי אפשר לכבות אף אחת מהן, והקטנה מבין השתיים היא זו שנאכפת. ערך שאינו נמצא ברשימה שלו נדחה בעלייה.
 * **יום המסחר מתחיל בשעה 01:00 בשעון השרת.** כל חלון מדידה, כל גלגול יום וכל פקיעת נעילה מעוגנים לגבול הזה. זהו קבוע בזמן הידור ולא קלט, כך שאף הגדרה אינה יכולה להזיז אותו.
 * **הפסד ממומש והפסד צף נמדדים יחד.** הממומש הוא סכום עסקאות הקנייה והמכירה שנסגרו היום, רווח ועוד עמלת החלפה ועוד עמלה ועוד אגרה. הצף הוא רווח ועוד עמלת החלפה על פני כל הפוזיציות הפתוחות. פוזיציה שנשארת פתוחה מעבר לגלגול היום נספרת ליום שבו היא עדיין פתוחה.
 * **חריגה נועלת את החשבון עד עוגן היום הבא.** הנעילה נכתבת לדיסק יחד עם תצלום של המגבלה ושל הבסיס ברגע שהיא נורתה. הדרך היחידה החוצה היא זמן: `TimeCurrent >= locked_until`. אין עקיפה ידנית, אין קלט שמקצר אותה, ואין התחברות מחדש שמנקה אותה.
@@ -309,7 +307,7 @@ stateDiagram-v2
 | מצב | משמעות |
 |---|---|
 | `BOOT` | לפני המעבר הראשון. הקלטים נבדקים כאן, וקלט ליבה פגום דוחה את העלייה לחלוטין ומשאיר על הגרף כרזת `REFUSED` נושאת תאריך. |
-| `SYNCING` | המתנה להתייצבות היסטוריית העסקאות של הברוקר. היציאה מחייבת מספר דגימות יציבות ורצופות של מונה העסקאות, כמספר שנקבע בקלט `HistoryStablePolls`. שום החלטת חריגה אינה מתקבלת מהמצב הזה. |
+| `SYNCING` | המתנה להתייצבות היסטוריית העסקאות של הברוקר. היציאה מחייבת שלוש דגימות יציבות ורצופות של מונה העסקאות. שום החלטת חריגה אינה מתקבלת מהמצב הזה. |
 | `ACTIVE` | מדידה. מעבר הערכה אחד בכל פעימת שעון. |
 | `LOCKED` | חריגה בתוקף. הפוזיציות נשארות פתוחות, שום פקודה אינה נשלחת, ושעון הפקיעה הוא היציאה היחידה. |
 | `SAFE_HALT` | היועץ מאמין שהסביבה שלו שבורה, בדרך כלל בעקבות לולאת קריסות. הוא אינו סוגר דבר, אינו סורק דבר, ואינו נכלל בפקיעה. החזרה לפעילות ידנית: לעצור את היועץ, למחוק את קובץ העצירה, ולהפעיל מחדש. |
@@ -333,7 +331,7 @@ flowchart TD
     T[timer tick] --> C{terminal connected?}
     C -- no --> D[DEGRADED: hold last known numbers, take no breach decision]
     C -- yes --> R{first pass after a disconnect?}
-    R -- yes --> S[RESYNC: wait for HistoryStablePolls stable polls]
+    R -- yes --> S[RESYNC: wait for 3 stable polls]
     R -- no --> A[anchor = last 01:00 server boundary]
     A --> B[base = balance - all deals since anchor]
     B --> RE[realized = buy and sell deals since anchor]
@@ -374,16 +372,14 @@ flowchart TD
 
 | קלט | מה זה אומר | ברירת מחדל | ערך התחלה בטוח |
 |---|---|---|---|
-| `DailyLossPercent` | מגבלת הפסד יומית כאחוז מבסיס עוגן היום. הערך `0` מכבה את הרגל הזו. נדחה אם שלילי או גדול ממאה. | `5.0` | `2.0` כל עוד אתה לומד כיצד היועץ מתנהג על החשבון שלך |
-| `DailyLossCurrency` | מגבלת הפסד יומית כסכום קבוע במטבע החשבון. הערך `0` מכבה את הרגל הזו. כששתי הרגליים פעילות, המחמירה נאכפת. | `0.0` | `0.0`, או תקרת מזומן קשיחה שאתה בטוח בה |
-| `SweepPeriodSeconds` | מחזור השעון. כל מעבר הערכה, פעימת הלב של המנעול ושורת אות החיים רצים על השעון הזה. נדחה מחוץ לטווח 1 עד 5. | `1` | `1` |
-| `CrashLoopMaxInits` | כמה עליות לא נקיות רצופות נסבלות לפני שהיועץ מכניס את עצמו ל`SAFE_HALT`. נדחה מתחת לאחת. | `3` | `3` |
-| `CrashLoopWindowSeconds` | הפער המרבי בין שתי עליות סמוכות כדי שייחשבו לאותה שרשרת. נדחה מתחת לאחת. | `300` | `300` |
-| `HistoryStablePolls` | מספר הדגימות היציבות והרצופות של מונה עסקאות הברוקר הנדרשות ליציאה מ`SYNCING`, וגם לחידוש פעילות אחרי ניתוק. נדחה מתחת לאחת. | `3` | `3` |
+| `DailyLossPercent` | מגבלת הפסד יומית כאחוז מבסיס עוגן היום. נבחרת מתוך רשימה קבועה, בטווח 0.25 עד 5.50 בצעדים של 0.25. ערך שאינו ברשימה דוחה את העלייה. | `5.50` | `2.00` כל עוד אתה לומד כיצד היועץ מתנהג על החשבון שלך |
+| `DailyLossCurrency` | מגבלת הפסד יומית כסכום קבוע במטבע החשבון. נבחרת מתוך רשימה קבועה, בטווח 1 עד 10 בצעדים של 1, ואחר כך 15 עד 200 בצעדים של 5. כששתי הרגליים מוגדרות, המחמירה נאכפת. ערך שאינו ברשימה דוחה את העלייה. | `200` | תקרת מזומן קשיחה שאתה בטוח בה |
 | `WeeklyReportEnabled` | מדידה ודיווח שבועיים. מחלקה אופציונלית: ערך פגום מכבה את התכונה עם אזהרה, והעלייה נמשכת. | `true` | `true` |
 | `LogVerbosity` | הערך `Normal` או `Verbose`. המצב המפורט מוסיף אבחון ולעולם אינו מדכא שורת מעבר או שורת אות חיים. | `Normal` | `Verbose` בימים הראשונים |
 
-שני קלטי המגבלה וארבעת המספרים השלמים שמעליהם הם מחלקת הליבה: ערך פגום שם מחזיר `INIT_PARAMETERS_INCORRECT`, מרים התראה שנוקבת בשם השדה, ומשאיר על הגרף כרזת `REFUSED` נושאת תאריך. היועץ לעולם אינו עולה מוגדר למחצה.
+מחזור השעון, מספר הדגימות היציבות הנדרשות ליציאה מ`SYNCING`, ושני גבולות לולאת הקריסות אינם קלטים. הם קבועים בבנייה על שנייה אחת, שלוש דגימות, שלוש עליות לא נקיות רצופות ושלוש מאות שניות.
+
+שני קלטי המגבלה הם מחלקת הליבה: ערך שאינו נמצא באחת הרשימות מחזיר `INIT_PARAMETERS_INCORRECT`, מרים התראה שנוקבת בשם השדה, ומשאיר על הגרף כרזת `REFUSED` נושאת תאריך. היועץ לעולם אינו עולה מוגדר למחצה.
 
 ### שורות היומן הראשונות
 

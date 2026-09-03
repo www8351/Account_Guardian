@@ -1,4 +1,4 @@
-DailyLossPercent=550
+DailyLossPercent=510
 DailyLossCurrency=200
 WeeklyReportEnabled=true
-LogVerbosity=99
+LogVerbosity=0
