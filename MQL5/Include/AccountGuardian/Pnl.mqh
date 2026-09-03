@@ -281,10 +281,127 @@ double AgFloating()
   }
 
 //+------------------------------------------------------------------+
-//| Stricter of the two enabled limit legs, min over enabled          |
-//| candidates only (Q8 of the original architecture review, naive-  |
-//| min trap avoided: a disabled leg, 0, never wins as "smallest").  |
-//| AgValidateLimits already guarantees not both are zero.            |
+//| R10, D1f (FINAL 2026-09-03). Both limits are mandatory list      |
+//| inputs. THE BACKING INTEGER IS THE VALUE: percent in hundredths, |
+//| currency in whole units. The member comment is the dialog text.  |
+//| Defaults FINAL 2026-09-03: the top value of each list.           |
+//+------------------------------------------------------------------+
+enum ENUM_AG_DAILY_LOSS_PERCENT
+  {
+   AG_DLP_0_25 =  25, // 0.25
+   AG_DLP_0_50 =  50, // 0.50
+   AG_DLP_0_75 =  75, // 0.75
+   AG_DLP_1_00 = 100, // 1.00
+   AG_DLP_1_25 = 125, // 1.25
+   AG_DLP_1_50 = 150, // 1.50
+   AG_DLP_1_75 = 175, // 1.75
+   AG_DLP_2_00 = 200, // 2.00
+   AG_DLP_2_25 = 225, // 2.25
+   AG_DLP_2_50 = 250, // 2.50
+   AG_DLP_2_75 = 275, // 2.75
+   AG_DLP_3_00 = 300, // 3.00
+   AG_DLP_3_25 = 325, // 3.25
+   AG_DLP_3_50 = 350, // 3.50
+   AG_DLP_3_75 = 375, // 3.75
+   AG_DLP_4_00 = 400, // 4.00
+   AG_DLP_4_25 = 425, // 4.25
+   AG_DLP_4_50 = 450, // 4.50
+   AG_DLP_4_75 = 475, // 4.75
+   AG_DLP_5_00 = 500, // 5.00
+   AG_DLP_5_25 = 525, // 5.25
+   AG_DLP_5_50 = 550  // 5.50
+  };
+
+enum ENUM_AG_DAILY_LOSS_CURRENCY
+  {
+   AG_DLC_1   =   1, // 1
+   AG_DLC_2   =   2, // 2
+   AG_DLC_3   =   3, // 3
+   AG_DLC_4   =   4, // 4
+   AG_DLC_5   =   5, // 5
+   AG_DLC_6   =   6, // 6
+   AG_DLC_7   =   7, // 7
+   AG_DLC_8   =   8, // 8
+   AG_DLC_9   =   9, // 9
+   AG_DLC_10  =  10, // 10
+   AG_DLC_15  =  15, // 15
+   AG_DLC_20  =  20, // 20
+   AG_DLC_25  =  25, // 25
+   AG_DLC_30  =  30, // 30
+   AG_DLC_35  =  35, // 35
+   AG_DLC_40  =  40, // 40
+   AG_DLC_45  =  45, // 45
+   AG_DLC_50  =  50, // 50
+   AG_DLC_55  =  55, // 55
+   AG_DLC_60  =  60, // 60
+   AG_DLC_65  =  65, // 65
+   AG_DLC_70  =  70, // 70
+   AG_DLC_75  =  75, // 75
+   AG_DLC_80  =  80, // 80
+   AG_DLC_85  =  85, // 85
+   AG_DLC_90  =  90, // 90
+   AG_DLC_95  =  95, // 95
+   AG_DLC_100 = 100, // 100
+   AG_DLC_105 = 105, // 105
+   AG_DLC_110 = 110, // 110
+   AG_DLC_115 = 115, // 115
+   AG_DLC_120 = 120, // 120
+   AG_DLC_125 = 125, // 125
+   AG_DLC_130 = 130, // 130
+   AG_DLC_135 = 135, // 135
+   AG_DLC_140 = 140, // 140
+   AG_DLC_145 = 145, // 145
+   AG_DLC_150 = 150, // 150
+   AG_DLC_155 = 155, // 155
+   AG_DLC_160 = 160, // 160
+   AG_DLC_165 = 165, // 165
+   AG_DLC_170 = 170, // 170
+   AG_DLC_175 = 175, // 175
+   AG_DLC_180 = 180, // 180
+   AG_DLC_185 = 185, // 185
+   AG_DLC_190 = 190, // 190
+   AG_DLC_195 = 195, // 195
+   AG_DLC_200 = 200  // 200
+  };
+
+//--- Membership, arithmetic on the raw integer and never on the enum
+//--- type, because the terminal can hand OnInit any integer through a
+//--- .set file or a stale chart profile (D1f names all three channels).
+bool AgDailyLossPercentIsMember(const int raw)
+  {
+   return raw >= 25 && raw <= 550 && (raw % 25) == 0;
+  }
+
+bool AgDailyLossCurrencyIsMember(const int raw)
+  {
+   if(raw >= 1 && raw <= 10)
+      return true;
+   return raw >= 15 && raw <= 200 && (raw % 5) == 0;
+  }
+
+//--- Mapping to the double the limit arithmetic consumes. Every percent
+//--- member is a multiple of 0.25 and every currency member an integer,
+//--- so both mappings are exact in binary and DoubleToString(x, 2)
+//--- reproduces the dialog text.
+double AgDailyLossPercentValue(const ENUM_AG_DAILY_LOSS_PERCENT v)
+  {
+   return ((double)(int)v) / 100.0;
+  }
+
+double AgDailyLossCurrencyValue(const ENUM_AG_DAILY_LOSS_CURRENCY v)
+  {
+   return (double)(int)v;
+  }
+
+//+------------------------------------------------------------------+
+//| Stricter of the two limit legs, min over enabled candidates only |
+//| (Q8 of the original architecture review, naive-min trap avoided: |
+//| a disabled leg, 0, never wins as "smallest"). R10, D1f (FINAL    |
+//| 2026-09-03): both legs are mandatory list inputs, so from the EA |
+//| only the has_percent && has_currency branch is live and the two  |
+//| disabled-leg branches are unreachable. They stay because         |
+//| AgPhase2StateVectors.mq5 still calls this with a zero currency   |
+//| literal. BODY UNCHANGED.                                         |
 //+------------------------------------------------------------------+
 double AgLimitCurrency(const double base, const double percent, const double currency)
   {
@@ -332,40 +449,23 @@ bool AgHistoryStable(const int required_polls)
   }
 
 //+------------------------------------------------------------------+
-//| Limit-input validation, core config class (Q4 FINAL).            |
-//| Malformed is concrete: non-finite, negative, out of range, or    |
-//| both limits zero. Caller returns INIT_PARAMETERS_INCORRECT.      |
+//| Limit-input validation, core config class (Q4 FINAL, D1f FINAL   |
+//| 2026-09-03). Malformed is one thing only: not a member of the    |
+//| input's own list. Checked PER RAW INPUT AT INIT (D6a). Caller    |
+//| returns INIT_PARAMETERS_INCORRECT.                               |
 //+------------------------------------------------------------------+
-bool AgValidateLimits(const double percent, const double currency, string &why)
+bool AgValidateLimits(const int percent_raw, const int currency_raw, string &why)
   {
-   if(!MathIsValidNumber(percent))
+   if(!AgDailyLossPercentIsMember(percent_raw))
      {
-      why = "DailyLossPercent is not a finite number";
+      why = "DailyLossPercent is not a list member (raw " + (string)percent_raw
+            + "); the list is 0.25 to 5.50 in steps of 0.25, stored as hundredths 25 to 550";
       return false;
      }
-   if(!MathIsValidNumber(currency))
+   if(!AgDailyLossCurrencyIsMember(currency_raw))
      {
-      why = "DailyLossCurrency is not a finite number";
-      return false;
-     }
-   if(percent < 0.0)
-     {
-      why = "DailyLossPercent is negative (" + DoubleToString(percent, 2) + ")";
-      return false;
-     }
-   if(percent > 100.0)
-     {
-      why = "DailyLossPercent is out of range, above 100 (" + DoubleToString(percent, 2) + ")";
-      return false;
-     }
-   if(currency < 0.0)
-     {
-      why = "DailyLossCurrency is negative (" + DoubleToString(currency, 2) + ")";
-      return false;
-     }
-   if(percent == 0.0 && currency == 0.0)
-     {
-      why = "both limits are zero, a guardian with no limit is a config error";
+      why = "DailyLossCurrency is not a list member (raw " + (string)currency_raw
+            + "); the list is 1 to 10 in steps of 1, then 15 to 200 in steps of 5";
       return false;
      }
    return true;

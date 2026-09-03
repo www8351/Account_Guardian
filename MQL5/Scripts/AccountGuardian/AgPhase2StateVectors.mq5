@@ -549,6 +549,46 @@ void OnStart()
    AgVecCheckMoney("k6_two_cent_decrease_still_lowers_the_floor",
                    g_ag_floor_currency, rt_live);
 
+   //--- R10, D1f (FINAL 2026-09-03): list membership and mapping. Counts are
+   //--- exhaustive over a range that brackets both lists, so the two member
+   //--- totals D1f states, 22 and 48, are measured rather than asserted.
+   int r10_pct_members = 0;
+   for(int p = -1000; p <= 1000; p++)
+      if(AgDailyLossPercentIsMember(p))
+         r10_pct_members++;
+   AgVecCheckInt("r10_percent_member_count_is_22", r10_pct_members, 22);
+   int r10_cur_members = 0;
+   for(int c = -1000; c <= 1000; c++)
+      if(AgDailyLossCurrencyIsMember(c))
+         r10_cur_members++;
+   AgVecCheckInt("r10_currency_member_count_is_48", r10_cur_members, 48);
+   AgVecCheck("r10_percent_floor_and_ceiling",
+              AgDailyLossPercentIsMember(25) && AgDailyLossPercentIsMember(550)
+              && !AgDailyLossPercentIsMember(0) && !AgDailyLossPercentIsMember(575),
+              "25 and 550 in, 0 and 575 out");
+   AgVecCheck("r10_percent_off_grid_rejected",
+              !AgDailyLossPercentIsMember(510) && !AgDailyLossPercentIsMember(5)
+              && !AgDailyLossPercentIsMember(-25),
+              "510, 5 and -25 out");
+   AgVecCheck("r10_currency_two_segments",
+              AgDailyLossCurrencyIsMember(1) && AgDailyLossCurrencyIsMember(10)
+              && AgDailyLossCurrencyIsMember(15) && AgDailyLossCurrencyIsMember(200)
+              && !AgDailyLossCurrencyIsMember(0) && !AgDailyLossCurrencyIsMember(12)
+              && !AgDailyLossCurrencyIsMember(205) && !AgDailyLossCurrencyIsMember(-5),
+              "1, 10, 15, 200 in; 0, 12, 205, -5 out");
+   AgVecCheckMoney("r10_map_percent_550_is_5_50", AgDailyLossPercentValue(AG_DLP_5_50), 5.50);
+   AgVecCheckMoney("r10_map_percent_25_is_0_25", AgDailyLossPercentValue(AG_DLP_0_25), 0.25);
+   AgVecCheckMoney("r10_map_currency_200", AgDailyLossCurrencyValue(AG_DLC_200), 200.0);
+   AgVecCheckMoney("r10_default_limit_is_min_of_legs",
+                   AgLimitCurrency(2000.0, AgDailyLossPercentValue(AG_DLP_5_50),
+                                   AgDailyLossCurrencyValue(AG_DLC_200)), 110.0);
+   string r10_why = "";
+   AgVecCheck("r10_validate_rejects_currency_zero",
+              !AgValidateLimits(550, 0, r10_why)
+              && StringFind(r10_why, "DailyLossCurrency is not a list member (raw 0)") == 0,
+              r10_why);
+   AgVecCheck("r10_validate_accepts_defaults", AgValidateLimits(550, 200, r10_why), "550/200");
+
    PrintFormat("AGVEC|SUMMARY|%d/%d", g_pass, g_total);
   }
 //+------------------------------------------------------------------+
