@@ -2244,3 +2244,11 @@ Status: FINAL
 Decision: (owner ruling 2026-09-02, transcribed 2026-09-03 in the input hardening session, R10, D11a) CrashLoopMaxInits = 3 and CrashLoopWindowSeconds = 300 become compile-time constants. Two a9 vectors are struck: `a9_crash_max_zero.set` and `a9_window_zero.set`.
 Reason: Owner's ruling, dated 2026-09-02 by the owner's own instruction and recorded here on 2026-09-03 because no earlier entry captured it; the ten 2026-09-02 rulings recorded in this DECISIONS section under that date do not include it, checked before this entry was written.
 Status: FINAL, dated 2026-09-02
+
+Decision: (owner ruling 2026-09-03, given in the R10 build plan session instruction, defaults under D1f) `DailyLossPercent` default = 5.50 and `DailyLossCurrency` default = 200, the top value of each D1f list. Both defaults are list members by construction, 5.50 = 0.25 * 22 and 200 = 15 + 5 * 37, so the shipped defaults pass the D1f init check with no dialog change. This entry adds to D1f (DECISIONS :2205) and supersedes nothing: D1f names the lists and the ceilings and did not name the defaults.
+Reason: Owner's ruling, recorded as given, 2026-09-03 R10 build plan session.
+Status: FINAL
+
+Decision: (owner ruling 2026-09-03, R10 plan review, given in the plan approval instruction) Four items of `docs/PLAN_R10_INPUT_HARDENING_2026-09-03.md` are ratified. ONE, retired a9 vectors are removed from the tree by `git rm` and listed in `docs/vectors/README.md` with the striking ruling (plan 3.3). TWO, `README.md` is updated in the build session to reflect R10: no zero-as-disable text, the four removed inputs gone; README stays bilingual and never names the ledger (plan 2.6, Task B4). THREE, the `docs/SPEC_v0.1.md` amendment per plan Task B5 is authorized. FOUR, the `limits accepted` INFO line and the `build=R10` label are approved as designed in plan 2.2.
+Reason: Owner's ruling, recorded as given, 2026-09-03 R10 plan review. On item ONE: none of the ten retired vectors is needed by the build or by the guardian's function.
+Status: FINAL
